@@ -1,0 +1,26 @@
+{
+  "name": "@padyna-v2/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@padyna-v2/db": "workspace:*",
+    "@padyna-v2/env": "workspace:*",
+    "@polar-sh/better-auth": "catalog:",
+    "@polar-sh/sdk": "^0.42.2",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@padyna-v2/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
