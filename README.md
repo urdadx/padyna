@@ -75,3 +75,4 @@ padyna-v2/
 - `pnpm run db:migrate`: Run database migrations
 - `pnpm run db:studio`: Open database studio UI
 - `pnpm run check`: Run Oxlint and Oxfmt
+# padyna
