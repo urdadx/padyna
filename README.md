@@ -1,8 +1,8 @@
-# padyna-v2
+# Padyna
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Router, Hono, TRPC, and more.
+AI powered customer support for modern businesses
 
-## Features
+## Tech Stack
 
 - **TypeScript** - For type safety and improved developer experience
 - **TanStack Router** - File-based routing with full type safety
@@ -75,4 +75,3 @@ padyna-v2/
 - `pnpm run db:migrate`: Run database migrations
 - `pnpm run db:studio`: Open database studio UI
 - `pnpm run check`: Run Oxlint and Oxfmt
-# padyna
