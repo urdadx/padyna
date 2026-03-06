@@ -74,13 +74,14 @@ export function LinkSourceDialog({
 					<div className="grid gap-2">
 						<Label htmlFor="url">
 							URL
-							<span className="text-muted-foreground">
+							<span className="text-muted-foreground text-xs">
 								(Press Enter to add)
 							</span>
 						</Label>
 						<div className="flex flex-col gap-2">
 							<Input
 								id="url"
+								type="url"
 								placeholder="https://padyna.com"
 								value={newLink}
 								onChange={(e) => setNewLink(e.target.value)}
@@ -119,7 +120,7 @@ export function LinkSourceDialog({
 						className="w-full"
 						onClick={handleSave}
 						disabled={links.length === 0}>
-						{`Add ${links.length} Links`}
+						Add Link
 					</Button>
 				</DialogFooter>
 			</DialogContent>

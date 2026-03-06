@@ -38,7 +38,7 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 	const addFiles = (newFiles: File[]) => {
 		const validFiles = newFiles.filter((file) => {
 			const extension = file.name.split(".").pop()?.toLowerCase();
-			return ["pdf", "csv", "txt", "docx"].includes(extension || "");
+			return ["pdf", "csv", "txt", "docx", ".md", ".mdx"].includes(extension || "");
 		});
 
 		const filesWithId = validFiles.map((file) => ({
@@ -104,7 +104,7 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 						ref={fileInputRef}
 						onChange={handleFileChange}
 						multiple
-						accept=".pdf,.csv,.txt,.docx"
+						accept=".pdf,.csv,.txt,.docx, .md, .mdx"
 						className="hidden"
 					/>
 					<UploadIcon className="h-10 w-10 text-muted-foreground" />
@@ -112,7 +112,7 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 						Click to upload or drag and drop
 					</p>
 					<p className="mt-1 text-xs text-muted-foreground">
-						PDF, CSV, TXT or DOCX (max. 10MB)
+						PDF, CSV, TXT, MD or DOCX (max. 20MB)
 					</p>
 				</div>
 
@@ -121,7 +121,7 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 						{files.map(({ id, file }) => (
 							<div
 								key={id}
-								className="flex items-center justify-between rounded-lg border bg-muted/20 p-3">
+								className="flex items-center justify-between rounded-lg border bg-muted/20 p-2 px-3">
 								<div className="flex items-center gap-3 overflow-hidden">
 									<DocumentIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
 									<div className="flex flex-col overflow-hidden">
@@ -158,7 +158,7 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 						className="w-full"
 						onClick={handleUpload}
 						disabled={files.length === 0}>
-						{`${files.length} files added`}
+						Add files
 					</Button>
 				</DialogFooter>
 			</DialogContent>

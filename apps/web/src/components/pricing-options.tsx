@@ -16,7 +16,7 @@ import Spinner from "./ui/spinner";
 
 export function Pricing() {
 	const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
-	const [loadingPlanId, setLoadingPlanId] = useState<number | null>(null);
+	const [loadingPlanId, _setLoadingPlanId] = useState<number | null>(null);
 
 	const navigate = useNavigate();
 
@@ -98,7 +98,12 @@ export function Pricing() {
 	const isLoading = (planId: number) => loadingPlanId === planId;
 
 	return (
-		<section id="pricing" className="py-4 font-sans">
+		<motion.section
+			id="pricing"
+			className="py-4 font-sans"
+			initial={{ y: 8, opacity: 0 }}
+			animate={{ y: 0, opacity: 1 }}
+			transition={{ duration: 0.5 }}>
 			<div className="mx-auto max-w-6xl px-6">
 				<div className="mt-8 ">
 					<Tabs
@@ -330,6 +335,6 @@ export function Pricing() {
 					</Tabs>
 				</div>
 			</div>
-		</section>
+		</motion.section>
 	);
 }

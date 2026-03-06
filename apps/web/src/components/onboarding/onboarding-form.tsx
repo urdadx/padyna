@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
-import OnboardingImage from "@/assets/images/busy-desk.webp";
+import OnboardingImage from "@/assets/images/fire-lookout.webp";
 import { StepOne } from "./step-one";
 import { StepTwo } from "./step-two";
 import { StepThree } from "./step-three";

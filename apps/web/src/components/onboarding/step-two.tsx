@@ -26,7 +26,7 @@ const SourceItem = ({ icon: Icon, label, count, status = "default", onClick }: S
 	const isAdded = status === "added";
 
 	return (
-		<div className="flex items-center justify-between py-4 border-b last:border-0">
+		<div className="flex items-center justify-between py-4 border-b last:border-0 ">
 			<div className="flex items-center gap-3">
 				<div
 					className={cn(
@@ -95,7 +95,7 @@ export const StepTwo = ({ onBack, onContinue }: { onBack: () => void; onContinue
 	const linkCountLabel = linkSources.length > 0 ? linkSources.length.toString() : undefined;
 
 	return (
-		<div className="p-6 md:p-12 flex flex-col justify-center h-full max-w-xl mx-auto w-full relative">
+		<div className="p-6 md:p-12 flex flex-col justify-center h-full max-w-lg mx-auto w-full relative">
 			<div className="flex flex-col gap-2 mb-5">
 				<h1 className="text-3xl font-semibold">Add training sources</h1>
 				<p className=" text-muted-foreground">

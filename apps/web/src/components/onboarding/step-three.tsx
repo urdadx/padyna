@@ -18,6 +18,15 @@ import {
 	AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { useNavigate } from "@tanstack/react-router";
+import { useId } from "react";
+
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 export const StepThree = ({ onBack }: { onBack: () => void }) => {
 	const [agentName, setAgentName] = useState("Padyna");
@@ -25,6 +34,8 @@ export const StepThree = ({ onBack }: { onBack: () => void }) => {
 	const [agentIcon, setAgentIcon] = useState(PadynaLogo);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	const id = useId();
 
 	const navigate = useNavigate();
 
@@ -53,15 +64,15 @@ export const StepThree = ({ onBack }: { onBack: () => void }) => {
 	};
 
 	return (
-		<div className="p-6 md:p-12 flex flex-col justify-center h-full max-w-xl mx-auto w-full relative">
-			<div className="flex flex-col gap-2 mb-8">
+		<div className="p-6 md:p-12 flex flex-col justify-center h-full max-w-lg mx-auto w-full relative">
+			<div className="flex flex-col gap-2 mb-6  ">
 				<h1 className="text-3xl font-semibold">Customize your agent</h1>
 				<p className="text-muted-foreground leading-relaxed">
 					Style your agent to match your brand. You can customize it further in
 					the settings later.
 				</p>
 
-				<div className="flex flex-col gap-8">
+				<div className="flex flex-col gap-5 mt-4">
 					<div className="flex flex-col gap-3">
 						<Label className="text-muted-foreground font-medium">
 							Agent name
@@ -86,6 +97,30 @@ export const StepThree = ({ onBack }: { onBack: () => void }) => {
 								/>
 							</div>
 						</div>
+					</div>
+
+					<div className="flex flex-col gap-3">
+						<Label
+							className="text-muted-foreground font-medium"
+							htmlFor={id}>
+							Use case
+						</Label>
+						<Select defaultValue="Customer Support">
+							<SelectTrigger className="w-full" id={id}>
+								<SelectValue placeholder="Select use case" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="Customer Support">
+									Customer Support
+								</SelectItem>
+								<SelectItem value="Technical Support">
+									Technical Support
+								</SelectItem>
+								<SelectItem value="Sales Representative">
+									Sales Representative
+								</SelectItem>
+							</SelectContent>
+						</Select>
 					</div>
 
 					<div className="flex flex-col gap-3">

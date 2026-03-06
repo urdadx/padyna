@@ -12,10 +12,22 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SuccessRouteImport } from './routes/success'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as adminRouteRouteImport } from './routes/(admin)/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as OnboardingPricingRouteImport } from './routes/onboarding/pricing'
+import { Route as adminWebsiteRouteImport } from './routes/(admin)/website'
+import { Route as adminTextRouteImport } from './routes/(admin)/text'
+import { Route as adminSettingsRouteImport } from './routes/(admin)/settings'
+import { Route as adminQuestionsRouteImport } from './routes/(admin)/questions'
+import { Route as adminPlaygroundRouteImport } from './routes/(admin)/playground'
+import { Route as adminIntegrationsRouteImport } from './routes/(admin)/integrations'
+import { Route as adminFilesRouteImport } from './routes/(admin)/files'
+import { Route as adminDataSourcesRouteImport } from './routes/(admin)/data-sources'
+import { Route as adminDashboardRouteImport } from './routes/(admin)/dashboard'
+import { Route as adminChatLogsRouteImport } from './routes/(admin)/chat-logs'
+import { Route as adminAnalyticsRouteImport } from './routes/(admin)/analytics'
+import { Route as adminActionsRouteImport } from './routes/(admin)/actions'
 
 const SuccessRoute = SuccessRouteImport.update({
   id: '/success',
@@ -32,9 +44,8 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const adminRouteRoute = adminRouteRouteImport.update({
+  id: '/(admin)',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -52,32 +63,126 @@ const OnboardingPricingRoute = OnboardingPricingRouteImport.update({
   path: '/onboarding/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const adminWebsiteRoute = adminWebsiteRouteImport.update({
+  id: '/website',
+  path: '/website',
+  getParentRoute: () => adminRouteRoute,
+} as any)
+const adminTextRoute = adminTextRouteImport.update({
+  id: '/text',
+  path: '/text',
+  getParentRoute: () => adminRouteRoute,
+} as any)
+const adminSettingsRoute = adminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => adminRouteRoute,
+} as any)
+const adminQuestionsRoute = adminQuestionsRouteImport.update({
+  id: '/questions',
+  path: '/questions',
+  getParentRoute: () => adminRouteRoute,
+} as any)
+const adminPlaygroundRoute = adminPlaygroundRouteImport.update({
+  id: '/playground',
+  path: '/playground',
+  getParentRoute: () => adminRouteRoute,
+} as any)
+const adminIntegrationsRoute = adminIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => adminRouteRoute,
+} as any)
+const adminFilesRoute = adminFilesRouteImport.update({
+  id: '/files',
+  path: '/files',
+  getParentRoute: () => adminRouteRoute,
+} as any)
+const adminDataSourcesRoute = adminDataSourcesRouteImport.update({
+  id: '/data-sources',
+  path: '/data-sources',
+  getParentRoute: () => adminRouteRoute,
+} as any)
+const adminDashboardRoute = adminDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => adminRouteRoute,
+} as any)
+const adminChatLogsRoute = adminChatLogsRouteImport.update({
+  id: '/chat-logs',
+  path: '/chat-logs',
+  getParentRoute: () => adminRouteRoute,
+} as any)
+const adminAnalyticsRoute = adminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => adminRouteRoute,
+} as any)
+const adminActionsRoute = adminActionsRouteImport.update({
+  id: '/actions',
+  path: '/actions',
+  getParentRoute: () => adminRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/success': typeof SuccessRoute
+  '/actions': typeof adminActionsRoute
+  '/analytics': typeof adminAnalyticsRoute
+  '/chat-logs': typeof adminChatLogsRoute
+  '/dashboard': typeof adminDashboardRoute
+  '/data-sources': typeof adminDataSourcesRoute
+  '/files': typeof adminFilesRoute
+  '/integrations': typeof adminIntegrationsRoute
+  '/playground': typeof adminPlaygroundRoute
+  '/questions': typeof adminQuestionsRoute
+  '/settings': typeof adminSettingsRoute
+  '/text': typeof adminTextRoute
+  '/website': typeof adminWebsiteRoute
   '/onboarding/pricing': typeof OnboardingPricingRoute
   '/onboarding/': typeof OnboardingIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/success': typeof SuccessRoute
+  '/actions': typeof adminActionsRoute
+  '/analytics': typeof adminAnalyticsRoute
+  '/chat-logs': typeof adminChatLogsRoute
+  '/dashboard': typeof adminDashboardRoute
+  '/data-sources': typeof adminDataSourcesRoute
+  '/files': typeof adminFilesRoute
+  '/integrations': typeof adminIntegrationsRoute
+  '/playground': typeof adminPlaygroundRoute
+  '/questions': typeof adminQuestionsRoute
+  '/settings': typeof adminSettingsRoute
+  '/text': typeof adminTextRoute
+  '/website': typeof adminWebsiteRoute
   '/onboarding/pricing': typeof OnboardingPricingRoute
   '/onboarding': typeof OnboardingIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/(admin)': typeof adminRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/success': typeof SuccessRoute
+  '/(admin)/actions': typeof adminActionsRoute
+  '/(admin)/analytics': typeof adminAnalyticsRoute
+  '/(admin)/chat-logs': typeof adminChatLogsRoute
+  '/(admin)/dashboard': typeof adminDashboardRoute
+  '/(admin)/data-sources': typeof adminDataSourcesRoute
+  '/(admin)/files': typeof adminFilesRoute
+  '/(admin)/integrations': typeof adminIntegrationsRoute
+  '/(admin)/playground': typeof adminPlaygroundRoute
+  '/(admin)/questions': typeof adminQuestionsRoute
+  '/(admin)/settings': typeof adminSettingsRoute
+  '/(admin)/text': typeof adminTextRoute
+  '/(admin)/website': typeof adminWebsiteRoute
   '/onboarding/pricing': typeof OnboardingPricingRoute
   '/onboarding/': typeof OnboardingIndexRoute
 }
@@ -85,35 +190,69 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/dashboard'
     | '/login'
     | '/register'
     | '/success'
+    | '/actions'
+    | '/analytics'
+    | '/chat-logs'
+    | '/dashboard'
+    | '/data-sources'
+    | '/files'
+    | '/integrations'
+    | '/playground'
+    | '/questions'
+    | '/settings'
+    | '/text'
+    | '/website'
     | '/onboarding/pricing'
     | '/onboarding/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/dashboard'
     | '/login'
     | '/register'
     | '/success'
+    | '/actions'
+    | '/analytics'
+    | '/chat-logs'
+    | '/dashboard'
+    | '/data-sources'
+    | '/files'
+    | '/integrations'
+    | '/playground'
+    | '/questions'
+    | '/settings'
+    | '/text'
+    | '/website'
     | '/onboarding/pricing'
     | '/onboarding'
   id:
     | '__root__'
     | '/'
-    | '/dashboard'
+    | '/(admin)'
     | '/login'
     | '/register'
     | '/success'
+    | '/(admin)/actions'
+    | '/(admin)/analytics'
+    | '/(admin)/chat-logs'
+    | '/(admin)/dashboard'
+    | '/(admin)/data-sources'
+    | '/(admin)/files'
+    | '/(admin)/integrations'
+    | '/(admin)/playground'
+    | '/(admin)/questions'
+    | '/(admin)/settings'
+    | '/(admin)/text'
+    | '/(admin)/website'
     | '/onboarding/pricing'
     | '/onboarding/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DashboardRoute: typeof DashboardRoute
+  adminRouteRoute: typeof adminRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   SuccessRoute: typeof SuccessRoute
@@ -144,11 +283,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
+    '/(admin)': {
+      id: '/(admin)'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof adminRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -172,12 +311,130 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingPricingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(admin)/website': {
+      id: '/(admin)/website'
+      path: '/website'
+      fullPath: '/website'
+      preLoaderRoute: typeof adminWebsiteRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
+    '/(admin)/text': {
+      id: '/(admin)/text'
+      path: '/text'
+      fullPath: '/text'
+      preLoaderRoute: typeof adminTextRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
+    '/(admin)/settings': {
+      id: '/(admin)/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof adminSettingsRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
+    '/(admin)/questions': {
+      id: '/(admin)/questions'
+      path: '/questions'
+      fullPath: '/questions'
+      preLoaderRoute: typeof adminQuestionsRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
+    '/(admin)/playground': {
+      id: '/(admin)/playground'
+      path: '/playground'
+      fullPath: '/playground'
+      preLoaderRoute: typeof adminPlaygroundRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
+    '/(admin)/integrations': {
+      id: '/(admin)/integrations'
+      path: '/integrations'
+      fullPath: '/integrations'
+      preLoaderRoute: typeof adminIntegrationsRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
+    '/(admin)/files': {
+      id: '/(admin)/files'
+      path: '/files'
+      fullPath: '/files'
+      preLoaderRoute: typeof adminFilesRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
+    '/(admin)/data-sources': {
+      id: '/(admin)/data-sources'
+      path: '/data-sources'
+      fullPath: '/data-sources'
+      preLoaderRoute: typeof adminDataSourcesRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
+    '/(admin)/dashboard': {
+      id: '/(admin)/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof adminDashboardRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
+    '/(admin)/chat-logs': {
+      id: '/(admin)/chat-logs'
+      path: '/chat-logs'
+      fullPath: '/chat-logs'
+      preLoaderRoute: typeof adminChatLogsRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
+    '/(admin)/analytics': {
+      id: '/(admin)/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof adminAnalyticsRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
+    '/(admin)/actions': {
+      id: '/(admin)/actions'
+      path: '/actions'
+      fullPath: '/actions'
+      preLoaderRoute: typeof adminActionsRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
   }
 }
 
+interface adminRouteRouteChildren {
+  adminActionsRoute: typeof adminActionsRoute
+  adminAnalyticsRoute: typeof adminAnalyticsRoute
+  adminChatLogsRoute: typeof adminChatLogsRoute
+  adminDashboardRoute: typeof adminDashboardRoute
+  adminDataSourcesRoute: typeof adminDataSourcesRoute
+  adminFilesRoute: typeof adminFilesRoute
+  adminIntegrationsRoute: typeof adminIntegrationsRoute
+  adminPlaygroundRoute: typeof adminPlaygroundRoute
+  adminQuestionsRoute: typeof adminQuestionsRoute
+  adminSettingsRoute: typeof adminSettingsRoute
+  adminTextRoute: typeof adminTextRoute
+  adminWebsiteRoute: typeof adminWebsiteRoute
+}
+
+const adminRouteRouteChildren: adminRouteRouteChildren = {
+  adminActionsRoute: adminActionsRoute,
+  adminAnalyticsRoute: adminAnalyticsRoute,
+  adminChatLogsRoute: adminChatLogsRoute,
+  adminDashboardRoute: adminDashboardRoute,
+  adminDataSourcesRoute: adminDataSourcesRoute,
+  adminFilesRoute: adminFilesRoute,
+  adminIntegrationsRoute: adminIntegrationsRoute,
+  adminPlaygroundRoute: adminPlaygroundRoute,
+  adminQuestionsRoute: adminQuestionsRoute,
+  adminSettingsRoute: adminSettingsRoute,
+  adminTextRoute: adminTextRoute,
+  adminWebsiteRoute: adminWebsiteRoute,
+}
+
+const adminRouteRouteWithChildren = adminRouteRoute._addFileChildren(
+  adminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DashboardRoute: DashboardRoute,
+  adminRouteRoute: adminRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   SuccessRoute: SuccessRoute,
