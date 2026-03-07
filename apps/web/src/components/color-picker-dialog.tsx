@@ -62,9 +62,9 @@ export const ColorPickerDialog = ({ onColorSelect, isUpdating }: ColorPickerDial
 					style={{
 						backgroundColor: color,
 					}}
-					className="w-7 h-7 rounded-md"
+					className="w-7 h-7 rounded-md border-2 border-gray-200"
 				/>
-				<span>{color}</span>
+				<span className="text-sm text-gray-600">{color}</span>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>

@@ -5,6 +5,9 @@ import path from "node:path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  define: {
+    __VERSION__: JSON.stringify("0.16.34"),
+  },
   plugins: [tailwindcss(), tanstackRouter({}), react()],
   resolve: {
     alias: {

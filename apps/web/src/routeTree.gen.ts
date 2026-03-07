@@ -16,7 +16,6 @@ import { Route as adminRouteRouteImport } from './routes/(admin)/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as OnboardingPricingRouteImport } from './routes/onboarding/pricing'
-import { Route as adminWebsiteRouteImport } from './routes/(admin)/website'
 import { Route as adminTextRouteImport } from './routes/(admin)/text'
 import { Route as adminSettingsRouteImport } from './routes/(admin)/settings'
 import { Route as adminQuestionsRouteImport } from './routes/(admin)/questions'
@@ -62,11 +61,6 @@ const OnboardingPricingRoute = OnboardingPricingRouteImport.update({
   id: '/onboarding/pricing',
   path: '/onboarding/pricing',
   getParentRoute: () => rootRouteImport,
-} as any)
-const adminWebsiteRoute = adminWebsiteRouteImport.update({
-  id: '/website',
-  path: '/website',
-  getParentRoute: () => adminRouteRoute,
 } as any)
 const adminTextRoute = adminTextRouteImport.update({
   id: '/text',
@@ -140,7 +134,6 @@ export interface FileRoutesByFullPath {
   '/questions': typeof adminQuestionsRoute
   '/settings': typeof adminSettingsRoute
   '/text': typeof adminTextRoute
-  '/website': typeof adminWebsiteRoute
   '/onboarding/pricing': typeof OnboardingPricingRoute
   '/onboarding/': typeof OnboardingIndexRoute
 }
@@ -160,7 +153,6 @@ export interface FileRoutesByTo {
   '/questions': typeof adminQuestionsRoute
   '/settings': typeof adminSettingsRoute
   '/text': typeof adminTextRoute
-  '/website': typeof adminWebsiteRoute
   '/onboarding/pricing': typeof OnboardingPricingRoute
   '/onboarding': typeof OnboardingIndexRoute
 }
@@ -182,7 +174,6 @@ export interface FileRoutesById {
   '/(admin)/questions': typeof adminQuestionsRoute
   '/(admin)/settings': typeof adminSettingsRoute
   '/(admin)/text': typeof adminTextRoute
-  '/(admin)/website': typeof adminWebsiteRoute
   '/onboarding/pricing': typeof OnboardingPricingRoute
   '/onboarding/': typeof OnboardingIndexRoute
 }
@@ -204,7 +195,6 @@ export interface FileRouteTypes {
     | '/questions'
     | '/settings'
     | '/text'
-    | '/website'
     | '/onboarding/pricing'
     | '/onboarding/'
   fileRoutesByTo: FileRoutesByTo
@@ -224,7 +214,6 @@ export interface FileRouteTypes {
     | '/questions'
     | '/settings'
     | '/text'
-    | '/website'
     | '/onboarding/pricing'
     | '/onboarding'
   id:
@@ -245,7 +234,6 @@ export interface FileRouteTypes {
     | '/(admin)/questions'
     | '/(admin)/settings'
     | '/(admin)/text'
-    | '/(admin)/website'
     | '/onboarding/pricing'
     | '/onboarding/'
   fileRoutesById: FileRoutesById
@@ -310,13 +298,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding/pricing'
       preLoaderRoute: typeof OnboardingPricingRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/(admin)/website': {
-      id: '/(admin)/website'
-      path: '/website'
-      fullPath: '/website'
-      preLoaderRoute: typeof adminWebsiteRouteImport
-      parentRoute: typeof adminRouteRoute
     }
     '/(admin)/text': {
       id: '/(admin)/text'
@@ -410,7 +391,6 @@ interface adminRouteRouteChildren {
   adminQuestionsRoute: typeof adminQuestionsRoute
   adminSettingsRoute: typeof adminSettingsRoute
   adminTextRoute: typeof adminTextRoute
-  adminWebsiteRoute: typeof adminWebsiteRoute
 }
 
 const adminRouteRouteChildren: adminRouteRouteChildren = {
@@ -425,7 +405,6 @@ const adminRouteRouteChildren: adminRouteRouteChildren = {
   adminQuestionsRoute: adminQuestionsRoute,
   adminSettingsRoute: adminSettingsRoute,
   adminTextRoute: adminTextRoute,
-  adminWebsiteRoute: adminWebsiteRoute,
 }
 
 const adminRouteRouteWithChildren = adminRouteRoute._addFileChildren(

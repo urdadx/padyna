@@ -1,4 +1,4 @@
-import { ChevronsUpDown, LogOut } from "lucide-react";
+import { ChevronsUpDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
@@ -7,6 +7,10 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { LogoutLinear } from "@/assets/icons/logout-icon";
+import { UserLinear } from "@/assets/icons/user-icon";
+import { CardLinear } from "@/assets/icons/card";
+import { SwitchLinear } from "@/assets/icons/switch-icon";
 
 export function NavUser({
 	user,
@@ -28,7 +32,7 @@ export function NavUser({
 							<Avatar className="h-8 w-8 rounded-lg">
 								<AvatarImage src={user.avatar} alt={user.name} />
 								<AvatarFallback className="rounded-lg">
-									CN
+									AK
 								</AvatarFallback>
 							</Avatar>
 							<div className="grid flex-1 text-left text-sm leading-tight">
@@ -40,12 +44,26 @@ export function NavUser({
 						</SidebarMenuButton>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
-						className="w-(--radix-dropdown-menu-trigger-width)  min-w-56 rounded-sm"
+						className="w-(--radix-dropdown-menu-trigger-width) space-y-1  min-w-58 rounded-sm"
 						align="end"
 						sideOffset={4}>
 						<DropdownMenuItem className="text-sm">
-							<LogOut />
-							Log out
+							<UserLinear />
+							My Account
+						</DropdownMenuItem>
+						<DropdownMenuItem className="text-sm">
+							<CardLinear />
+							Manage Subscriptions
+						</DropdownMenuItem>
+						<DropdownMenuItem className="text-sm">
+							<SwitchLinear />
+							Switch Teams
+						</DropdownMenuItem>
+						<DropdownMenuItem className="text-sm">
+							<LogoutLinear color="red" />
+							<span className="text-red-500 hover:text-red-500">
+								Logout
+							</span>
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

@@ -2,7 +2,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { ColorPickerDialog } from "../color-picker-dialog";
-import { MoreHorizontal, Trash2, RefreshCw } from "lucide-react";
+import { MoreHorizontal, RefreshCw } from "lucide-react";
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import PadynaLogo from "@/assets/images/logo.svg";
@@ -27,6 +27,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { TrashBinLinear } from "@/assets/icons/trash-icon";
 
 export const StepThree = ({ onBack }: { onBack: () => void }) => {
 	const [agentName, setAgentName] = useState("Padyna");
@@ -172,7 +173,10 @@ export const StepThree = ({ onBack }: { onBack: () => void }) => {
 											onClick={() =>
 												setIsDeleteDialogOpen(true)
 											}>
-											<Trash2 className="w-4 h-4" />
+											<TrashBinLinear
+												color="red"
+												className="w-4 h-4 "
+											/>
 											Delete
 										</Button>
 									</div>

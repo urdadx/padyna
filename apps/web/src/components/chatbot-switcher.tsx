@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
@@ -7,6 +7,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { ArrowDownLinear } from "@/assets/icons/arrow-down";
 
 export function ChatbotSwitcher() {
 	const activeBot = {
@@ -34,7 +35,7 @@ export function ChatbotSwitcher() {
 							<div className="grid flex-1 text-left text-sm leading-tight">
 								<span className="truncate ">{activeBot.name}</span>
 							</div>
-							<ChevronDown className="ml-auto size-4" />
+							<ArrowDownLinear className="ml-auto size-4" />
 						</SidebarMenuButton>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
@@ -44,15 +45,19 @@ export function ChatbotSwitcher() {
 						sideOffset={4}>
 						<DropdownMenuItem className="text-sm">
 							<div className="rounded-full w-2 h-2 bg-orange-500" />
-							Padyna Bot
+							Padyna agent
 						</DropdownMenuItem>
 						<DropdownMenuItem className="text-sm">
 							<div className="rounded-full w-2 h-2 bg-green-500" />
-							Jack Bot
+							Jack agent
 						</DropdownMenuItem>
 						<DropdownMenuItem className="text-sm">
 							<div className="rounded-full w-2 h-2 bg-blue-500" />
-							Ruth Bot
+							Ruth agent
+						</DropdownMenuItem>
+						<DropdownMenuItem className="text-sm">
+							<PlusIcon className="size-4 text-muted-foreground" />
+							Add new agent
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

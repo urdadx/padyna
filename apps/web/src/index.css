@@ -220,6 +220,30 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* TRANSPARENT SCROLLBAR */
+.smooth-div {
+  overflow-y: auto;
+  scrollbar-color: #f0eeee transparent;
+}
+
+/* WebKit browsers */
+.smooth-div::-webkit-scrollbar {
+  width: 4px;
+}
+
+.smooth-div::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.smooth-div::-webkit-scrollbar-thumb {
+  background: #cecccc;
+  border-radius: 3px;
+}
+
+.smooth-div::-webkit-scrollbar-thumb:hover {
+  background: #cfcece;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

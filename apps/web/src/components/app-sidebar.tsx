@@ -27,8 +27,8 @@ import { NavPlayground } from "./nav-playground";
 
 const data = {
 	user: {
-		name: "Alfred Kissiedu",
-		email: "m@example.com",
+		name: "Jack Maaye",
+		email: "kackmaay12@gmail.com",
 		avatar: "/avatars/alfred.jpg",
 	},
 
@@ -110,7 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			</Sidebar>
 			<SidebarInset>
 				<Navbar />
-				<div className="flex-1">
+				<div className="min-h-0 flex-1 overflow-hidden">
 					<Outlet />
 				</div>
 			</SidebarInset>
