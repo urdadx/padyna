@@ -11,6 +11,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "../ui/input";
+import { motion } from "motion/react";
 
 interface QASource {
 	question: string;
@@ -75,12 +76,17 @@ export function QASourceDialog({ open, onOpenChange, onSave, defaultValues }: QA
 				</div>
 
 				<DialogFooter>
-					<Button
+					<motion.div
 						className="w-full"
-						onClick={handleSave}
-						disabled={!question.trim() || !answer.trim()}>
-						Add Q&A
-					</Button>
+						whileHover={{ scale: 1.02 }}
+						whileTap={{ scale: 0.98 }}>
+						<Button
+							className="w-full"
+							onClick={handleSave}
+							disabled={!question.trim() || !answer.trim()}>
+							Add Q&A
+						</Button>
+					</motion.div>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

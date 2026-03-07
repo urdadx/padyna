@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { motion } from "motion/react";
 
 interface TextSource {
 	title: string;
@@ -81,12 +82,17 @@ export function TextSourceDialog({
 				</div>
 
 				<DialogFooter>
-					<Button
+					<motion.div
 						className="w-full"
-						onClick={handleSave}
-						disabled={!title.trim() || !content.trim()}>
-						Add Text Source
-					</Button>
+						whileHover={{ scale: 1.02 }}
+						whileTap={{ scale: 0.98 }}>
+						<Button
+							className="w-full"
+							onClick={handleSave}
+							disabled={!title.trim() || !content.trim()}>
+							Add Text Source
+						</Button>
+					</motion.div>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

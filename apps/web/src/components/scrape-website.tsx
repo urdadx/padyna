@@ -1,11 +1,8 @@
-import { motion } from "motion/react";
 import { Input } from "./ui/input";
-import { Button } from "./ui/button";
-import { PlayLinear } from "@/assets/icons/play-icon";
 
 export const ScrapeWebsite = () => {
 	return (
-		<div className="flex flex-col gap-2 mt-6">
+		<div className="flex flex-col gap-2 mt-3">
 			<p className="text-sm text-muted-foreground">
 				Enter a single page URL to extract content from it.
 			</p>
@@ -22,13 +19,6 @@ export const ScrapeWebsite = () => {
 						required
 					/>
 				</div>
-				<motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-					<Button className="w-fit">
-						{/* <Spinner className="text-white" /> */}
-						<PlayLinear color="white" />
-						Start scraping
-					</Button>
-				</motion.div>
 			</div>
 		</div>
 	);

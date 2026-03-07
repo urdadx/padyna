@@ -12,6 +12,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { motion } from "motion/react";
 
 interface FileWithId {
 	id: string;
@@ -154,12 +155,17 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 				)}
 
 				<DialogFooter className="">
-					<Button
+					<motion.div
 						className="w-full"
-						onClick={handleUpload}
-						disabled={files.length === 0}>
-						Add files
-					</Button>
+						whileHover={{ scale: 1.02 }}
+						whileTap={{ scale: 0.98 }}>
+						<Button
+							className="w-full"
+							onClick={handleUpload}
+							disabled={files.length === 0}>
+							Add files
+						</Button>
+					</motion.div>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
