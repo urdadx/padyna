@@ -33,7 +33,6 @@ export function AgentSettingsPanel() {
 						Agent icon
 					</Label>
 					<div className="flex  items-center justify-between">
-						<input type="file" className="hidden" accept="image/*" />
 						<Avatar className="w-12 h-12 rounded-md">
 							<AvatarImage className="rounded-md" src={""} />
 							<AvatarFallback className="bg-muted rounded-md text-muted-foreground">

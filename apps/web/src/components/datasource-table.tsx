@@ -8,19 +8,10 @@ import {
 	type SortingState,
 	useReactTable,
 } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { TablePagination } from "@/components/table-pagination";
 import {
 	Table,
@@ -30,16 +21,20 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { RestartLinear } from "@/assets/icons/restart-icon";
-import { TrashBinLinear } from "@/assets/icons/trash-icon";
 import { Input } from "./ui/input";
 import { SearchLinear } from "@/assets/icons/search-icon";
 import { DatabaseLinear } from "@/assets/icons/database-icon";
 import { AddSource } from "./add-source";
 import { FilterByTypes } from "./filter-by-types";
 import { FilterByStatus } from "./filter-by-status";
+import { CuteIconWrapper } from "./cute-icon-wrapper";
+import { GlobeLinear } from "@/assets/icons/globe-icon";
+import { TextLinear } from "@/assets/icons/text-icon";
+import { ChatLinear } from "@/assets/icons/chat-icon";
+import { PaperclipLinear } from "@/assets/icons/paperclip-icon";
+import { DataSourceActions } from "./datasource-actions";
 
-type Item = {
+export type Item = {
 	id: string;
 	name: string;
 	lastSynced: string;
@@ -106,7 +101,37 @@ const columns: ColumnDef<Item>[] = [
 	},
 	{
 		accessorKey: "name",
-		cell: ({ row }) => <div className="font-normal">{row.getValue("name")}</div>,
+		cell: ({ row }) => {
+			const type = row.getValue("type") as string;
+			return (
+				<div className="font-normal flex gap-2 items-center">
+					<CuteIconWrapper
+						icon={
+							type === "Link"
+								? GlobeLinear
+								: type === "Text"
+									? TextLinear
+									: type === "File"
+										? PaperclipLinear
+										: ChatLinear
+						}
+						color={
+							type === "Link"
+								? "green"
+								: type === "Text"
+									? "orange"
+									: type === "File"
+										? "violet"
+										: type === "Q&A"
+											? "gray"
+											: "purple"
+						}
+					/>
+					{row.getValue("name")}
+				</div>
+			);
+		},
+
 		header: "Source name",
 		size: 250,
 	},
@@ -130,45 +155,25 @@ const columns: ColumnDef<Item>[] = [
 		cell: ({ row }) => {
 			const status = row.getValue("status") as string;
 			return (
-				<Badge
+				<div
 					className={cn(
-						"font-medium",
+						"text-xs w-max font-normal border rounded-full px-2 py-0.5 ",
 						status === "Completed" &&
-							"bg-green-500/15 text-green-500 hover:bg-green-500 border-green-500/20",
+							"bg-green-50 text-green-500  border-green-500/20",
 						status === "Processing" &&
-							"bg-amber-500/15 text-amber-500 hover:bg-amber-500/25 border-amber-500/20",
+							"bg-amber-50 text-amber-500  border-amber-500/20",
 						status === "Failed" &&
-							"bg-destructive/15 text-destructive hover:bg-destructive/25 border-destructive/20",
-					)}
-					variant="outline">
+							"bg-red-50 text-red-500 border-red-500/20",
+					)}>
 					{status}
-				</Badge>
+				</div>
 			);
 		},
 		header: "Status",
 		size: 120,
 	},
 	{
-		cell: () => (
-			<DropdownMenu>
-				<DropdownMenuTrigger>
-					<Button className="h-8 w-8 p-0" variant="outline">
-						<span className="sr-only">Open menu</span>
-						<MoreHorizontal className="h-4 w-4" />
-					</Button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end">
-					<DropdownMenuItem>
-						<RestartLinear />
-						Resync
-					</DropdownMenuItem>
-					<DropdownMenuItem className="text-destructive">
-						<TrashBinLinear color="red" />
-						Delete
-					</DropdownMenuItem>
-				</DropdownMenuContent>
-			</DropdownMenu>
-		),
+		cell: ({ row }) => <DataSourceActions item={row.original} />,
 		header: "Action",
 		id: "actions",
 		size: 80,

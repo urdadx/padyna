@@ -1,9 +1,21 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute('/(admin)/analytics')({
-  component: RouteComponent,
-})
+export const Route = createFileRoute("/(admin)/analytics")({
+	component: RouteComponent,
+});
 
 function RouteComponent() {
-  return <div>Hello "/(admin)/analytics"!</div>
+	return (
+		<div className="flex h-full w-full">
+			<div className="w-full bg-background p-4 px-4 sm:px-6 lg:px-8 py-6">
+				<div className="max-w-7xl mx-auto ">
+					<h1 className="text-2xl font-semibold">Analytics</h1>
+					<p className="text-muted-foreground text-[16px] mt-2 mb-6">
+						Track and analyze your AI agent's performance and insights
+					</p>
+					<div></div>
+				</div>
+			</div>
+		</div>
+	);
 }

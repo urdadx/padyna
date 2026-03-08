@@ -35,7 +35,7 @@ const data = {
 	overview: [
 		{
 			title: "Overview",
-			url: "/dashboard",
+			url: "/overview",
 			icon: HomeLinear,
 		},
 	],

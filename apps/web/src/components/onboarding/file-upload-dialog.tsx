@@ -95,7 +95,7 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 					onDrop={handleDrop}
 					onClick={() => fileInputRef.current?.click()}
 					className={cn(
-						" flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 transition-colors cursor-pointer",
+						" flex flex-col items-center justify-center rounded-xl bg-gray-50 border-2 border-dashed p-4 transition-colors cursor-pointer",
 						isDragging
 							? "border-primary bg-primary/5"
 							: "border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/50",
@@ -108,7 +108,11 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 						accept=".pdf,.csv,.txt,.docx, .md, .mdx"
 						className="hidden"
 					/>
-					<UploadIcon className="h-10 w-10 text-muted-foreground" />
+					<div
+						className="bg-white mb-2 flex size-16 shrink-0 items-center justify-center rounded-full border"
+						aria-hidden="true">
+						<UploadIcon className="h-8 w-8 text-muted-foreground" />
+					</div>
 					<p className="mt-4 text-sm font-medium">
 						Click to upload or drag and drop
 					</p>

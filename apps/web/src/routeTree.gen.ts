@@ -20,10 +20,10 @@ import { Route as adminTextRouteImport } from './routes/(admin)/text'
 import { Route as adminSettingsRouteImport } from './routes/(admin)/settings'
 import { Route as adminQuestionsRouteImport } from './routes/(admin)/questions'
 import { Route as adminPlaygroundRouteImport } from './routes/(admin)/playground'
+import { Route as adminOverviewRouteImport } from './routes/(admin)/overview'
 import { Route as adminIntegrationsRouteImport } from './routes/(admin)/integrations'
 import { Route as adminFilesRouteImport } from './routes/(admin)/files'
 import { Route as adminDataSourcesRouteImport } from './routes/(admin)/data-sources'
-import { Route as adminDashboardRouteImport } from './routes/(admin)/dashboard'
 import { Route as adminChatLogsRouteImport } from './routes/(admin)/chat-logs'
 import { Route as adminAnalyticsRouteImport } from './routes/(admin)/analytics'
 import { Route as adminActionsRouteImport } from './routes/(admin)/actions'
@@ -82,6 +82,11 @@ const adminPlaygroundRoute = adminPlaygroundRouteImport.update({
   path: '/playground',
   getParentRoute: () => adminRouteRoute,
 } as any)
+const adminOverviewRoute = adminOverviewRouteImport.update({
+  id: '/overview',
+  path: '/overview',
+  getParentRoute: () => adminRouteRoute,
+} as any)
 const adminIntegrationsRoute = adminIntegrationsRouteImport.update({
   id: '/integrations',
   path: '/integrations',
@@ -95,11 +100,6 @@ const adminFilesRoute = adminFilesRouteImport.update({
 const adminDataSourcesRoute = adminDataSourcesRouteImport.update({
   id: '/data-sources',
   path: '/data-sources',
-  getParentRoute: () => adminRouteRoute,
-} as any)
-const adminDashboardRoute = adminDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
   getParentRoute: () => adminRouteRoute,
 } as any)
 const adminChatLogsRoute = adminChatLogsRouteImport.update({
@@ -126,10 +126,10 @@ export interface FileRoutesByFullPath {
   '/actions': typeof adminActionsRoute
   '/analytics': typeof adminAnalyticsRoute
   '/chat-logs': typeof adminChatLogsRoute
-  '/dashboard': typeof adminDashboardRoute
   '/data-sources': typeof adminDataSourcesRoute
   '/files': typeof adminFilesRoute
   '/integrations': typeof adminIntegrationsRoute
+  '/overview': typeof adminOverviewRoute
   '/playground': typeof adminPlaygroundRoute
   '/questions': typeof adminQuestionsRoute
   '/settings': typeof adminSettingsRoute
@@ -145,10 +145,10 @@ export interface FileRoutesByTo {
   '/actions': typeof adminActionsRoute
   '/analytics': typeof adminAnalyticsRoute
   '/chat-logs': typeof adminChatLogsRoute
-  '/dashboard': typeof adminDashboardRoute
   '/data-sources': typeof adminDataSourcesRoute
   '/files': typeof adminFilesRoute
   '/integrations': typeof adminIntegrationsRoute
+  '/overview': typeof adminOverviewRoute
   '/playground': typeof adminPlaygroundRoute
   '/questions': typeof adminQuestionsRoute
   '/settings': typeof adminSettingsRoute
@@ -166,10 +166,10 @@ export interface FileRoutesById {
   '/(admin)/actions': typeof adminActionsRoute
   '/(admin)/analytics': typeof adminAnalyticsRoute
   '/(admin)/chat-logs': typeof adminChatLogsRoute
-  '/(admin)/dashboard': typeof adminDashboardRoute
   '/(admin)/data-sources': typeof adminDataSourcesRoute
   '/(admin)/files': typeof adminFilesRoute
   '/(admin)/integrations': typeof adminIntegrationsRoute
+  '/(admin)/overview': typeof adminOverviewRoute
   '/(admin)/playground': typeof adminPlaygroundRoute
   '/(admin)/questions': typeof adminQuestionsRoute
   '/(admin)/settings': typeof adminSettingsRoute
@@ -187,10 +187,10 @@ export interface FileRouteTypes {
     | '/actions'
     | '/analytics'
     | '/chat-logs'
-    | '/dashboard'
     | '/data-sources'
     | '/files'
     | '/integrations'
+    | '/overview'
     | '/playground'
     | '/questions'
     | '/settings'
@@ -206,10 +206,10 @@ export interface FileRouteTypes {
     | '/actions'
     | '/analytics'
     | '/chat-logs'
-    | '/dashboard'
     | '/data-sources'
     | '/files'
     | '/integrations'
+    | '/overview'
     | '/playground'
     | '/questions'
     | '/settings'
@@ -226,10 +226,10 @@ export interface FileRouteTypes {
     | '/(admin)/actions'
     | '/(admin)/analytics'
     | '/(admin)/chat-logs'
-    | '/(admin)/dashboard'
     | '/(admin)/data-sources'
     | '/(admin)/files'
     | '/(admin)/integrations'
+    | '/(admin)/overview'
     | '/(admin)/playground'
     | '/(admin)/questions'
     | '/(admin)/settings'
@@ -327,6 +327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof adminPlaygroundRouteImport
       parentRoute: typeof adminRouteRoute
     }
+    '/(admin)/overview': {
+      id: '/(admin)/overview'
+      path: '/overview'
+      fullPath: '/overview'
+      preLoaderRoute: typeof adminOverviewRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
     '/(admin)/integrations': {
       id: '/(admin)/integrations'
       path: '/integrations'
@@ -346,13 +353,6 @@ declare module '@tanstack/react-router' {
       path: '/data-sources'
       fullPath: '/data-sources'
       preLoaderRoute: typeof adminDataSourcesRouteImport
-      parentRoute: typeof adminRouteRoute
-    }
-    '/(admin)/dashboard': {
-      id: '/(admin)/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof adminDashboardRouteImport
       parentRoute: typeof adminRouteRoute
     }
     '/(admin)/chat-logs': {
@@ -383,10 +383,10 @@ interface adminRouteRouteChildren {
   adminActionsRoute: typeof adminActionsRoute
   adminAnalyticsRoute: typeof adminAnalyticsRoute
   adminChatLogsRoute: typeof adminChatLogsRoute
-  adminDashboardRoute: typeof adminDashboardRoute
   adminDataSourcesRoute: typeof adminDataSourcesRoute
   adminFilesRoute: typeof adminFilesRoute
   adminIntegrationsRoute: typeof adminIntegrationsRoute
+  adminOverviewRoute: typeof adminOverviewRoute
   adminPlaygroundRoute: typeof adminPlaygroundRoute
   adminQuestionsRoute: typeof adminQuestionsRoute
   adminSettingsRoute: typeof adminSettingsRoute
@@ -397,10 +397,10 @@ const adminRouteRouteChildren: adminRouteRouteChildren = {
   adminActionsRoute: adminActionsRoute,
   adminAnalyticsRoute: adminAnalyticsRoute,
   adminChatLogsRoute: adminChatLogsRoute,
-  adminDashboardRoute: adminDashboardRoute,
   adminDataSourcesRoute: adminDataSourcesRoute,
   adminFilesRoute: adminFilesRoute,
   adminIntegrationsRoute: adminIntegrationsRoute,
+  adminOverviewRoute: adminOverviewRoute,
   adminPlaygroundRoute: adminPlaygroundRoute,
   adminQuestionsRoute: adminQuestionsRoute,
   adminSettingsRoute: adminSettingsRoute,

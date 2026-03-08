@@ -9,11 +9,11 @@ export const AgentHeader = () => {
 				<Avatar className="w-9 h-9 rounded-md border-primary">
 					<AvatarImage className="rounded-md" src={""} />
 					<AvatarFallback className="bg-primary/80 text-white font-semibold rounded-md border-primary">
-						JB
+						J
 					</AvatarFallback>
 				</Avatar>{" "}
 				<div>
-					<p className="text-sm font-semibold tracking-tight">urdadx.tech</p>
+					<p className="text-sm font-medium tracking-tight">urdadx.tech</p>
 				</div>
 			</div>
 			<Button
