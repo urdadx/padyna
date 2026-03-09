@@ -20,7 +20,7 @@ export function AgentSettingsPanel() {
 				<h1 className="text-2xl  font-semibold tracking-tight">Playground</h1>
 				<Switch defaultChecked id="enable-widget" />
 			</div>
-			<div className="flex flex-col gap-6 pb-5">
+			<div className="flex flex-col gap-6 pb-6">
 				<div className="flex flex-col gap-3">
 					<Label className="text-muted-foreground font-medium">
 						Agent name

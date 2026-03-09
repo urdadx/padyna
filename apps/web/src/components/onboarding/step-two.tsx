@@ -2,7 +2,6 @@ import { Button } from "../ui/button";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CheckMarkIcon } from "@/assets/icons/checkmark-icon";
-import { MotionButton } from "../ui/motion-button";
 import { TextIcon } from "@/assets/icons/text-icon";
 import { NewFileIcon } from "@/assets/icons/file-icon";
 import { QuestionCircleIcon } from "@/assets/icons/question-circle-icon";
@@ -13,6 +12,7 @@ import { FileUploadDialog } from "./file-upload-dialog";
 import { TextSourceDialog } from "./text-source-dialog";
 import { QASourceDialog } from "./qa-source-dialog";
 import { LinkSourceDialog } from "./link-source-dialog";
+import { motion } from "motion/react";
 
 interface SourceItemProps {
 	icon: React.ElementType;
@@ -134,7 +134,14 @@ export const StepTwo = ({ onBack, onContinue }: { onBack: () => void; onContinue
 			</div>
 
 			<div className="flex flex-col gap-2">
-				<MotionButton title="Train & continue" fn={onContinue} />
+				<motion.div
+					whileHover={{ scale: 1.02 }}
+					whileTap={{ scale: 0.98 }}
+					className="relative w-full">
+					<Button className="w-full" onClick={onContinue} type="submit">
+						Continue
+					</Button>
+				</motion.div>{" "}
 				<Button className="text-gray-500" variant="ghost" onClick={onBack}>
 					Go Back
 				</Button>

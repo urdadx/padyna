@@ -50,7 +50,7 @@ export function Metrics({
 
 			<MetricCard
 				icon={Globe}
-				title="Total visits"
+				title="Unique visitors"
 				value={totalVisits}
 				gradientFrom="blue-50"
 				gradientVia="blue-25"

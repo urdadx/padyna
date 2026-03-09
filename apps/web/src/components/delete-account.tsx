@@ -17,7 +17,7 @@ export function DeleteAccount() {
 					</div>
 				</div>
 			</div>
-			<div className="p-3 bg-red-50 border-t border-red-300 rounded-b-2xl">
+			<div className="p-3 px-6 bg-red-50 border-t border-red-300 rounded-b-2xl">
 				<Button className="bg-red-500 text-white hover:bg-red-600" size="sm">
 					Yes, delete
 				</Button>

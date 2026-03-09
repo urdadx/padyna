@@ -23,7 +23,7 @@ export function UserBillingEmail() {
 					</div>
 				</div>
 			</div>
-			<div className="p-3 bg-gray-50 border-t border-border rounded-b-2xl">
+			<div className="p-3 px-6 bg-gray-50 border-t border-border rounded-b-2xl">
 				<Button size="sm">Save changes</Button>
 			</div>
 		</div>

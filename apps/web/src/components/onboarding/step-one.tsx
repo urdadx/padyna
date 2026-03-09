@@ -4,6 +4,7 @@ import { Field, FieldGroup } from "../ui/field";
 import { AvatarStack } from "./avatar-stack";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
+import { motion } from "motion/react";
 
 export const StepOne = ({ onContinue }: { onContinue: () => void }) => {
 	return (
@@ -31,10 +32,14 @@ export const StepOne = ({ onContinue }: { onContinue: () => void }) => {
 						<InputWithStartAddon />
 					</Field>
 					<Field>
-						<Button type="submit">
-							{/* <Spinner /> */}
-							Continue
-						</Button>
+						<motion.div
+							whileHover={{ scale: 1.02 }}
+							whileTap={{ scale: 0.98 }}
+							className="relative w-full">
+							<Button className="w-full" type="submit">
+								Continue
+							</Button>
+						</motion.div>
 					</Field>
 					<Field className="grid grid-cols-3 gap-4"></Field>
 				</FieldGroup>

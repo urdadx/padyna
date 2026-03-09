@@ -65,15 +65,14 @@ const data = {
 			icon: ChatLogsIcon,
 		},
 		{
-			title: "Agent actions",
-			url: "/actions",
-			icon: BoltLinear,
-		},
-
-		{
 			title: "Analytics",
 			url: "/analytics",
 			icon: ChartLinear,
+		},
+		{
+			title: "Custom actions",
+			url: "/actions",
+			icon: BoltLinear,
 		},
 	],
 	account: [
@@ -108,11 +107,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					<NavUser user={data.user} />
 				</SidebarFooter>
 			</Sidebar>
-			<SidebarInset>
+			<SidebarInset className="overflow-y-auto">
 				<Navbar />
-				<div className="min-h-0 flex-1 overflow-hidden">
-					<Outlet />
-				</div>
+				<Outlet />
 			</SidebarInset>
 		</SidebarProvider>
 	);

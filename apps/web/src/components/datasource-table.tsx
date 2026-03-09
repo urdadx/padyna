@@ -39,8 +39,9 @@ export type Item = {
 	name: string;
 	lastSynced: string;
 	fileSize: string;
-	type: string;
-	status: "Completed" | "Processing" | "Failed";
+	noReferenced: number;
+	status: "Synced" | "Processing" | "Failed";
+	type: "File" | "Text" | "Q&A" | "Link";
 };
 
 const dummyData: Item[] = [
@@ -49,31 +50,35 @@ const dummyData: Item[] = [
 		name: "Customer_Feedback_Q1.csv",
 		lastSynced: "2 days ago",
 		fileSize: "1.2 MB",
-		status: "Completed",
+		status: "Synced",
+		noReferenced: 5,
 		type: "File",
 	},
-	{
-		id: "2",
-		name: "Refund Policy",
-		lastSynced: "4 months ago",
-		fileSize: "9.2 KB",
-		status: "Processing",
-		type: "Text",
-	},
-	{
-		id: "3",
-		name: "What does your product do?",
-		lastSynced: "1 week ago",
-		fileSize: "4.5 KB",
-		status: "Processing",
-		type: "Q&A",
-	},
+	// {
+	// 	id: "2",
+	// 	name: "Refund Policy",
+	// 	lastSynced: "4 months ago",
+	// 	fileSize: "9.2 KB",
+	// 	status: "Processing",
+	// 	noReferenced: 3,
+	// 	type: "Text",
+	// },
+	// {
+	// 	id: "3",
+	// 	name: "What does your product do?",
+	// 	lastSynced: "1 week ago",
+	// 	fileSize: "4.5 KB",
+	// 	status: "Processing",
+	// 	noReferenced: 0,
+	// 	type: "Q&A",
+	// },
 	{
 		id: "4",
 		name: "https://mywebsite.com",
 		lastSynced: "1 minute ago",
 		fileSize: "850 KB",
 		status: "Failed",
+		noReferenced: 12,
 		type: "Link",
 	},
 ];
@@ -102,7 +107,7 @@ const columns: ColumnDef<Item>[] = [
 	{
 		accessorKey: "name",
 		cell: ({ row }) => {
-			const type = row.getValue("type") as string;
+			const type = row.original.type;
 			return (
 				<div className="font-normal flex gap-2 items-center">
 					<CuteIconWrapper
@@ -133,7 +138,7 @@ const columns: ColumnDef<Item>[] = [
 		},
 
 		header: "Source name",
-		size: 250,
+		size: 220,
 	},
 	{
 		accessorKey: "lastSynced",
@@ -141,8 +146,8 @@ const columns: ColumnDef<Item>[] = [
 		size: 120,
 	},
 	{
-		accessorKey: "type",
-		header: "Source type",
+		accessorKey: "noReferenced",
+		header: "# times referenced",
 		size: 120,
 	},
 	{
@@ -158,7 +163,7 @@ const columns: ColumnDef<Item>[] = [
 				<div
 					className={cn(
 						"text-xs w-max font-normal border rounded-full px-2 py-0.5 ",
-						status === "Completed" &&
+						status === "Synced" &&
 							"bg-green-50 text-green-500  border-green-500/20",
 						status === "Processing" &&
 							"bg-amber-50 text-amber-500  border-amber-500/20",

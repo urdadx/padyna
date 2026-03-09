@@ -5,7 +5,7 @@ import { LetterLinear } from "@/assets/icons/letter";
 
 export const Navbar = () => {
 	return (
-		<header className="flex w-full justify-between h-14 border-b top-0 px-3   shrink-0 items-center gap-2 z-40">
+		<header className="px-4 sticky top-0 flex justify-between h-14 shrink-0 items-center  bg-background/50 backdrop-blur-lg border-b transition-[width,height] ease-linear z-10 group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
 			<div className="flex items-center">
 				<SidebarTrigger className=" w-7 h-7 text-muted-foreground " />
 			</div>

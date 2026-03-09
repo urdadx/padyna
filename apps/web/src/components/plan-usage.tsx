@@ -7,13 +7,13 @@ const usageLimits = [
 	{
 		label: "Message credits",
 		maxTokens: 3000,
-		usedTokens: 10,
+		usedTokens: 1000,
 	},
 
 	{
 		label: "Data source size limit",
 		maxTokens: 100,
-		usedTokens: 2,
+		usedTokens: 25,
 	},
 ];
 
@@ -64,8 +64,8 @@ function UsageLimitRow({ label, maxTokens, usedTokens }: UsageLimitRowProps) {
 					aria-label={`${label} usage`}
 					indicatorClassName="text-emerald-500"
 					max={100}
-					showValueLabel={true}
-					size={44}
+					showValueLabel={false}
+					size={35}
 					strokeWidth={2.5}
 					value={usagePercent}
 				/>

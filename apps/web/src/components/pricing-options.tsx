@@ -91,7 +91,7 @@ export function Pricing() {
 
 	const handleSelectPlan = async () => {
 		navigate({
-			to: "/dashboard",
+			to: "/overview",
 		});
 	};
 

@@ -1,3 +1,8 @@
+import { SearchLinear } from "@/assets/icons/search-icon";
+import { ActionCard } from "@/components/actions/action-card";
+import { NoActionsPlaceholder } from "@/components/actions/no-action-placeholder";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/(admin)/actions")({
@@ -9,11 +14,25 @@ function RouteComponent() {
 		<div className="flex h-full w-full">
 			<div className="w-full bg-background p-4 px-4 sm:px-6 lg:px-8 py-6">
 				<div className="max-w-7xl mx-auto ">
-					<h1 className="text-2xl font-semibold">Actions</h1>
-					<p className="text-muted-foreground text-[16px] mt-2 mb-6">
-						Define and manage custom actions your agent can perform
-					</p>
-					<div></div>
+					<div className="flex justify-between items-center">
+						<h1 className="text-2xl font-semibold">Custom actions</h1>
+						<div className="flex items-center gap-2">
+							<div className="relative">
+								<Input
+									placeholder="Search actions..."
+									className="max-w-3xl h-9 pl-9"
+								/>
+								<SearchLinear className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							</div>
+							<Button>Create a new action</Button>
+						</div>
+					</div>
+					<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 mt-4 gap-4">
+						{/* <ActionCard /> */}
+					</div>
+					<div className="mt-6 border h-70 rounded-3xl py-8 flex justify-center">
+						<NoActionsPlaceholder />
+					</div>
 				</div>
 			</div>
 		</div>

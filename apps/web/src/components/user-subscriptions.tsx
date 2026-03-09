@@ -74,7 +74,7 @@ export function UserSubscriptions() {
 					))}
 				</div>
 			</div>
-			<div className="p-3 bg-muted/20 border-t border-border rounded-b-2xl">
+			<div className="p-3 px-6 bg-gray-50 border-t border-border rounded-b-2xl">
 				<Button size="sm">Upgrade</Button>
 			</div>
 		</div>

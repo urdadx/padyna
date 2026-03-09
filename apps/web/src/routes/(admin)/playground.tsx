@@ -1,7 +1,6 @@
 import { AgentPreviewPanel } from "@/components/agent-preview";
 import { AgentSettingsPanel } from "@/components/agent-settings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UnsavedChangesBar } from "@/components/unsaved-changes-bar";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/(admin)/playground")({
@@ -18,7 +17,6 @@ function RouteComponent() {
 					<div className="flex-1  smooth-div p-5 ">
 						<AgentSettingsPanel />
 					</div>
-					<UnsavedChangesBar className="border-t" />
 				</div>
 			</div>
 
@@ -49,7 +47,6 @@ function RouteComponent() {
 					<div className="flex-1 overflow-y-auto p-5">
 						<AgentSettingsPanel />
 					</div>
-					<UnsavedChangesBar className="border-t" />
 				</TabsContent>
 
 				<TabsContent

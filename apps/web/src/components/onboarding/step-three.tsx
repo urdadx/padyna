@@ -198,9 +198,10 @@ export const StepThree = ({ onBack }: { onBack: () => void }) => {
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
-							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogCancel size="sm">Cancel</AlertDialogCancel>
 							<AlertDialogAction
-								className="bg-destructive  text-destructive-foreground hover:bg-destructive/90"
+								size="sm"
+								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 								onClick={handleDeleteIcon}>
 								<span className="text-white">Yes, delete</span>
 							</AlertDialogAction>
