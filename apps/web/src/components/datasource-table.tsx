@@ -138,22 +138,18 @@ const columns: ColumnDef<Item>[] = [
 		},
 
 		header: "Source name",
-		size: 220,
 	},
 	{
 		accessorKey: "lastSynced",
 		header: "Last synced",
-		size: 120,
 	},
 	{
 		accessorKey: "noReferenced",
 		header: "# times referenced",
-		size: 120,
 	},
 	{
 		accessorKey: "fileSize",
 		header: "File size",
-		size: 120,
 	},
 	{
 		accessorKey: "status",
@@ -162,7 +158,7 @@ const columns: ColumnDef<Item>[] = [
 			return (
 				<div
 					className={cn(
-						"text-xs w-max font-normal border rounded-full px-2 py-0.5 ",
+						"text-xs w-max font-normal border rounded-sm px-2 py-0.5 ",
 						status === "Synced" &&
 							"bg-green-50 text-green-500  border-green-500/20",
 						status === "Processing" &&
@@ -175,13 +171,11 @@ const columns: ColumnDef<Item>[] = [
 			);
 		},
 		header: "Status",
-		size: 120,
 	},
 	{
 		cell: ({ row }) => <DataSourceActions item={row.original} />,
 		header: "Action",
 		id: "actions",
-		size: 80,
 	},
 ];
 
@@ -233,8 +227,8 @@ export function DataSourceTable() {
 					<AddSource />
 				</div>
 			</div>
-			<div className="rounded-xl border bg-background">
-				<Table className="table-fixed">
+			<div className="rounded-xl border bg-background overflow-x-auto">
+				<Table className="">
 					<TableHeader className="bg-gray-50 w-full">
 						{table.getHeaderGroups().map((headerGroup) => (
 							<TableRow

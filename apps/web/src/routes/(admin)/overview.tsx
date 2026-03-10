@@ -10,7 +10,7 @@ export const Route = createFileRoute("/(admin)/overview")({
 
 function RouteComponent() {
 	return (
-		<div className="relative p-6 w-full max-w-7xl mx-auto space-y-7">
+		<div className="relative p-4 md:p-6 w-full max-w-7xl mx-auto space-y-6 overflow-x-hidden">
 			<Metrics
 				sourcesCount={12}
 				conversationsCount={34}
@@ -26,8 +26,9 @@ function RouteComponent() {
 					<SourcesOverview />
 				</div>
 			</div>
-			<div className="w-full">
+			<div className="w-full min-w-0">
 				<MostRecentConversations />
+				{/* <TestTable /> */}
 			</div>
 		</div>
 	);

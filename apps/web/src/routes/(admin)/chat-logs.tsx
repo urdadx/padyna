@@ -1,18 +1,24 @@
+import { ChatConversationPanel } from "@/components/chat-logs/chat-conversation-panel";
+import { ChatHistorySidebar } from "@/components/chat-logs/chat-history-sidebar";
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 
 export const Route = createFileRoute("/(admin)/chat-logs")({
 	component: RouteComponent,
 });
 
 function RouteComponent() {
-	return (
-		<div className="flex h-full w-full">
-			<div className="w-full bg-background p-4 px-4 sm:px-6 lg:px-8 py-6">
-				<div className="max-w-7xl mx-auto ">
-					<h1 className="text-2xl font-semibold">Chat logs</h1>
+	const [selectedChatId, setSelectedChatId] = useState<string>();
 
-					<div></div>
-				</div>
+	return (
+		<div className="flex flex-col h-full bg-background">
+			<div className="flex flex-1 overflow-hidden">
+				<ChatHistorySidebar
+					className="w-full max-w-sm"
+					selectedId={selectedChatId}
+					onSelect={setSelectedChatId}
+				/>
+				<ChatConversationPanel chatId={selectedChatId} className="flex-1" />
 			</div>
 		</div>
 	);

@@ -30,44 +30,40 @@ const items = [
 
 export function TeamMembersTable() {
 	return (
-		<div className=" w-full overflow-y-hidden ">
-			<Table className="w-full table-fixed">
-				<TableHeader className="w-full text-muted-foreground ">
-					<TableRow className="hover:bg-transparent text-muted-foreground text-xs">
-						<TableHead>Name</TableHead>
-						<TableHead>Email</TableHead>
-						<TableHead>Role</TableHead>
-						<TableHead>Status</TableHead>
-						<TableHead>Action</TableHead>
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{items.map((item) => (
-						<TableRow className="w-full" key={item.id}>
-							<TableCell>
-								<div className="flex items-center gap-3">
-									<div>
-										<div className="font-medium">
-											{item.name}
-										</div>
-										<span className="mt-0.5 text-muted-foreground text-xs">
-											Joined on {item.dateJoined}
-										</span>
-									</div>
+		<Table className=" ">
+			<TableHeader className="w-full text-muted-foreground ">
+				<TableRow className="hover:bg-transparent text-muted-foreground text-xs">
+					<TableHead>Name</TableHead>
+					<TableHead>Email</TableHead>
+					<TableHead>Role</TableHead>
+					<TableHead>Status</TableHead>
+					<TableHead>Action</TableHead>
+				</TableRow>
+			</TableHeader>
+			<TableBody>
+				{items.map((item) => (
+					<TableRow className="w-full" key={item.id}>
+						<TableCell>
+							<div className="flex items-center gap-3">
+								<div>
+									<div className="font-medium">{item.name}</div>
+									<span className="mt-0.5 text-muted-foreground text-xs">
+										Joined on {item.dateJoined}
+									</span>
 								</div>
-							</TableCell>
-							<TableCell>{item.email}</TableCell>
-							<TableCell>{item.role}</TableCell>
-							<TableCell>{item.status}</TableCell>
-							<TableCell>
-								<Button variant="outline" size="sm">
-									<MoreHorizontal className="size-4" />
-								</Button>
-							</TableCell>
-						</TableRow>
-					))}
-				</TableBody>
-			</Table>
-		</div>
+							</div>
+						</TableCell>
+						<TableCell>{item.email}</TableCell>
+						<TableCell>{item.role}</TableCell>
+						<TableCell>{item.status}</TableCell>
+						<TableCell>
+							<Button variant="outline" size="sm">
+								<MoreHorizontal className="size-4" />
+							</Button>
+						</TableCell>
+					</TableRow>
+				))}
+			</TableBody>
+		</Table>
 	);
 }

@@ -45,18 +45,18 @@ export function ViewAllStats({
 					</DialogTitle>
 
 					<div className="space-y-2">
-						<div className="relative">
-							<Input
-								className="peer pe-9 ps-9 bg-background w-full"
-								placeholder={`Search ${name}...`}
-								type="text"
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-							/>
-							<div className="pointer-events-none absolute inset-y-0 inset-s-0 flex items-center justify-center ps-3 text-muted-foreground/80 peer-disabled:opacity-50">
-								<Search size={16} strokeWidth={2} />
-							</div>
-						</div>
+            <div className="relative">
+              <Input
+                className="peer pe-9 ps-9 bg-background w-full "
+                placeholder={`Search ${name}...`}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <div className="pointer-events-none absolute inset-y-0 inset-s-0 flex items-center justify-center ps-3 text-muted-foreground/80 peer-disabled:opacity-50">
+                <Search size={16} strokeWidth={2} />
+              </div>
+            </div>
 					</div>
 				</DialogHeader>
 

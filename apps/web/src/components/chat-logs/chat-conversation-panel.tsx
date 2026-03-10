@@ -1,0 +1,87 @@
+import {
+	Message,
+	MessageContent,
+	MessageResponse,
+	MessageToolbar,
+} from "@/components/ai-elements/message";
+import { cn } from "@/lib/utils";
+import type { UIMessage } from "ai";
+import {
+	ChatContainerContent,
+	ChatContainerRoot,
+	ChatContainerScrollAnchor,
+} from "./chat-container";
+
+const MOCK_MESSAGES: Record<string, UIMessage[]> = {
+	"1": [
+		{
+			id: "m1",
+			role: "user",
+			content: "Hi, how do I use the platform?",
+		},
+		{
+			id: "m2",
+			role: "assistant",
+			content: "Welcome! You can start by exploring the dashboard. Would you like a guided tour or have a specific question?",
+		},
+	],
+	"2": [
+		{
+			id: "m3",
+			role: "user",
+			content: "What are the pricing options?",
+		},
+		{
+			id: "m4",
+			role: "assistant",
+			content: "We have three tiers: Free, Pro ($19/mo), and Enterprise. You can find more details in the billing section.",
+		},
+	],
+};
+
+interface ChatConversationPanelProps {
+	chatId?: string;
+	className?: string;
+}
+
+export const ChatConversationPanel = ({ chatId, className }: ChatConversationPanelProps) => {
+	const messages = chatId ? MOCK_MESSAGES[chatId] || [] : [];
+
+	if (!chatId) {
+		return (
+			<div
+				className={cn(
+					"flex flex-1 items-center justify-center p-8 text-center",
+					className,
+				)}>
+				<div className="space-y-2">
+					<h3 className="text-lg font-medium">No conversation selected</h3>
+					<p className="text-sm text-muted-foreground">
+						Select a conversation from the list to view the message history.
+					</p>
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className={cn("flex flex-col h-full ", className)}>
+			<ChatContainerRoot className="flex-1">
+				<ChatContainerContent className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
+					<div className="space-y-6">
+						{messages.map((message) => (
+							<Message key={message.id} from={message.role}>
+								<MessageContent>
+									<MessageResponse>
+										{message.content}
+									</MessageResponse>
+								</MessageContent>
+							</Message>
+						))}
+					</div>
+					<ChatContainerScrollAnchor />
+				</ChatContainerContent>
+			</ChatContainerRoot>
+		</div>
+	);
+};

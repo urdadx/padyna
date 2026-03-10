@@ -10,7 +10,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal } from "lucide-react";
+import { ArrowUpRight, MoreHorizontal } from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -30,28 +30,28 @@ export type Conversation = {
 const dummyConversations: Conversation[] = [
 	{
 		id: "1",
-		date: "2024-03-10 14:30",
+		date: "Oct, 11, 2024 14:30",
 		title: "Pricing inquiry about Pro plan",
 		status: "Resolved",
 		channel: "Widget",
 	},
 	{
 		id: "2",
-		date: "2024-03-10 13:15",
+		date: "Oct, 10, 2024 13:15",
 		title: "Technical issue with API key",
 		status: "Escalated",
 		channel: "Telegram",
 	},
 	{
 		id: "3",
-		date: "2024-03-10 12:00",
+		date: "Oct, 10, 2024 12:00",
 		title: "Feature request for dark mode",
 		status: "Unresolved",
 		channel: "Link in Bio",
 	},
 	{
 		id: "4",
-		date: "2024-03-10 10:45",
+		date: "Dec, 10, 2024 10:45",
 		title: "General feedback - very helpful!",
 		status: "Resolved",
 		channel: "Widget",
@@ -61,13 +61,13 @@ const dummyConversations: Conversation[] = [
 const columns: ColumnDef<Conversation>[] = [
 	{
 		accessorKey: "date",
-		header: "Date",
-		size: 150,
+		header: "Date & Time",
+		cell: ({ row }) => <span className="text-xs md:text-sm">{row.getValue("date")}</span>,
 	},
 	{
 		accessorKey: "title",
 		cell: ({ row }) => (
-			<span className="font-medium truncate max-w-52 block">
+			<span className="font-medium truncate max-w-24 md:max-w-52 block">
 				{row.getValue("title")}
 			</span>
 		),
@@ -80,7 +80,7 @@ const columns: ColumnDef<Conversation>[] = [
 			return (
 				<div
 					className={cn(
-						"text-xs w-max font-normal border rounded-full px-2 py-0.5 ",
+						"text-[10px] md:text-xs w-max font-normal border rounded-sm px-1.5 py-0.5 md:px-2 md:py-0.5 ",
 						status === "Resolved" &&
 							"bg-green-50 text-green-500 border-green-500/20",
 						status === "Unresolved" &&
@@ -93,15 +93,15 @@ const columns: ColumnDef<Conversation>[] = [
 			);
 		},
 		header: "Status",
-		size: 120,
 	},
 	{
 		accessorKey: "channel",
 		header: "Channel",
-		size: 120,
+		cell: ({ row }) => <span className="">{row.getValue("channel")}</span>,
 	},
 	{
 		id: "actions",
+		header: "Action",
 		cell: () => (
 			<DropdownMenu>
 				<DropdownMenuTrigger>
@@ -114,8 +114,6 @@ const columns: ColumnDef<Conversation>[] = [
 				</DropdownMenuContent>
 			</DropdownMenu>
 		),
-		header: "Actions",
-		size: 80,
 	},
 ];
 
@@ -131,13 +129,17 @@ export function MostRecentConversations() {
 			<div className="flex items-center justify-between">
 				<h2 className="text-xl font-semibold">Most recent conversations</h2>
 				<Link to="/chat-logs">
-					<Button variant="link" size="sm" className="text-muted-foreground">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="text-muted-foreground cursor-pointer">
 						View all
+						<ArrowUpRight className="h-3 w-3" />
 					</Button>
 				</Link>
 			</div>
-			<div className="rounded-xl border bg-background overflow-hidden">
-				<Table>
+			<div className="rounded-xl border bg-background overflow-x-auto">
+				<Table className="">
 					<TableHeader className="bg-gray-50">
 						{table.getHeaderGroups().map((headerGroup) => (
 							<TableRow
@@ -146,13 +148,7 @@ export function MostRecentConversations() {
 								{headerGroup.headers.map((header) => (
 									<TableHead
 										key={header.id}
-										style={{
-											width:
-												header.getSize() !== 150
-													? header.getSize()
-													: undefined,
-										}}
-										className="h-10 text-xs uppercase text-muted-foreground font-semibold">
+										className="h-10 text-sm  text-muted-foreground ">
 										{flexRender(
 											header.column.columnDef.header,
 											header.getContext(),
@@ -168,7 +164,7 @@ export function MostRecentConversations() {
 								{row.getVisibleCells().map((cell) => (
 									<TableCell
 										key={cell.id}
-										className="py-3 px-4 h-14">
+										className="py-3 px-2 md:px-4 h-14">
 										{flexRender(
 											cell.column.columnDef.cell,
 											cell.getContext(),

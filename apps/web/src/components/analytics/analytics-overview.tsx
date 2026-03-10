@@ -65,7 +65,12 @@ export function AnalyticsOverview() {
 						</CardDescription>
 					</div>
 				</div>
-				<h2 className=" text-xl font-medium pr-4 pt-1">Last 7 days</h2>
+				<div className="flex flex-col gap-1">
+					<span className="text-xs text-muted-foreground text-right">
+						Mar 21 - Mar 28
+					</span>
+					<h2 className="hidden sm:flex text-xl font-medium">Last 7 days</h2>
+				</div>
 			</CardHeader>
 
 			<CardContent className=" pt-4 sm:pt-6 flex-1 min-h-0">
