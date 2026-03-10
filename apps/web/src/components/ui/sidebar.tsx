@@ -100,9 +100,17 @@ function SidebarProvider({
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [toggleSidebar]);
 
+	// Close mobile sidebar when switching to desktop
+	React.useEffect(() => {
+		if (!isMobile && openMobile) {
+			setOpenMobile(false);
+		}
+	}, [isMobile, openMobile]);
+
 	// We add a state so that we can do data-state="expanded" or "collapsed".
-	// This makes it easier to style the sidebar with Tailwind classes.
 	const state = open ? "expanded" : "collapsed";
+
+	const sidebarWidth = isMobile ? SIDEBAR_WIDTH_MOBILE : SIDEBAR_WIDTH;
 
 	const contextValue = React.useMemo<SidebarContextProps>(
 		() => ({
@@ -123,7 +131,7 @@ function SidebarProvider({
 				data-slot="sidebar-wrapper"
 				style={
 					{
-						"--sidebar-width": SIDEBAR_WIDTH,
+						"--sidebar-width": sidebarWidth,
 						"--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
 						...style,
 					} as React.CSSProperties

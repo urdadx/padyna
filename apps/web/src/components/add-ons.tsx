@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 export function AddOns() {
 	return (
 		<div className=" bg-card text-card-foreground">
-			<div className="grid gap-8 p-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
+			<div className="grid gap-6 p-4 md:gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
 				<div className="space-y-5">
 					<div className="space-y-2">
 						<h3 className="text-lg font-semibold tracking-tight text-foreground">
@@ -15,14 +15,14 @@ export function AddOns() {
 					</div>
 				</div>
 
-				<div className="space-y-3 w-115">
+				<div className="w-full space-y-3">
 					<p className="text-justify text-sm leading-relaxed">
 						Get access to exclusive enhancements by purchasing our add-ons
 						to complement your experience. Each add-on is designed to
 						provide additional value and functionality, allowing you to
 						customize your usage according to your needs.
 					</p>
-					<Button className="w-fit px-4" size="sm">
+					<Button className="w-full px-4 sm:w-fit" size="sm">
 						Purchase add-ons
 					</Button>
 				</div>

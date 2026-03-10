@@ -4,6 +4,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useSidebar } from "@/components/ui/sidebar";
 import { Link, useLocation } from "@tanstack/react-router";
 
 export function NavMain({
@@ -22,6 +23,13 @@ export function NavMain({
 	const pathname = useLocation({
 		select: (location) => location.pathname,
 	});
+	const { isMobile, setOpenMobile } = useSidebar();
+
+	const handleLinkClick = () => {
+		if (isMobile) {
+			setOpenMobile(false);
+		}
+	};
 
 	return (
 		<SidebarGroup className="py-0 my-0 mt-2">
@@ -32,7 +40,7 @@ export function NavMain({
 					return (
 						<div key={item.title}>
 							<SidebarMenuItem>
-								<Link to={item.url} className="w-full">
+								<Link to={item.url} className="w-full" onClick={handleLinkClick}>
 									<SidebarMenuButton
 										tooltip={item.title}
 										className={
@@ -75,7 +83,8 @@ export function NavMain({
 												}>
 												<Link
 													to={subItem.url}
-													className="w-full">
+													className="w-full"
+													onClick={handleLinkClick}>
 													<span
 														className={
 															isSubItemActive

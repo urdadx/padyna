@@ -5,6 +5,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useSidebar } from "@/components/ui/sidebar";
 import { Link, useLocation } from "@tanstack/react-router";
 
 export function NavPlayground({
@@ -19,6 +20,13 @@ export function NavPlayground({
 	const pathname = useLocation({
 		select: (location) => location.pathname,
 	});
+	const { isMobile, setOpenMobile } = useSidebar();
+
+	const handleLinkClick = () => {
+		if (isMobile) {
+			setOpenMobile(false);
+		}
+	};
 	return (
 		<SidebarGroup className="py-0 my-0 group-data-[collapsible=icon]:hidden">
 			<SidebarGroupLabel className="text-muted-foreground">
@@ -29,7 +37,7 @@ export function NavPlayground({
 					const isActive = pathname === item.url;
 
 					return (
-						<Link to={item.url} key={item.title}>
+						<Link to={item.url} key={item.title} onClick={handleLinkClick}>
 							<SidebarMenuItem>
 								<SidebarMenuButton
 									tooltip={item.title}

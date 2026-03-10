@@ -4,7 +4,7 @@ import CalendlyLogo from "@/assets/calendly.png";
 
 export const IntegrationCard = () => {
 	return (
-		<div className="bg-white rounded-xl p-4 border border-gray-200  w-full max-w-xs h-full">
+		<div className="bg-white rounded-lg p-4 border border-gray-200  w-full max-w-md mx-auto h-full">
 			<div className="flex flex-col gap-2 sm:gap-2.5 h-full">
 				<div className="flex justify-between items-center">
 					<div className="flex items-center gap-2">

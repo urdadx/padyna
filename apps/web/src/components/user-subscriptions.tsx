@@ -16,13 +16,13 @@ export function UserSubscriptions() {
 
 	return (
 		<div className="rounded-2xl border bg-card text-card-foreground">
-			<div className="p-3 px-6">
+			<div className="p-3 px-4 sm:px-6">
 				<h3 className="text-xl font-semibold text-foreground">Subscriptions</h3>
 				<div className="space-y-0 relative">
 					{subscriptions.map((sub, index) => (
 						<div
 							key={sub.name}
-							className={`flex items-center justify-between py-3 ${
+							className={`flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between ${
 								index !== subscriptions.length - 1
 									? "border-b border-border/50"
 									: ""
@@ -34,7 +34,7 @@ export function UserSubscriptions() {
 								/>
 								<span>{sub.name}</span>
 							</div>
-							<div className="flex items-center gap-12">
+							<div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:gap-8">
 								<div className="text-sm text-foreground">
 									{sub.usage}
 								</div>
@@ -74,7 +74,7 @@ export function UserSubscriptions() {
 					))}
 				</div>
 			</div>
-			<div className="p-3 px-6 bg-gray-50 border-t border-border rounded-b-2xl">
+			<div className="border-t border-border bg-gray-50 p-3 px-4 sm:px-6 rounded-b-2xl">
 				<Button size="sm">Upgrade</Button>
 			</div>
 		</div>

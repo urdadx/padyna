@@ -1,5 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/ui/circular-progress";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogTrigger } from "./ui/dialog";
+import { Drawer, DrawerTrigger } from "./ui/drawer";
+import { AddOnsDialog } from "./add-ons-dialog";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 
@@ -18,6 +22,8 @@ const usageLimits = [
 ];
 
 export function PlanUsage() {
+	const isMobile = useIsMobile();
+
 	return (
 		<div className=" bg-card text-card-foreground">
 			<div className="grid gap-8 p-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
@@ -30,9 +36,28 @@ export function PlanUsage() {
 							You are currently on the Growth Plan. Your limits will
 							reset on the first day of each month.
 						</p>
-						<Button className="w-fit  px-4" size="sm">
-							Increase limits
-						</Button>
+						{isMobile ? (
+							<Drawer>
+								<DrawerTrigger asChild>
+									<Button className="w-fit px-4" size="sm">
+										Increase limits
+									</Button>
+								</DrawerTrigger>
+								<AddOnsDialog defaultValue="messages" isMobile />
+							</Drawer>
+						) : (
+							<Dialog>
+								<DialogTrigger>
+									<Button className="w-fit px-4" size="sm">
+										Increase limits
+									</Button>
+								</DialogTrigger>
+								<AddOnsDialog
+									defaultValue="messages"
+									isMobile={false}
+								/>
+							</Dialog>
+						)}
 					</div>
 				</div>
 

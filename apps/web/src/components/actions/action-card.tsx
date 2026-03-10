@@ -54,7 +54,7 @@ export const ActionCard = () => {
 	};
 
 	return (
-		<div className="bg-white rounded-lg p-3 sm:p-4 border border-gray-200 w-full max-w-sm mx-auto h-full">
+		<div className="bg-white rounded-lg p-4 border border-gray-200  w-full max-w-md mx-auto h-full">
 			<div className="flex flex-col gap-2 h-full">
 				<div className="flex justify-between items-center">
 					<div className="flex items-center gap-2">
@@ -78,11 +78,9 @@ export const ActionCard = () => {
 					<BoltLinear className="inline w-4 h-4 mr-1" />
 					calendly booking
 				</p>
-				<div className="flex items-center gap-1">
-					<Button className="w-full text-muted-foreground" variant="outline">
-						Customize
-					</Button>
-				</div>
+				<Button className="w-full text-gray-700" variant="outline">
+					Customize
+				</Button>
 			</div>
 		</div>
 	);

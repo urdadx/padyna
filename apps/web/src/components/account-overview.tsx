@@ -7,13 +7,13 @@ import { UploadLinear } from "@/assets/icons/upload-icon";
 export function AccountOverview() {
 	return (
 		<div className="rounded-2xl border bg-card text-card-foreground">
-			<div className="p-3 px-6">
+			<div className="p-3 px-4 sm:px-6">
 				<h3 className="text-xl font-semibold text-foreground">Overview</h3>
 				<div className="space-y-0 relative">
 					<div className="flex flex-col gap-2 py-2">
 						<Label className="text-sm text-muted-foreground">Avatar</Label>
 
-						<div className="flex items-center gap-4">
+						<div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
 							<Avatar className="h-16 w-16 rounded-2xl">
 								<AvatarImage
 									className="rounded-2xl object-cover"
@@ -39,13 +39,13 @@ export function AccountOverview() {
 						</Label>
 						<Input
 							type="text"
-							className="w-100 h-8 bg-gray-200 outline-2"
+							className="h-8 w-full bg-gray-200 outline-2"
 							defaultValue="Jack Maaye"
 						/>
 					</div>
 				</div>
 			</div>
-			<div className="p-3 px-6 bg-gray-50 border-t border-border rounded-b-2xl">
+			<div className="border-t border-border bg-gray-50 p-3 px-4 sm:px-6 rounded-b-2xl">
 				<Button size="sm">Save </Button>
 			</div>
 		</div>

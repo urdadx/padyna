@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import NumberFlow from "@number-flow/react";
 import { Checkbox } from "../ui/checkbox";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 
 const DUMMY_CHART_DATA = [
 	{ date: "2024-03-01", visitors: 450, chats: 120 },
@@ -62,7 +63,9 @@ const chartConfig = {
 export function AgentAnalytics() {
 	const [showChats, setShowChats] = React.useState(true);
 	const [showVisitors, setShowVisitors] = React.useState(true);
-	const [selectedTimeRange, setSelectedTimeRange] = React.useState("24h");
+	const navigate = useNavigate({ from: "/analytics" });
+	const { timeRange } = useSearch({ from: "/(admin)/analytics" });
+	const selectedTimeRange = (timeRange as "24h" | "7d" | "30d" | "90d") || "24h";
 
 	return (
 		<div className="mt-4 flex flex-col space-y-4 w-full">
@@ -73,7 +76,15 @@ export function AgentAnalytics() {
 					value={selectedTimeRange}
 					onValueChange={(value) => {
 						if (value !== null) {
-							setSelectedTimeRange(value);
+							navigate({
+								search: {
+									timeRange: value as
+										| "24h"
+										| "7d"
+										| "30d"
+										| "90d",
+								},
+							});
 						}
 					}}>
 					<SelectTrigger

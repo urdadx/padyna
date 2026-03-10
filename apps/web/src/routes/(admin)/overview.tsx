@@ -1,3 +1,6 @@
+import { AnalyticsOverview } from "@/components/analytics/analytics-overview";
+import { SourcesOverview } from "@/components/analytics/sources-overview";
+import { MostRecentConversations } from "@/components/most-recent-conversations";
 import { Metrics } from "@/components/metrics";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -7,7 +10,7 @@ export const Route = createFileRoute("/(admin)/overview")({
 
 function RouteComponent() {
 	return (
-		<div className="relative p-6 w-full md:max-w-6xl mx-auto space-y-10">
+		<div className="relative p-6 w-full max-w-7xl mx-auto space-y-7">
 			<Metrics
 				sourcesCount={12}
 				conversationsCount={34}
@@ -15,6 +18,17 @@ function RouteComponent() {
 				meter={{ balance: 89 }}
 				visitorData={[]}
 			/>
+			<div className="flex flex-col lg:flex-row gap-6 w-full items-stretch">
+				<div className="w-full lg:w-[60%] flex">
+					<AnalyticsOverview />
+				</div>
+				<div className="w-full lg:w-[40%] flex">
+					<SourcesOverview />
+				</div>
+			</div>
+			<div className="w-full">
+				<MostRecentConversations />
+			</div>
 		</div>
 	);
 }

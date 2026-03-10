@@ -30,9 +30,9 @@ const items = [
 
 export function TeamMembersTable() {
 	return (
-		<div>
-			<Table>
-				<TableHeader className="text-muted-foreground ">
+		<div className=" w-full overflow-y-hidden ">
+			<Table className="w-full table-fixed">
+				<TableHeader className="w-full text-muted-foreground ">
 					<TableRow className="hover:bg-transparent text-muted-foreground text-xs">
 						<TableHead>Name</TableHead>
 						<TableHead>Email</TableHead>
@@ -43,7 +43,7 @@ export function TeamMembersTable() {
 				</TableHeader>
 				<TableBody>
 					{items.map((item) => (
-						<TableRow key={item.id}>
+						<TableRow className="w-full" key={item.id}>
 							<TableCell>
 								<div className="flex items-center gap-3">
 									<div>

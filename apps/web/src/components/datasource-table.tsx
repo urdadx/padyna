@@ -215,23 +215,27 @@ export function DataSourceTable() {
 
 	return (
 		<div className="space-y-4">
-			<div className="flex justify-between items-center">
-				<div className="flex w-full  items-center gap-2">
-					<div className="relative">
+			<div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-2">
+				<div className="flex w-full flex-col sm:flex-row items-start sm:items-center gap-2">
+					<div className="relative w-full sm:max-w-md">
 						<Input
 							placeholder="Search data sources..."
-							className="max-w-3xl h-9 pl-9"
+							className="w-full h-9 pl-9"
 						/>
 						<SearchLinear className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 					</div>
-					<FilterByTypes />
-					<FilterByStatus />
+					<div className="flex flex-wrap items-center gap-2">
+						<FilterByTypes />
+						<FilterByStatus />
+					</div>
 				</div>
-				<AddSource />
+				<div className="w-full lg:w-auto flex justify-start sm:justify-end">
+					<AddSource />
+				</div>
 			</div>
-			<div className="overflow-hidden rounded-xl border bg-background">
-				<Table className="table-fixed ">
-					<TableHeader className="bg-gray-50">
+			<div className="rounded-xl border bg-background">
+				<Table className="table-fixed">
+					<TableHeader className="bg-gray-50 w-full">
 						{table.getHeaderGroups().map((headerGroup) => (
 							<TableRow
 								className="hover:bg-transparent"
@@ -312,7 +316,7 @@ export function DataSourceTable() {
 						) : (
 							<TableRow>
 								<TableCell
-									className="h-64 text-center "
+									className="h-64 text-center w-full"
 									colSpan={columns.length}>
 									<div className="relative inline-block">
 										<div

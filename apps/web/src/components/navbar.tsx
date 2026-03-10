@@ -12,13 +12,15 @@ export const Navbar = () => {
 			<div className="flex gap-1 sm:gap-2  items-center ml-auto">
 				<Button className="h-9" size="sm">
 					<LetterLinear color="white" className="size-4" />
-					Invite your team
+					<span className="flex sm:hidden">Invite team</span>
+					<span className="hidden sm:flex">Invite your team</span>
 				</Button>
 				<Button
 					className="text-primary h-9 font-normal hover:text-primary"
 					variant="outline">
 					<RocketLinear color="#8b5cf6" className="size-4" />
-					Deploy your agent
+					<span className="flex sm:hidden">Deploy</span>
+					<span className="hidden sm:flex">Deploy your agent</span>{" "}
 				</Button>
 			</div>
 		</header>

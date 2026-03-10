@@ -7,15 +7,11 @@ export const Route = createFileRoute("/(admin)/integrations")({
 
 function RouteComponent() {
 	return (
-		<div className="flex h-full w-full">
-			<div className="w-full bg-background p-4 px-4 sm:px-6 lg:px-8 py-6">
-				<div className="max-w-7xl mx-auto ">
-					<h1 className="text-2xl font-semibold">Integrations</h1>
-					<p className="text-muted-foreground text-[15px] mt-2 mb-6">
-						Connect third-party services to enhance your AI agent's
-						capabilities.
-					</p>
-					<div className="mt-5">
+		<div className="px-4 sm:px-12 py-6 min-h-screen">
+			<div className="w-full min-h-screen">
+				<div className="w-full max-w-6xl mx-auto space-y-6">
+					<h2 className="text-2xl font-semibold ">Integrations</h2>
+					<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
 						<IntegrationCard />
 					</div>
 				</div>

@@ -27,7 +27,7 @@ export const AddSource = () => {
 		<>
 			<DropdownMenu>
 				<DropdownMenuTrigger>
-					<Button className="h-9">
+					<Button className="h-9 w-full sm:w-auto">
 						<PlusIcon className="h-4 w-4 text-white" />
 						Add Data Source
 					</Button>

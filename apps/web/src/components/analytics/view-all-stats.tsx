@@ -38,7 +38,7 @@ export function ViewAllStats({
 
 	return (
 		<Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-			<DialogContent className="w-full max-w-lg! smooth-div max-h-[80vh] ">
+			<DialogContent className="w-[95%] max-w-lg! smooth-div max-h-[80vh] ">
 				<DialogHeader className="">
 					<DialogTitle className="text-xl font-semibold capitalize">
 						All {name}

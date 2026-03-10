@@ -21,12 +21,7 @@ function RouteComponent() {
 			</div>
 
 			<div className="flex min-h-0 flex-1 flex-col lg:hidden">
-				<header className="bg-background px-6 pt-6">
-					<h1 className="pb-4 text-2xl font-semibold tracking-tight">
-						Playground
-					</h1>
-				</header>
-				<div className="sticky top-0 z-10 border-b bg-background px-6">
+				<div className="sticky pt-2 top-0 z-10 border-b bg-background px-6">
 					<TabsList className="h-auto w-full justify-start gap-6 rounded-none border-b-0 bg-transparent p-0 text-sm">
 						<TabsTrigger
 							value="settings"

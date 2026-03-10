@@ -14,14 +14,14 @@ export function TablePagination<TData>({ table }: TablePaginationProps<TData>) {
 	const id = useId();
 
 	return (
-		<div className="flex items-center justify-between gap-8">
-			<div className="flex items-center gap-1">
+		<div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 sm:gap-8">
+			<div className="flex items-center gap-1 order-2 sm:order-0 w-full sm:w-auto mt-2 sm:mt-0">
 				<Label className="max-sm:sr-only" htmlFor={id}>
 					Total size:
 				</Label>
-				<span className="font-medium text-sm">{`12 MB`}</span>
+				<span className="font-medium text-sm text-foreground sm:text-foreground">{`12 MB`}</span>
 			</div>
-			<div className="flex grow justify-end whitespace-nowrap text-muted-foreground text-sm">
+			<div className="flex grow justify-start sm:justify-end whitespace-nowrap text-muted-foreground text-sm order-1 sm:order-0">
 				<p
 					aria-live="polite"
 					className="whitespace-nowrap text-muted-foreground text-sm">
