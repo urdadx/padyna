@@ -36,7 +36,7 @@ function RouteComponent() {
 	};
 
 	return (
-		<div className="flex h-full min-h-0 w-full flex-col">
+		<div className="relative p-4 w-full max-w-7xl mx-auto space-y-6 overflow-x-hidden">
 			<div className="min-h-0 flex-1 overflow-visible bg-background px-3 py-4 sm:px-6 lg:px-8">
 				<div className="mx-auto max-w-7xl">
 					<h1 className="text-2xl font-semibold">Settings</h1>

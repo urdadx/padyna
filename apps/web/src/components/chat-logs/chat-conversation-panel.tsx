@@ -1,18 +1,12 @@
-import {
-	Message,
-	MessageContent,
-	MessageResponse,
-	MessageToolbar,
-} from "@/components/ai-elements/message";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import { cn } from "@/lib/utils";
-import type { UIMessage } from "ai";
 import {
 	ChatContainerContent,
 	ChatContainerRoot,
 	ChatContainerScrollAnchor,
 } from "./chat-container";
 
-const MOCK_MESSAGES: Record<string, UIMessage[]> = {
+const MOCK_MESSAGES: Record<string, any[]> = {
 	"1": [
 		{
 			id: "m1",
@@ -72,7 +66,12 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 						{messages.map((message) => (
 							<Message key={message.id} from={message.role}>
 								<MessageContent>
-									<MessageResponse>
+									<MessageResponse
+										className={cn(
+											message.role === "user"
+												? ""
+												: "bg-primary p-3 rounded-lg border-primary text-white",
+										)}>
 										{message.content}
 									</MessageResponse>
 								</MessageContent>

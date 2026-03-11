@@ -14,7 +14,7 @@ function RouteComponent() {
 			className="flex h-full min-h-0 w-full overflow-hidden flex-col lg:flex-row lg:gap-0">
 			<div className="hidden min-h-0 lg:flex lg:w-100 lg:shrink-0 lg:border-r lg:bg-background">
 				<div className="flex min-h-0 h-full w-full flex-col">
-					<div className="flex-1  smooth-div p-5 ">
+					<div className="flex-1 overflow-hidden smooth-div p-5">
 						<AgentSettingsPanel />
 					</div>
 				</div>
@@ -38,8 +38,8 @@ function RouteComponent() {
 
 				<TabsContent
 					value="settings"
-					className="mt-0 flex min-h-0 flex-1 flex-col bg-background">
-					<div className="flex-1 overflow-y-auto p-5">
+					className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+					<div className="flex-1 p-5">
 						<AgentSettingsPanel />
 					</div>
 				</TabsContent>

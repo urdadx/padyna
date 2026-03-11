@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import { RiAlarmFill, RiAlertFill, RiCheckboxCircleFill, RiDeleteBinFill } from "@remixicon/react";
 import { MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -11,6 +10,10 @@ import {
 	DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { DeleteChat } from "./delete-chat";
+import { ChatLogsIcon } from "@/assets/icons/chatlogs-icon";
+import { CheckMarkLinear } from "@/assets/icons/checkmark-icon";
+import { TrashBinLinear } from "@/assets/icons/trash-icon";
+import { AlertLinear } from "@/assets/icons/alert-icon";
 
 interface ChatLogItemProps {
 	id: string;
@@ -110,7 +113,7 @@ export const ChatLogItem = ({
 									}}
 									disabled={isUpdating}
 									className="flex items-center gap-2 cursor-pointer">
-									<RiAlarmFill className="h-4 w-4 text-blue-600" />
+									<ChatLogsIcon color="black" />
 									Mark as unresolved
 								</DropdownMenuItem>
 							)}
@@ -122,7 +125,7 @@ export const ChatLogItem = ({
 									}}
 									disabled={isUpdating}
 									className="flex items-center gap-2 cursor-pointer">
-									<RiCheckboxCircleFill className="h-4 w-4 text-green-600" />
+									<CheckMarkLinear color="black" />
 									Mark as resolved
 								</DropdownMenuItem>
 							)}
@@ -134,15 +137,15 @@ export const ChatLogItem = ({
 									}}
 									disabled={isUpdating}
 									className="flex items-center gap-2 cursor-pointer">
-									<RiAlertFill className="h-4 w-4 text-orange-600" />
+									<AlertLinear color="black" />
 									Escalate to human
 								</DropdownMenuItem>
 							)}
 							<DropdownMenuItem
 								onClick={handleDeleteClick}
 								disabled={isUpdating}
-								className="flex items-center gap-2 text-red-600 focus:text-red-600 cursor-pointer">
-								<RiDeleteBinFill className="h-4 w-4" />
+								className="flex items-center text-red-500 gap-2 cursor-pointer">
+								<TrashBinLinear color="red" />
 								Delete conversation
 							</DropdownMenuItem>
 						</DropdownMenuContent>

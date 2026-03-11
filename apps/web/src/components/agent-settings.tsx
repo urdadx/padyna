@@ -15,7 +15,7 @@ export function AgentSettingsPanel() {
 	const [_primaryColor, setPrimaryColor] = useState("#000000");
 
 	return (
-		<div className="flex h-full min-h-0 flex-col gap-6 bg-background">
+		<div className="flex h-full min-h-0 flex-col gap-6  bg-background pr-1">
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl  font-semibold tracking-tight">Playground</h1>
 				<Switch defaultChecked id="enable-widget" />

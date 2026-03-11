@@ -36,9 +36,11 @@ export const DeleteChat = ({ id, open, onOpenChange }: DeleteChatProps) => {
 
 	return (
 		<AlertDialog open={open} onOpenChange={onOpenChange}>
-			<AlertDialogContent>
+			<AlertDialogContent className="p-5">
 				<AlertDialogHeader>
-					<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+					<AlertDialogTitle className="text-lg font-semibold">
+						Are you absolutely sure?
+					</AlertDialogTitle>
 					<AlertDialogDescription>
 						This action cannot be undone. This will permanently delete the
 						conversation and remove the data from our servers.

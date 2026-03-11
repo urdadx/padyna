@@ -20,7 +20,7 @@ function RouteComponent() {
 	const selectedTimeRange = (timeRange as "24h" | "7d" | "30d" | "90d") || "24h";
 
 	return (
-		<div className="flex w-full">
+		<div className="relative  w-full max-w-7xl mx-auto  overflow-x-hidden">
 			<div className="w-full bg-background p-4 px-4 sm:px-6 lg:px-8 py-6">
 				<div className="max-w-7xl mx-auto ">
 					<AgentAnalytics />

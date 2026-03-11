@@ -107,9 +107,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					<NavUser user={data.user} />
 				</SidebarFooter>
 			</Sidebar>
-			<SidebarInset className="overflow-y-auto">
+			<SidebarInset className="min-h-0 overflow-hidden">
 				<Navbar />
-				<Outlet />
+				<div className="flex min-h-0 flex-1 overflow-hidden">
+					<Outlet />
+				</div>{" "}
 			</SidebarInset>
 		</SidebarProvider>
 	);
