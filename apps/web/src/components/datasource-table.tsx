@@ -4,13 +4,16 @@ import {
 	getCoreRowModel,
 	getPaginationRowModel,
 	getSortedRowModel,
+	getFilteredRowModel,
 	type PaginationState,
 	type SortingState,
+	type ColumnFiltersState,
 	useReactTable,
 } from "@tanstack/react-table";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn, timeAgo } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TablePagination } from "@/components/table-pagination";
 import {
@@ -33,6 +36,8 @@ import { TextLinear } from "@/assets/icons/text-icon";
 import { ChatLinear } from "@/assets/icons/chat-icon";
 import { PaperclipLinear } from "@/assets/icons/paperclip-icon";
 import { DataSourceActions } from "./datasource-actions";
+import { trpc } from "@/utils/trpc";
+import Spinner from "./ui/spinner";
 
 export type Item = {
 	id: string;
@@ -44,44 +49,47 @@ export type Item = {
 	type: "File" | "Text" | "Q&A" | "Link";
 };
 
-const dummyData: Item[] = [
-	{
-		id: "1",
-		name: "Customer_Feedback_Q1.csv",
-		lastSynced: "2 days ago",
-		fileSize: "1.2 MB",
-		status: "Synced",
-		noReferenced: 5,
-		type: "File",
-	},
-	// {
-	// 	id: "2",
-	// 	name: "Refund Policy",
-	// 	lastSynced: "4 months ago",
-	// 	fileSize: "9.2 KB",
-	// 	status: "Processing",
-	// 	noReferenced: 3,
-	// 	type: "Text",
-	// },
-	// {
-	// 	id: "3",
-	// 	name: "What does your product do?",
-	// 	lastSynced: "1 week ago",
-	// 	fileSize: "4.5 KB",
-	// 	status: "Processing",
-	// 	noReferenced: 0,
-	// 	type: "Q&A",
-	// },
-	{
-		id: "4",
-		name: "https://mywebsite.com",
-		lastSynced: "1 minute ago",
-		fileSize: "850 KB",
-		status: "Failed",
-		noReferenced: 12,
-		type: "Link",
-	},
-];
+function formatBytes(bytes: number | null): string {
+	if (!bytes) return "0 B";
+	const k = 1024;
+	const sizes = ["B", "KB", "MB", "GB"];
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+	return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
+type DatasourceRow = {
+	id: string;
+	sourceName: string;
+	sourceType: "link" | "file" | "qa" | "text";
+	ingestStatus: "pending" | "processing" | "synced" | "failed" | "archived";
+	timesReferenced: number;
+	sizeBytes: number | null;
+	lastSyncedAt: string | Date | null;
+};
+
+function mapDatasourceToItem(db: DatasourceRow): Item {
+	return {
+		id: db.id,
+		name: db.sourceName,
+		lastSynced: timeAgo(db.lastSyncedAt),
+		fileSize: formatBytes(db.sizeBytes),
+		noReferenced: db.timesReferenced,
+		status:
+			db.ingestStatus === "synced"
+				? "Synced"
+				: db.ingestStatus === "failed"
+					? "Failed"
+					: "Processing",
+		type:
+			db.sourceType === "file"
+				? "File"
+				: db.sourceType === "text"
+					? "Text"
+					: db.sourceType === "qa"
+						? "Q&A"
+						: "Link",
+	};
+}
 
 const columns: ColumnDef<Item>[] = [
 	{
@@ -132,12 +140,13 @@ const columns: ColumnDef<Item>[] = [
 											: "purple"
 						}
 					/>
-					{row.getValue("name")}
+					<span className="truncate max-w-xs">{row.getValue("name")}</span>
 				</div>
 			);
 		},
 
 		header: "Source name",
+		size: 200,
 	},
 	{
 		accessorKey: "lastSynced",
@@ -170,7 +179,12 @@ const columns: ColumnDef<Item>[] = [
 				</div>
 			);
 		},
+		filterFn: "equalsString",
 		header: "Status",
+	},
+	{
+		accessorKey: "type",
+		filterFn: "equalsString",
 	},
 	{
 		cell: ({ row }) => <DataSourceActions item={row.original} />,
@@ -182,7 +196,7 @@ const columns: ColumnDef<Item>[] = [
 export function DataSourceTable() {
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
-		pageSize: 5,
+		pageSize: 10,
 	});
 
 	const [sorting, setSorting] = useState<SortingState>([
@@ -192,18 +206,41 @@ export function DataSourceTable() {
 		},
 	]);
 
+	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+	const { data: datasources, isLoading } = useQuery(trpc.datasource.getAll.queryOptions());
+
+	const tableData = useMemo(() => datasources?.map(mapDatasourceToItem) ?? [], [datasources]);
+	const totalSize = useMemo(
+		() =>
+			formatBytes(
+				(datasources ?? []).reduce(
+					(total: number, datasource: DatasourceRow) =>
+						total + (datasource.sizeBytes ?? 0),
+					0,
+				),
+			),
+		[datasources],
+	);
+
 	const table = useReactTable({
 		columns,
-		data: dummyData,
+		data: tableData,
 		enableSortingRemoval: false,
 		getCoreRowModel: getCoreRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
+		getFilteredRowModel: getFilteredRowModel(),
 		onPaginationChange: setPagination,
 		onSortingChange: setSorting,
+		onColumnFiltersChange: setColumnFilters,
 		state: {
 			pagination,
 			sorting,
+			columnFilters,
+			columnVisibility: {
+				type: false,
+			},
 		},
 	});
 
@@ -215,12 +252,40 @@ export function DataSourceTable() {
 						<Input
 							placeholder="Search data sources..."
 							className="w-full h-9 pl-9"
+							value={
+								(table
+									.getColumn("name")
+									?.getFilterValue() as string) ?? ""
+							}
+							onChange={(event) =>
+								table
+									.getColumn("name")
+									?.setFilterValue(event.target.value)
+							}
 						/>
 						<SearchLinear className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 					</div>
 					<div className="flex flex-wrap items-center gap-2">
-						<FilterByTypes />
-						<FilterByStatus />
+						<FilterByTypes
+							value={
+								(table
+									.getColumn("type")
+									?.getFilterValue() as string) ?? undefined
+							}
+							onChange={(value) =>
+								table.getColumn("type")?.setFilterValue(value)
+							}
+						/>
+						<FilterByStatus
+							value={
+								(table
+									.getColumn("status")
+									?.getFilterValue() as string) ?? undefined
+							}
+							onChange={(value) =>
+								table.getColumn("status")?.setFilterValue(value)
+							}
+						/>
 					</div>
 				</div>
 				<div className="w-full lg:w-auto flex justify-start sm:justify-end">
@@ -290,7 +355,20 @@ export function DataSourceTable() {
 						))}
 					</TableHeader>
 					<TableBody>
-						{table.getRowModel().rows?.length ? (
+						{isLoading ? (
+							<TableRow>
+								<TableCell
+									className="h-64 text-center w-full"
+									colSpan={columns.length}>
+									<div className="flex flex-col items-center justify-center gap-2">
+										<Spinner size={30} />
+										<p className="text-sm text-muted-foreground">
+											Loading data sources...
+										</p>
+									</div>
+								</TableCell>
+							</TableRow>
+						) : table.getRowModel().rows?.length ? (
 							table.getRowModel().rows.map((row) => (
 								<TableRow
 									data-state={row.getIsSelected() && "selected"}
@@ -336,7 +414,7 @@ export function DataSourceTable() {
 				</Table>
 			</div>
 
-			<TablePagination table={table} />
+			<TablePagination table={table} totalSize={totalSize} isLoading={isLoading} />
 		</div>
 	);
 }

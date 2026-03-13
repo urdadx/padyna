@@ -51,7 +51,7 @@ export function TopTopics() {
 	const maxTopicCount = Math.max(...mapTopics.map((t) => t.value));
 
 	return (
-		<div className="h-87.5 w-full rounded-3xl border bg-white flex flex-col overflow-hidden">
+		<div className="h-87.5 w-full rounded-xl border bg-white flex flex-col overflow-hidden">
 			<Tabs defaultValue="topics" className="flex flex-col h-full">
 				<div className="flex items-center justify-between px-4 py-3 shrink-0">
 					<TabsList className="h-auto gap-2 rounded-none border-border bg-transparent px-0 text-foreground">

@@ -3,18 +3,68 @@ import { Button } from "@/components/ui/button";
 import {
 	Field,
 	FieldDescription,
+	FieldError,
 	FieldGroup,
 	FieldLabel,
 	FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { GoogleSVG } from "../google-svg";
-import { Link } from "@tanstack/react-router";
-import { MotionButton } from "../ui/motion-button";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
+import { useForm } from "@tanstack/react-form";
+import { z } from "zod";
+import { motion } from "motion/react";
+import Spinner from "../ui/spinner";
 
 export function SignupForm({ className, ...props }: React.ComponentProps<"form">) {
+	const navigate = useNavigate();
+
+	const form = useForm({
+		defaultValues: {
+			email: "",
+			password: "",
+			name: "",
+		},
+		onSubmit: async ({ value }) => {
+			await authClient.signUp.email(
+				{
+					email: value.email,
+					password: value.password,
+					name: value.name,
+				},
+				{
+					onSuccess: () => {
+						navigate({
+							to: "/onboarding",
+						});
+						toast.success("Sign up successful");
+					},
+					onError: (error) => {
+						toast.error(error.error.message || error.error.statusText);
+					},
+				},
+			);
+		},
+		validators: {
+			onSubmit: z.object({
+				name: z.string().min(2, "Name must be at least 2 characters"),
+				email: z.email("Invalid email address"),
+				password: z.string().min(8, "Password must be at least 8 characters"),
+			}),
+		},
+	});
+
 	return (
-		<form className={cn("flex flex-col gap-4", className)} {...props}>
+		<form
+			onSubmit={(e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				form.handleSubmit();
+			}}
+			className={cn("flex flex-col gap-4", className)}
+			{...props}>
 			<FieldGroup className="">
 				<div className="flex flex-col items-center gap-1 text-center">
 					<h1 className="text-3xl font-semibold">Create your account</h1>
@@ -22,31 +72,86 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"form">
 						Fill in the form below to create your account
 					</p>
 				</div>
-				<Field>
-					<FieldLabel htmlFor="name">Username</FieldLabel>
-					<Input id="name" type="text" placeholder="Jack Maaye" required />
-				</Field>
-				<Field>
-					<FieldLabel htmlFor="email">Email</FieldLabel>
-					<Input
-						id="email"
-						type="email"
-						placeholder="malika@example.com"
-						required
-					/>
-				</Field>
-				<Field>
-					<FieldLabel htmlFor="password">Password</FieldLabel>
-					<Input
-						placeholder="********"
-						id="password"
-						type="password"
-						required
-					/>
-				</Field>
+				<form.Field name="name">
+					{(field) => (
+						<Field>
+							<FieldLabel htmlFor={field.name}>Username</FieldLabel>
+							<Input
+								id={field.name}
+								name={field.name}
+								type="text"
+								placeholder="Jack Maaye"
+								value={field.state.value}
+								onBlur={field.handleBlur}
+								onChange={(e) => field.handleChange(e.target.value)}
+								required
+							/>
+							<FieldError>
+								{field.state.meta.errors.join(", ")}
+							</FieldError>
+						</Field>
+					)}
+				</form.Field>
+
+				<form.Field name="email">
+					{(field) => (
+						<Field>
+							<FieldLabel htmlFor={field.name}>Email</FieldLabel>
+							<Input
+								id={field.name}
+								name={field.name}
+								type="email"
+								placeholder="malika@example.com"
+								value={field.state.value}
+								onBlur={field.handleBlur}
+								onChange={(e) => field.handleChange(e.target.value)}
+								required
+							/>
+							<FieldError>
+								{field.state.meta.errors.join(", ")}
+							</FieldError>
+						</Field>
+					)}
+				</form.Field>
+
+				<form.Field name="password">
+					{(field) => (
+						<Field>
+							<FieldLabel htmlFor={field.name}>Password</FieldLabel>
+							<Input
+								placeholder="********"
+								id={field.name}
+								name={field.name}
+								type="password"
+								value={field.state.value}
+								onBlur={field.handleBlur}
+								onChange={(e) => field.handleChange(e.target.value)}
+								required
+							/>
+							<FieldError>
+								{field.state.meta.errors.join(", ")}
+							</FieldError>
+						</Field>
+					)}
+				</form.Field>
 
 				<Field>
-					<MotionButton title="Create my account" />
+					<form.Subscribe>
+						{(state) => (
+							<motion.div
+								whileHover={{ scale: 1.02 }}
+								whileTap={{ scale: 0.98 }}
+								className="relative w-full">
+								<Button className="w-full" type="submit">
+									{state.isSubmitting ? (
+										<Spinner color="white" />
+									) : (
+										"Create my account"
+									)}
+								</Button>
+							</motion.div>
+						)}
+					</form.Subscribe>
 				</Field>
 				<FieldSeparator>Or continue with</FieldSeparator>
 				<Field>

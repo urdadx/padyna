@@ -26,8 +26,8 @@ function ChatContainerRoot({
 	return (
 		<StickToBottom
 			className={cn(
-				"flex flex-col overflow-y-auto", // ensure vertical layout
-				optimize && "min-h-0 overscroll-contain will-change-transform", // performance helpers
+				"flex flex-col overflow-y-auto",
+				optimize && "min-h-0 overscroll-contain will-change-transform",
 				className,
 			)}
 			initial="instant"

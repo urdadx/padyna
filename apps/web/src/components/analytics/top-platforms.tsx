@@ -56,7 +56,7 @@ export function TopPlatforms() {
 	const maxPlatformCount = Math.max(...mapPlatforms.map((p) => p.value));
 
 	return (
-		<div className="h-87.5 w-full rounded-3xl z-0 border bg-white flex flex-col overflow-hidden">
+		<div className="h-87.5 w-full rounded-xl z-0 border bg-white flex flex-col overflow-hidden">
 			<Tabs defaultValue="platforms" className="flex flex-col h-full">
 				<div className="flex items-center justify-between px-4 py-3 shrink-0">
 					<TabsList className="h-auto gap-2 rounded-none border-border bg-transparent px-0 text-foreground">

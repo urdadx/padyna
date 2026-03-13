@@ -45,12 +45,14 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 		return (
 			<div
 				className={cn(
-					"flex flex-1 items-center justify-center p-8 text-center",
+					"flex h-full w-full  flex-1 items-center justify-center p-8 text-center",
 					className,
 				)}>
 				<div className="space-y-2">
-					<h3 className="text-lg font-medium">No conversation selected</h3>
-					<p className="text-sm text-muted-foreground">
+					<h3 className="text-xl text-center font-medium">
+						No conversation selected
+					</h3>
+					<p className="text-sm text-center text-muted-foreground">
 						Select a conversation from the list to view the message history.
 					</p>
 				</div>
@@ -59,10 +61,10 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 	}
 
 	return (
-		<div className={cn("flex flex-col h-full ", className)}>
-			<ChatContainerRoot className="flex-1">
-				<ChatContainerContent className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
-					<div className="space-y-6">
+		<div className={cn("flex flex-col h-full", className)}>
+			<ChatContainerRoot optimize className="flex-1 w-full smooth-div relative">
+				<ChatContainerContent className="p-4 space-y-4">
+					<div className="flex flex-col gap-4">
 						{messages.map((message) => (
 							<Message key={message.id} from={message.role}>
 								<MessageContent>

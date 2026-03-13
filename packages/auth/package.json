@@ -1,5 +1,5 @@
 {
-  "name": "@padyna-v2/auth",
+  "name": "@padyna/auth",
   "type": "module",
   "exports": {
     ".": {
@@ -11,16 +11,18 @@
   },
   "scripts": {},
   "dependencies": {
-    "@padyna-v2/db": "workspace:*",
-    "@padyna-v2/env": "workspace:*",
+    "@padyna/db": "workspace:*",
+    "@padyna/env": "workspace:*",
     "@polar-sh/better-auth": "catalog:",
     "@polar-sh/sdk": "^0.42.2",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
+    "nanoid": "^5.1.6",
+    "uuid": "^13.0.0",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@padyna-v2/config": "workspace:*",
+    "@padyna/config": "workspace:*",
     "typescript": "catalog:"
   }
 }

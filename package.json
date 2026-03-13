@@ -1,5 +1,5 @@
 {
-  "name": "padyna-v2",
+  "name": "padyna",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -13,20 +13,21 @@
     "dev:native": "pnpm --filter native dev",
     "dev:web": "pnpm --filter web dev",
     "dev:server": "pnpm --filter server dev",
-    "db:push": "pnpm --filter @padyna-v2/db db:push",
-    "db:studio": "pnpm --filter @padyna-v2/db db:studio",
-    "db:generate": "pnpm --filter @padyna-v2/db db:generate",
-    "db:migrate": "pnpm --filter @padyna-v2/db db:migrate",
+    "db:push": "pnpm --filter @padyna/db db:push",
+    "db:studio": "pnpm --filter @padyna/db db:studio",
+    "db:generate": "pnpm --filter @padyna/db db:generate",
+    "db:migrate": "pnpm --filter @padyna/db db:migrate",
     "check": "oxlint && oxfmt --write"
   },
   "dependencies": {
-    "@padyna-v2/env": "workspace:*",
+    "@padyna/env": "workspace:*",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@padyna-v2/config": "workspace:*",
+    "@padyna/config": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/uuid": "^11.0.0",
     "oxfmt": "^0.26.0",
     "oxlint": "^1.41.0",
     "typescript": "catalog:"

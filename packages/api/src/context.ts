@@ -1,6 +1,6 @@
 import type { Context as HonoContext } from "hono";
 
-import { auth } from "@padyna-v2/auth";
+import { auth } from "@padyna/auth";
 
 export type CreateContextOptions = {
   context: HonoContext;

@@ -18,7 +18,10 @@ function RouteComponent() {
 					selectedId={selectedChatId}
 					onSelect={setSelectedChatId}
 				/>
-				<ChatConversationPanel chatId={selectedChatId} className="flex-1" />
+				<ChatConversationPanel
+					chatId={selectedChatId}
+					className="relative flex-1 h-full flex flex-col min-h-0"
+				/>
 			</div>
 		</div>
 	);

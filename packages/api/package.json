@@ -1,5 +1,5 @@
 {
-  "name": "@padyna-v2/api",
+  "name": "@padyna/api",
   "type": "module",
   "exports": {
     ".": {
@@ -11,16 +11,17 @@
   },
   "scripts": {},
   "dependencies": {
-    "@padyna-v2/auth": "workspace:*",
-    "@padyna-v2/db": "workspace:*",
-    "@padyna-v2/env": "workspace:*",
+    "@padyna/auth": "workspace:*",
+    "@padyna/db": "workspace:*",
+    "@padyna/env": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "dotenv": "catalog:",
+    "drizzle-orm": "^0.45.1",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@padyna-v2/config": "workspace:*",
+    "@padyna/config": "workspace:*",
     "hono": "catalog:",
     "typescript": "catalog:"
   }

@@ -124,7 +124,7 @@ export function CountryAnalytics() {
 	const maxContinentCount = Math.max(...mapContinents.map((c) => c.value));
 
 	return (
-		<div className="h-87.5 w-full z-0 rounded-3xl border bg-white flex flex-col overflow-hidden">
+		<div className="h-87.5 w-full z-0 rounded-xl border bg-white flex flex-col overflow-hidden">
 			<Tabs defaultValue="countries" className="flex flex-col h-full">
 				<div className="flex items-center justify-between px-4 py-3 shrink-0">
 					<TabsList className="h-auto gap-2 rounded-none border-border bg-transparent px-0 text-foreground">

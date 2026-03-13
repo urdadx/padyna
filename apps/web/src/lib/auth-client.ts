@@ -1,8 +1,9 @@
-import { env } from "@padyna-v2/env/web";
+import { organizationClient } from "better-auth/client/plugins";
+import { env } from "@padyna/env/web";
 import { polarClient } from "@polar-sh/better-auth";
 import { createAuthClient } from "better-auth/react";
 
 export const authClient = createAuthClient({
   baseURL: env.VITE_SERVER_URL,
-  plugins: [polarClient()],
+  plugins: [polarClient(), organizationClient()],
 });

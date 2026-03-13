@@ -1,15 +1,12 @@
-import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
-	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { ScrapeWebsite } from "../scrape-website";
-import { motion } from "motion/react";
 import { CrawlWebsite } from "../crawl-website";
 
 interface WebSourceProps {
@@ -30,24 +27,16 @@ export function WebSourceDialog({ open, onOpenChange }: WebSourceProps) {
 				</DialogHeader>
 				<Tabs className="w-full">
 					<TabsList className="w-fit justify-start text-foreground h-auto gap-2 bg-gray-50 rounded-md p-2">
-						<TabsTrigger value="scrape">Single URL</TabsTrigger>
+						<TabsTrigger value="scrape">Single page</TabsTrigger>
 						<TabsTrigger value="crawl">Crawl an entire website</TabsTrigger>
 					</TabsList>
 					<TabsContent value="scrape">
-						<ScrapeWebsite />
+						<ScrapeWebsite onSuccess={() => onOpenChange(false)} />
 					</TabsContent>
 					<TabsContent value="crawl">
-						<CrawlWebsite />
+						<CrawlWebsite onSuccess={() => onOpenChange(false)} />
 					</TabsContent>
 				</Tabs>
-				<DialogFooter>
-					<motion.div
-						className="w-full"
-						whileHover={{ scale: 1.02 }}
-						whileTap={{ scale: 0.98 }}>
-						<Button className="w-full">Add Link</Button>
-					</motion.div>
-				</DialogFooter>
 			</DialogContent>
 		</Dialog>
 	);

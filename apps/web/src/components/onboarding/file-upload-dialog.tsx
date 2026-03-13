@@ -13,6 +13,24 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
+import { toast } from "sonner";
+import api from "@/lib/api";
+import Spinner from "../ui/spinner";
+import { useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { trpc } from "@/utils/trpc";
+
+interface FileIngestionResult {
+	fileName: string;
+	datasourceId: string;
+	status: "synced" | "failed";
+	chunkCount: number;
+	message?: string;
+}
+
+interface FileIngestionResponse {
+	results: FileIngestionResult[];
+}
 
 interface FileWithId {
 	id: string;
@@ -26,9 +44,10 @@ interface FileUploadDialogProps {
 }
 
 export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDialogProps) {
-	const [files, setFiles] = React.useState<FileWithId[]>([]);
-	const [isDragging, setIsDragging] = React.useState(false);
-	const fileInputRef = React.useRef<HTMLInputElement>(null);
+	const [files, setFiles] = useState<FileWithId[]>([]);
+	const [isDragging, setIsDragging] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const queryClient = useQueryClient();
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files) {
@@ -39,10 +58,17 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 	const addFiles = (newFiles: File[]) => {
 		const validFiles = newFiles.filter((file) => {
 			const extension = file.name.split(".").pop()?.toLowerCase();
-			return ["pdf", "csv", "txt", "docx", ".md", ".mdx"].includes(extension || "");
+			return ["pdf", "csv", "txt", "docx", "md", "mdx"].includes(extension || "");
 		});
 
-		const filesWithId = validFiles.map((file) => ({
+		const tooLargeFiles = validFiles.filter((file) => file.size > 20 * 1024 * 1024);
+		if (tooLargeFiles.length > 0) {
+			toast.error("Some files exceed the 20MB limit.");
+		}
+
+		const sizeFilteredFiles = validFiles.filter((file) => file.size <= 20 * 1024 * 1024);
+
+		const filesWithId = sizeFilteredFiles.map((file) => ({
 			id: Math.random().toString(36).substring(7),
 			file,
 		}));
@@ -71,10 +97,54 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 		}
 	};
 
+	const { mutate: uploadFiles, isPending } = useMutation({
+		mutationFn: async (payload: File[]) => {
+			const formData = new FormData();
+
+			for (const file of payload) {
+				formData.append("files", file);
+			}
+
+			const response = await api.post<FileIngestionResponse>(
+				"/api/ingestion/files",
+				formData,
+			);
+			return response.data;
+		},
+		onSuccess: (data, payload) => {
+			onUpload(payload);
+
+			const synced = data.results.filter((result) => result.status === "synced").length;
+			const failed = data.results.length - synced;
+
+			if (synced > 0) {
+				toast.success(`${synced} file${synced > 1 ? "s" : ""} ingested.`);
+			}
+
+			if (failed > 0) {
+				toast.warning(
+					`${failed} file${failed > 1 ? "s" : ""} failed during ingestion.`,
+				);
+			}
+
+			setFiles([]);
+			onOpenChange(false);
+
+			queryClient.invalidateQueries({
+				queryKey: trpc.datasource.getAll.queryOptions().queryKey,
+			});
+		},
+		onError: (error) => {
+			const message =
+				error instanceof Error ? error.message : "Failed to ingest files.";
+			toast.warning(message);
+		},
+	});
+
 	const handleUpload = () => {
-		onUpload(files.map((f) => f.file));
-		setFiles([]);
-		onOpenChange(false);
+		if (files.length === 0) return;
+		const payload = files.map((f) => f.file);
+		uploadFiles(payload);
 	};
 
 	return (
@@ -134,12 +204,19 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 											{file.name}
 										</span>
 										<span className="text-xs text-muted-foreground">
-											{(
-												file.size /
-												1024 /
-												1024
-											).toFixed(2)}{" "}
-											MB
+											{(() => {
+												const sizeInMB =
+													file.size /
+													(1024 * 1024);
+												if (sizeInMB < 1) {
+													const sizeInKB =
+														file.size /
+														1024;
+													return `${sizeInKB.toFixed(2)} KB`;
+												} else {
+													return `${sizeInMB.toFixed(2)} MB`;
+												}
+											})()}
 										</span>
 									</div>
 								</div>
@@ -166,8 +243,15 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 						<Button
 							className="w-full"
 							onClick={handleUpload}
-							disabled={files.length === 0}>
-							Add files
+							disabled={files.length === 0 || isPending}>
+							{isPending ? (
+								<>
+									<Spinner color="white" />
+									Uploading...
+								</>
+							) : (
+								"Add files"
+							)}
 						</Button>
 					</motion.div>
 				</DialogFooter>

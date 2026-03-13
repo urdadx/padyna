@@ -36,15 +36,15 @@ function RouteComponent() {
 	};
 
 	return (
-		<div className="relative p-4 w-full max-w-7xl mx-auto space-y-6 overflow-x-hidden">
-			<div className="min-h-0 flex-1 overflow-visible bg-background px-3 py-4 sm:px-6 lg:px-8">
+		<div className="relative p-4 w-full space-y-6 overflow-x-hidden">
+			<div className="min-h-0 flex-1 overflow-visible bg-background px-3 sm:px-6 lg:px-8">
 				<div className="mx-auto max-w-7xl">
 					<h1 className="text-2xl font-semibold">Settings</h1>
 
 					<Tabs
 						value={tab}
 						onValueChange={handleTabChange}
-						className="pt-4"
+						className="pt-3"
 						defaultValue="account">
 						<div className=" pb-1">
 							<TabsList className="w-full justify-start text-foreground h-auto gap-2 rounded-none  bg-transparent px-0 ">

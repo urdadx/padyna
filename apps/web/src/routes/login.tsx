@@ -6,7 +6,7 @@ export const Route = createFileRoute("/login")({
 	component: RouteComponent,
 });
 
-function RouteComponent() {
+async function RouteComponent() {
 	return (
 		<>
 			<div className="grid min-h-svh lg:grid-cols-2">

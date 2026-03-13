@@ -1,5 +1,5 @@
 {
-  "name": "@padyna-v2/env",
+  "name": "@padyna/env",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@padyna-v2/config": "workspace:*",
+    "@padyna/config": "workspace:*",
     "@types/bun": "catalog:",
     "typescript": "catalog:"
   }

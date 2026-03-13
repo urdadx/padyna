@@ -1,5 +1,5 @@
 {
-  "extends": "@padyna-v2/config/tsconfig.base.json",
+  "extends": "@padyna/config/tsconfig.base.json",
   "compilerOptions": {
     "declaration": true,
     "declarationMap": true,

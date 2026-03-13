@@ -1,4 +1,4 @@
-import { env } from "@padyna-v2/env/server";
+import { env } from "@padyna/env/server";
 import { Polar } from "@polar-sh/sdk";
 
 export const polarClient = new Polar({

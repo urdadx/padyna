@@ -355,6 +355,17 @@ export const isValidUrl = (url: string) => {
   }
 };
 
+export const getWebsiteDomain = (websiteUrl: string) => {
+  const trimmedWebsiteUrl = websiteUrl.trim();
+  if (!trimmedWebsiteUrl) return "";
+
+  const normalizedWebsiteUrl = /^https?:\/\//i.test(trimmedWebsiteUrl)
+    ? trimmedWebsiteUrl
+    : `https://${trimmedWebsiteUrl}`;
+
+  return getApexDomain(normalizedWebsiteUrl);
+};
+
 export const signalIframe = () => {
   const iframe = document.getElementById("preview") as HTMLIFrameElement;
   console.log("iframe", iframe);
@@ -364,6 +375,7 @@ export const signalIframe = () => {
 };
 
 export const timeAgo = (timestamp: string | number | Date | null | undefined) => {
+  if (timestamp === null) return "----";
   if (!timestamp) return "Just now";
 
   const date = new Date(timestamp);

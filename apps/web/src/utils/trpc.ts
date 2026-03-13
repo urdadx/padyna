@@ -1,6 +1,6 @@
-import type { AppRouter } from "@padyna-v2/api/routers/index";
+import type { AppRouter } from "@padyna/api/routers/index";
 
-import { env } from "@padyna-v2/env/web";
+import { env } from "@padyna/env/web";
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
@@ -17,6 +17,14 @@ export const queryClient = new QueryClient({
       });
     },
   }),
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      retry: 1,
+    },
+  },
 });
 
 export const trpcClient = createTRPCClient<AppRouter>({

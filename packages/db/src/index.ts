@@ -1,4 +1,4 @@
-import { env } from "@padyna-v2/env/server";
+import { env } from "@padyna/env/server";
 import { drizzle } from "drizzle-orm/node-postgres";
 
 import * as schema from "./schema";

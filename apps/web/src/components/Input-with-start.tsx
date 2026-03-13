@@ -3,7 +3,12 @@ import { useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function InputWithStartAddon() {
+interface InputWithStartAddonProps {
+	value?: string;
+	onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+export default function InputWithStartAddon({ value, onChange }: InputWithStartAddonProps) {
 	const id = useId();
 	return (
 		<div className="*:not-first:mt-2">
@@ -18,6 +23,9 @@ export default function InputWithStartAddon() {
 					placeholder="google.com"
 					type="text"
 					aria-required="true"
+					required
+					value={value}
+					onChange={onChange}
 				/>
 			</div>
 		</div>

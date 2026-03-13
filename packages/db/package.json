@@ -1,5 +1,5 @@
 {
-  "name": "@padyna-v2/db",
+  "name": "@padyna/db",
   "type": "module",
   "exports": {
     ".": {
@@ -16,14 +16,14 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
-    "@padyna-v2/env": "workspace:*",
+    "@padyna/env": "workspace:*",
     "dotenv": "catalog:",
     "drizzle-orm": "^0.45.1",
     "pg": "^8.17.1",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@padyna-v2/config": "workspace:*",
+    "@padyna/config": "workspace:*",
     "@types/pg": "^8.16.0",
     "drizzle-kit": "^0.31.8",
     "typescript": "catalog:"

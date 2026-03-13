@@ -1,6 +1,5 @@
 import type { Table } from "@tanstack/react-table";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import { useId } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -8,42 +7,37 @@ import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/p
 
 interface TablePaginationProps<TData> {
 	table: Table<TData>;
+	totalSize: string;
+	isLoading?: boolean;
 }
 
-export function TablePagination<TData>({ table }: TablePaginationProps<TData>) {
-	const id = useId();
+export function TablePagination<TData>({
+	table,
+	totalSize,
+	isLoading = false,
+}: TablePaginationProps<TData>) {
+	const rowCount = table.getRowCount();
+	const pageIndex = table.getState().pagination.pageIndex;
+	const pageSize = table.getState().pagination.pageSize;
+	const from = rowCount === 0 ? 0 : pageIndex * pageSize + 1;
+	const to = rowCount === 0 ? 0 : Math.min(pageIndex * pageSize + pageSize, rowCount);
 
 	return (
 		<div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 sm:gap-8">
 			<div className="flex items-center gap-1 order-2 sm:order-0 w-full sm:w-auto mt-2 sm:mt-0">
-				<Label className="max-sm:sr-only" htmlFor={id}>
-					Total size:
-				</Label>
-				<span className="font-medium text-sm text-foreground sm:text-foreground">{`12 MB`}</span>
+				<Label className="max-sm:sr-only">Total size:</Label>
+				<span className="font-medium text-sm text-foreground sm:text-foreground">
+					{isLoading ? "Loading..." : totalSize}
+				</span>
 			</div>
 			<div className="flex grow justify-start sm:justify-end whitespace-nowrap text-muted-foreground text-sm order-1 sm:order-0">
 				<p
 					aria-live="polite"
 					className="whitespace-nowrap text-muted-foreground text-sm">
 					<span className="text-foreground">
-						{table.getState().pagination.pageIndex *
-							table.getState().pagination.pageSize +
-							1}
-						-
-						{Math.min(
-							Math.max(
-								table.getState().pagination.pageIndex *
-									table.getState().pagination.pageSize +
-									table.getState().pagination.pageSize,
-								0,
-							),
-							table.getRowCount(),
-						)}
+						{from}-{to}
 					</span>{" "}
-					of{" "}
-					<span className="text-foreground">
-						{table.getRowCount().toString()}
-					</span>
+					of <span className="text-foreground">{rowCount.toString()}</span>
 				</p>
 			</div>
 			<div>

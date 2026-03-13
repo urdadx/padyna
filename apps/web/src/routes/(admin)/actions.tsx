@@ -20,7 +20,7 @@ function RouteComponent() {
 							<div className="relative">
 								<Input
 									placeholder="Search actions..."
-									className="max-w-3xl h-9 pl-9"
+									className="max-w-3xl pl-9"
 								/>
 								<SearchLinear className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 							</div>

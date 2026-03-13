@@ -18,7 +18,7 @@ interface InviteMembersProps {
 }
 
 export const InviteMembers = ({ isDialogOpen, setIsDialogOpen }: InviteMembersProps) => {
-	const [teamMemberName, setTeamMemberName] = useState("");
+	const [email, setEmail] = useState("");
 	const [role, setRole] = useState("");
 
 	return (
@@ -38,9 +38,9 @@ export const InviteMembers = ({ isDialogOpen, setIsDialogOpen }: InviteMembersPr
 							Name
 						</Label>
 						<Input
-							value={teamMemberName}
-							onChange={(e) => setTeamMemberName(e.target.value)}
-							placeholder="Team member name"
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+							placeholder="Enter team member's email"
 							className=""
 						/>
 					</div>

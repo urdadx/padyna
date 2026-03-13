@@ -1,0 +1,53 @@
+import { env } from "@padyna/env/server";
+
+interface MapLink {
+  url: string;
+  title?: string;
+  description?: string;
+}
+
+interface MapResponse {
+  success: boolean;
+  links: MapLink[];
+}
+
+export class MapError extends Error {
+  constructor(
+    message: string,
+    public statusCode?: number,
+  ) {
+    super(message);
+    this.name = "MapError";
+  }
+}
+
+export async function runMapWebsite(url: string, search?: string): Promise<MapLink[]> {
+  const scraperUrl = env.SCRAPER_URL;
+
+  const response = await fetch(`${scraperUrl}/v2/map`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url,
+      search,
+      sitemap: "include",
+      includeSubdomains: true,
+      ignoreQueryParameters: true,
+      limit: 100,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new MapError(`Failed to map website: ${response.statusText}`, response.status);
+  }
+
+  const result = (await response.json()) as MapResponse;
+
+  if (!result.success || !result.links) {
+    throw new MapError("Mapping failed or returned no data");
+  }
+
+  return result.links;
+}
