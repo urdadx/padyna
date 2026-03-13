@@ -22,6 +22,15 @@ export async function ingestLink(input: IngestLinkInput): Promise<IngestedLinkRe
   const urlHash = hashText(url);
 
   let datasourceId: string;
+  const scrapedContent = await runLinkScrape(url);
+  const contentText = scrapedContent.markdown || "";
+
+  if (!contentText) {
+    throw new Error("No content extracted from link");
+  }
+
+  const sizeBytes = new TextEncoder().encode(contentText).length;
+
   try {
     datasourceId = await createDatasourceRecord({
       chatbotId,
@@ -29,7 +38,7 @@ export async function ingestLink(input: IngestLinkInput): Promise<IngestedLinkRe
       sourceName: url,
       sourceType: "link",
       url,
-      sizeBytes: 0,
+      sizeBytes,
       mimeType: normalizeMimeType(url),
       contentHash: urlHash,
     });
@@ -45,13 +54,6 @@ export async function ingestLink(input: IngestLinkInput): Promise<IngestedLinkRe
   }
 
   try {
-    const scrapedContent = await runLinkScrape(url);
-    const contentText = scrapedContent.markdown || "";
-
-    if (!contentText) {
-      throw new Error("No content extracted from link");
-    }
-
     const contentHash = hashText(contentText);
     const charCount = contentText.length;
     const tokenCount = estimateContentTokens(contentText);

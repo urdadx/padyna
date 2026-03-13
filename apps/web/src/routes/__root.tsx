@@ -45,10 +45,10 @@ function RootComponent() {
 				defaultTheme="light"
 				disableTransitionOnChange
 				storageKey="vite-ui-theme">
-				<div className="grid h-svh grid-rows-[auto_1fr] overflow-hidden">
+				<div className="grid h-svh grid-rows-[auto_1fr]">
 					<Outlet />
 				</div>
-				<Toaster richColors />
+				<Toaster />
 			</ThemeProvider>
 			{/* <TanStackRouterDevtools position="bottom-left" /> */}
 			<ReactQueryDevtools position="bottom" buttonPosition="bottom-left" />

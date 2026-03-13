@@ -43,7 +43,7 @@ curl --request GET \
 # GET CRAWL STATUS RESPONSE
 
 {
-"status": "<string>",
+"status": "<string>", // The current status of the crawl. Can be scraping, completed, or failed.
 "total": 123,
 "completed": 123,
 "creditsUsed": 123,

@@ -47,6 +47,7 @@ export type Item = {
 	noReferenced: number;
 	status: "Synced" | "Processing" | "Failed";
 	type: "File" | "Text" | "Q&A" | "Link";
+	url?: string;
 };
 
 function formatBytes(bytes: number | null): string {
@@ -64,7 +65,8 @@ type DatasourceRow = {
 	ingestStatus: "pending" | "processing" | "synced" | "failed" | "archived";
 	timesReferenced: number;
 	sizeBytes: number | null;
-	lastSyncedAt: string | Date | null;
+	lastSyncedAt: Date | string | null;
+	url: string | null;
 };
 
 function mapDatasourceToItem(db: DatasourceRow): Item {
@@ -88,6 +90,7 @@ function mapDatasourceToItem(db: DatasourceRow): Item {
 					: db.sourceType === "qa"
 						? "Q&A"
 						: "Link",
+		url: db.url ?? undefined,
 	};
 }
 
@@ -248,7 +251,7 @@ export function DataSourceTable() {
 		<div className="space-y-4">
 			<div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-2">
 				<div className="flex w-full flex-col sm:flex-row items-start sm:items-center gap-2">
-					<div className="relative w-full sm:max-w-md">
+					<div className="relative w-full sm:max-w-sm">
 						<Input
 							placeholder="Search data sources..."
 							className="w-full h-9 pl-9"

@@ -18,11 +18,11 @@ export const ScrapeWebsite = ({ onSuccess }: ScrapeWebsiteProps) => {
 
 	const { mutate, isPending } = useMutation({
 		mutationFn: async (url: string) => {
-			const response = await api.post("/api/ingestion/link", { url });
+			const response = await api.post("/api/ingestion/scrape", { url });
 			return response.data;
 		},
 		onSuccess: (data) => {
-			toast.success(`Successfully ingested ${data.url}`);
+			toast.success(`Scraped ${data.url}`);
 			queryClient.invalidateQueries({
 				queryKey: trpc.datasource.getAll.queryOptions().queryKey,
 			});
@@ -40,7 +40,8 @@ export const ScrapeWebsite = ({ onSuccess }: ScrapeWebsiteProps) => {
 			toast.error("Please enter a URL");
 			return;
 		}
-		const fullUrl = `https://${urlInput.trim()}`;
+		const rawUrl = urlInput.trim();
+		const fullUrl = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
 		mutate(fullUrl);
 	};
 

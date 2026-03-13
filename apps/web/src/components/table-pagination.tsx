@@ -23,7 +23,7 @@ export function TablePagination<TData>({
 	const to = rowCount === 0 ? 0 : Math.min(pageIndex * pageSize + pageSize, rowCount);
 
 	return (
-		<div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 sm:gap-8">
+		<div className="flex  flex-wrap sm:flex-nowrap items-center justify-between gap-4 sm:gap-8">
 			<div className="flex items-center gap-1 order-2 sm:order-0 w-full sm:w-auto mt-2 sm:mt-0">
 				<Label className="max-sm:sr-only">Total size:</Label>
 				<span className="font-medium text-sm text-foreground sm:text-foreground">

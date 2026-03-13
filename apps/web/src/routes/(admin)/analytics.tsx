@@ -7,31 +7,31 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
 export const timeRangeSchema = z.object({
-	timeRange: z.enum(["24h", "7d", "30d", "90d"]).optional().default("24h"),
+  timeRange: z.enum(["24h", "7d", "30d", "90d"]).optional().default("24h"),
 });
 
 export const Route = createFileRoute("/(admin)/analytics")({
-	component: RouteComponent,
-	validateSearch: timeRangeSchema,
+  component: RouteComponent,
+  validateSearch: timeRangeSchema,
 });
 
 function RouteComponent() {
-	const { timeRange } = Route.useSearch();
-	const selectedTimeRange = (timeRange as "24h" | "7d" | "30d" | "90d") || "24h";
+  const { timeRange } = Route.useSearch();
+  const selectedTimeRange = (timeRange as "24h" | "7d" | "30d" | "90d") || "24h";
 
-	return (
-		<div className="relative w-full overflow-x-hidden">
-			<div className="w-full bg-background p-4 px-4 sm:px-6 lg:px-8 py-6">
-				<div className="max-w-7xl mx-auto ">
-					<AgentAnalytics />
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 py-6">
-						<CountryAnalytics visitorData={[]} />
-						<TopSources />
-						<TopPlatforms />
-						<TopTopics />
-					</div>
-				</div>
-			</div>
-		</div>
-	);
+  return (
+    <div className="relative w-full overflow-x-hidden">
+      <div className="w-full bg-background p-4 px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto ">
+          <AgentAnalytics />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 py-6">
+            <CountryAnalytics visitorData={[]} />
+            <TopSources />
+            <TopPlatforms />
+            <TopTopics />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

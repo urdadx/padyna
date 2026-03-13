@@ -34,7 +34,7 @@ export function WebSourceDialog({ open, onOpenChange }: WebSourceProps) {
 						<ScrapeWebsite onSuccess={() => onOpenChange(false)} />
 					</TabsContent>
 					<TabsContent value="crawl">
-						<CrawlWebsite onSuccess={() => onOpenChange(false)} />
+						<CrawlWebsite onStarted={() => onOpenChange(false)} />
 					</TabsContent>
 				</Tabs>
 			</DialogContent>

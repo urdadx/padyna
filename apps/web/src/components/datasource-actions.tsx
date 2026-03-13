@@ -18,16 +18,19 @@ import { toast } from "sonner";
 import { queryClient, trpc } from "@/utils/trpc";
 
 export const DataSourceActions = ({ item }: { item: Item }) => {
-	const { type, name } = item;
+	const { type, url } = item;
 	const [deleteOpen, setDeleteOpen] = useState(false);
 
 	const { mutate: recrawl, isPending: isRecrawling } = useMutation({
 		mutationFn: async () => {
-			const response = await api.post("/api/ingestion/link", { url: name });
+			const response = await api.post("/api/ingestion/scrape", { url: url });
 			return response.data;
 		},
+		onMutate: () => {
+			toast.loading("Recrawling...", { id: "recrawl-status" });
+		},
 		onSuccess: () => {
-			toast.info(`Recrawling`);
+			toast.info("Done", { id: "recrawl-status" });
 			queryClient.invalidateQueries({
 				queryKey: trpc.datasource.getAll.queryOptions().queryKey,
 			});
