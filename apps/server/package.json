@@ -20,6 +20,7 @@
     "ai": "^6.0.100",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
+    "drizzle-orm": "^0.45.1",
     "hono": "catalog:",
     "mammoth": "^1.10.0",
     "nanoid": "^5.1.6",

@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { ingestFiles } from "./ingestion/file/ingest-files";
 import { ingestLink, runMapWebsite } from "./ingestion/scrape";
 import { ingestCrawl, checkCrawlStatus, processCompletedCrawl } from "./ingestion/crawl";
+import { ingestQa, updateQa } from "./ingestion/qa";
+import { ingestText, updateText } from "./ingestion/text";
 import { authMiddleware } from "./middlewares/authMiddleware";
 
 type Variables = {
@@ -172,6 +174,162 @@ ingestionRoutes.get("/crawl/:id", async (c) => {
     return c.json(
       {
         message: error instanceof Error ? error.message : "Failed to get crawl status.",
+      },
+      500,
+    );
+  }
+});
+
+ingestionRoutes.post("/qa", async (c) => {
+  const session = c.get("session");
+  const activeChatbot = session.activeChatbot;
+  const activeOrganization = session.activeOrganization;
+
+  const body = await c.req.json();
+  const { question, answer } = body;
+
+  if (!question || !answer) {
+    return c.json(
+      {
+        message: "Question and answer are required.",
+      },
+      400,
+    );
+  }
+
+  try {
+    const result = await ingestQa({
+      question,
+      answer,
+      chatbotId: activeChatbot,
+      organizationId: activeOrganization,
+    });
+    return c.json(result);
+  } catch (error) {
+    console.error("Q&A ingestion error:", error);
+    return c.json(
+      {
+        message: error instanceof Error ? error.message : "Failed to ingest Q&A.",
+      },
+      500,
+    );
+  }
+});
+
+ingestionRoutes.post("/text", async (c) => {
+  const session = c.get("session");
+  const activeChatbot = session.activeChatbot;
+  const activeOrganization = session.activeOrganization;
+
+  const body = await c.req.json();
+  const { content, title } = body;
+
+  if (!content || !content.trim()) {
+    return c.json(
+      {
+        message: "Content is required.",
+      },
+      400,
+    );
+  }
+
+  try {
+    const result = await ingestText({
+      content,
+      title,
+      chatbotId: activeChatbot,
+      organizationId: activeOrganization,
+    });
+    return c.json(result);
+  } catch (error) {
+    console.error("Text ingestion error:", error);
+    return c.json(
+      {
+        message: error instanceof Error ? error.message : "Failed to ingest text.",
+      },
+      500,
+    );
+  }
+});
+
+ingestionRoutes.put("/qa/:id", async (c) => {
+  const id = c.req.param("id");
+
+  if (!id) {
+    return c.json(
+      {
+        message: "ID is required.",
+      },
+      400,
+    );
+  }
+
+  const body = await c.req.json();
+  const { question, answer } = body;
+
+  if (!question || !answer) {
+    return c.json(
+      {
+        message: "Question and answer are required.",
+      },
+      400,
+    );
+  }
+
+  try {
+    const result = await updateQa({
+      id,
+      question,
+      answer,
+    });
+    return c.json(result);
+  } catch (error) {
+    console.error("Q&A update error:", error);
+    return c.json(
+      {
+        message: error instanceof Error ? error.message : "Failed to update Q&A.",
+      },
+      500,
+    );
+  }
+});
+
+ingestionRoutes.put("/text/:id", async (c) => {
+  const id = c.req.param("id");
+
+  if (!id) {
+    return c.json(
+      {
+        message: "ID is required.",
+      },
+      400,
+    );
+  }
+
+  const body = await c.req.json();
+  const { content, title } = body;
+
+  if (!content || !content.trim()) {
+    return c.json(
+      {
+        message: "Content is required.",
+      },
+      400,
+    );
+  }
+
+  try {
+    const result = await updateText({
+      id,
+      content,
+      title,
+    });
+    return c.json(result);
+  } catch (error) {
+    console.error("Text update error:", error);
+    return c.json(
+      {
+        message: error instanceof Error ? error.message : "Failed to update text.",
       },
       500,
     );

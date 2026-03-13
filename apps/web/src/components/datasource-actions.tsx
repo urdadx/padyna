@@ -16,10 +16,14 @@ import { useMutation } from "@tanstack/react-query";
 import api from "../lib/api";
 import { toast } from "sonner";
 import { queryClient, trpc } from "@/utils/trpc";
+import { QASourceDialog } from "./onboarding/qa-source-dialog";
+import { TextSourceDialog } from "./onboarding/text-source-dialog";
 
 export const DataSourceActions = ({ item }: { item: Item }) => {
 	const { type, url } = item;
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [editQaOpen, setEditQaOpen] = useState(false);
+	const [editTextOpen, setEditTextOpen] = useState(false);
 
 	const { mutate: recrawl, isPending: isRecrawling } = useMutation({
 		mutationFn: async () => {
@@ -40,6 +44,46 @@ export const DataSourceActions = ({ item }: { item: Item }) => {
 		},
 	});
 
+	const { mutate: updateQa, isPending: isUpdatingQa } = useMutation({
+		mutationFn: async (data: { id: string; question: string; answer: string }) => {
+			const response = await api.put(`/api/ingestion/qa/${data.id}`, {
+				question: data.question,
+				answer: data.answer,
+			});
+			return response.data;
+		},
+		onSuccess: () => {
+			toast.success("Q&A updated successfully");
+			queryClient.invalidateQueries({
+				queryKey: trpc.datasource.getAll.queryOptions().queryKey,
+			});
+			setEditQaOpen(false);
+		},
+		onError: (error: any) => {
+			toast.error(error.response?.data?.message || "Failed to update Q&A");
+		},
+	});
+
+	const { mutate: updateText, isPending: isUpdatingText } = useMutation({
+		mutationFn: async (data: { id: string; content: string; title?: string }) => {
+			const response = await api.put(`/api/ingestion/text/${data.id}`, {
+				content: data.content,
+				title: data.title,
+			});
+			return response.data;
+		},
+		onSuccess: () => {
+			toast.success("Text source updated successfully");
+			queryClient.invalidateQueries({
+				queryKey: trpc.datasource.getAll.queryOptions().queryKey,
+			});
+			setEditTextOpen(false);
+		},
+		onError: (error: any) => {
+			toast.error(error.response?.data?.message || "Failed to update text source");
+		},
+	});
+
 	return (
 		<>
 			<DropdownMenu>
@@ -53,13 +97,22 @@ export const DataSourceActions = ({ item }: { item: Item }) => {
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
-					{type === "Q&A" ||
-						(type === "Text" && (
-							<DropdownMenuItem>
-								<PenLinear className="size-4" />
-								Edit source
-							</DropdownMenuItem>
-						))}
+					{type === "Q&A" && (
+						<DropdownMenuItem
+							onClick={() => setEditQaOpen(true)}
+						>
+							<PenLinear className="size-4" />
+							Edit source
+						</DropdownMenuItem>
+					)}
+					{type === "Text" && (
+						<DropdownMenuItem
+							onClick={() => setEditTextOpen(true)}
+						>
+							<PenLinear className="size-4" />
+							Edit source
+						</DropdownMenuItem>
+					)}
 					{type === "Link" && (
 						<DropdownMenuItem
 							onClick={() => {
@@ -83,6 +136,22 @@ export const DataSourceActions = ({ item }: { item: Item }) => {
 			</DropdownMenu>
 
 			<DeleteDataSource item={item} open={deleteOpen} onOpenChange={setDeleteOpen} />
+
+			{type === "Q&A" && (
+				<QASourceDialog
+					open={editQaOpen}
+					onOpenChange={setEditQaOpen}
+					defaultValues={{ id: item.id, question: item.question || "", answer: item.answer || "" }}
+				/>
+			)}
+
+			{type === "Text" && (
+				<TextSourceDialog
+					open={editTextOpen}
+					onOpenChange={setEditTextOpen}
+					defaultValues={{ id: item.id, title: item.name, content: item.contentText || "" }}
+				/>
+			)}
 		</>
 	);
 };

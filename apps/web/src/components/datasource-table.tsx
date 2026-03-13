@@ -48,6 +48,9 @@ export type Item = {
 	status: "Synced" | "Processing" | "Failed";
 	type: "File" | "Text" | "Q&A" | "Link";
 	url?: string;
+	question?: string;
+	answer?: string;
+	contentText?: string;
 };
 
 function formatBytes(bytes: number | null): string {
@@ -67,6 +70,9 @@ type DatasourceRow = {
 	sizeBytes: number | null;
 	lastSyncedAt: Date | string | null;
 	url: string | null;
+	question: string | null;
+	answer: string | null;
+	contentText: string | null;
 };
 
 function mapDatasourceToItem(db: DatasourceRow): Item {
@@ -91,6 +97,9 @@ function mapDatasourceToItem(db: DatasourceRow): Item {
 						? "Q&A"
 						: "Link",
 		url: db.url ?? undefined,
+		question: db.question ?? undefined,
+		answer: db.answer ?? undefined,
+		contentText: db.contentText ?? undefined,
 	};
 }
 

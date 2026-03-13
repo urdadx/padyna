@@ -12,8 +12,10 @@ interface CreateDatasourceInput {
   mimeType?: string;
   fileHash?: string;
   contentHash?: string;
-  sourceType?: "file" | "link";
+  sourceType?: "file" | "link" | "qa" | "text";
   url?: string;
+  question?: string;
+  answer?: string;
 }
 
 interface UpdateDatasourceSuccessInput {
@@ -40,7 +42,6 @@ interface InsertChunkInput {
 }
 
 export async function createDatasourceRecord(input: CreateDatasourceInput) {
-  // Check for existing record to update instead of create
   let existingId: string | undefined;
 
   if (input.sourceType === "link" && input.url) {
@@ -52,8 +53,6 @@ export async function createDatasourceRecord(input: CreateDatasourceInput) {
       existingId = existing.id;
     }
   } else if (input.fileHash) {
-    // If file hash is provided (binary hash), check against fileHash column
-    // This allows re-ingestion of same file even if contentHash (text hash) changed
     const existing = await db.query.datasources.findFirst({
       where: and(
         eq(datasources.chatbotId, input.chatbotId),
@@ -65,7 +64,6 @@ export async function createDatasourceRecord(input: CreateDatasourceInput) {
       existingId = existing.id;
     }
   } else if (input.contentHash) {
-    // Fallback for non-file sources checking contentHash
     const existing = await db.query.datasources.findFirst({
       where: and(
         eq(datasources.chatbotId, input.chatbotId),
@@ -79,7 +77,6 @@ export async function createDatasourceRecord(input: CreateDatasourceInput) {
   }
 
   if (existingId) {
-    // Update existing record
     await db
       .update(datasources)
       .set({
@@ -87,15 +84,14 @@ export async function createDatasourceRecord(input: CreateDatasourceInput) {
         lastErrorAt: null,
         errorMessage: null,
         updatedAt: new Date(),
-        // Update source name/mime type if provided
         ...(input.sourceName ? { sourceName: input.sourceName } : {}),
         ...(input.mimeType ? { mimeType: input.mimeType } : {}),
-        // Update fileHash if provided (e.g. if record existed but didn't have fileHash set)
         ...(input.fileHash ? { fileHash: input.fileHash } : {}),
+        ...(input.question ? { question: input.question } : {}),
+        ...(input.answer ? { answer: input.answer } : {}),
       })
       .where(eq(datasources.id, existingId));
 
-    // Clear old chunks to avoid duplication
     await db.delete(datasourceChunks).where(eq(datasourceChunks.datasourceId, existingId));
 
     return existingId;
@@ -115,6 +111,8 @@ export async function createDatasourceRecord(input: CreateDatasourceInput) {
       mimeType: input.mimeType,
       fileHash: input.fileHash,
       contentHash: input.contentHash ?? input.fileHash,
+      question: input.question,
+      answer: input.answer,
     })
     .returning({ id: datasources.id });
 
