@@ -6,8 +6,8 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { ScrapeWebsite } from "../scrape-website";
-import { CrawlWebsite } from "../crawl-website";
+import { ScrapeWebsite } from "../datasource/scrape-website";
+import { CrawlWebsite } from "../datasource/crawl-website";
 
 interface WebSourceProps {
 	open: boolean;

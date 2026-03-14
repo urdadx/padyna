@@ -1,5 +1,5 @@
 import { db } from "@padyna/db";
-import * as schema from "@padyna/db/schema/auth";
+import * as schema from "@padyna/db/schema/index";
 import { env } from "@padyna/env/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";

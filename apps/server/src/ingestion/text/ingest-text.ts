@@ -1,5 +1,5 @@
-import { chunkText, estimateContentTokens } from "../file/chunking";
-import { embedTexts } from "../file/embeddings";
+import { chunkText, estimateContentTokens } from "../chunking";
+import { embedTexts } from "../embeddings";
 import { hashText } from "../file/hash";
 import {
   createDatasourceRecord,

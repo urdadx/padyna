@@ -1,5 +1,5 @@
-import { chunkText, estimateContentTokens } from "./chunking";
-import { embedTexts } from "./embeddings";
+import { chunkText, estimateContentTokens } from "../chunking";
+import { embedTexts } from "../embeddings";
 import { extractFileContent } from "./extract-file-content";
 import { hashFile, hashText } from "./hash";
 import {

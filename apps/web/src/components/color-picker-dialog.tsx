@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HexColorPicker } from "react-colorful";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
@@ -15,12 +15,20 @@ import { Button } from "./ui/button";
 interface ColorPickerDialogProps {
   onColorSelect: (color: string) => void;
   isUpdating: boolean;
+  initialColor?: string;
 }
 
-export const ColorPickerDialog = ({ onColorSelect, isUpdating }: ColorPickerDialogProps) => {
-  const [color, setColor] = useState("#6366f1");
-  const [hexInput, setHexInput] = useState(color);
+export const ColorPickerDialog = ({ onColorSelect, isUpdating, initialColor }: ColorPickerDialogProps) => {
+  const [color, setColor] = useState(initialColor || "#6366f1");
+  const [hexInput, setHexInput] = useState(initialColor || "#6366f1");
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (initialColor) {
+      setColor(initialColor);
+      setHexInput(initialColor);
+    }
+  }, [initialColor]);
 
   const isValidHex = (hex: string) => {
     return /^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex);

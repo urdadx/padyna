@@ -13,7 +13,7 @@ import { Outlet } from "@tanstack/react-router";
 import { Navbar } from "./navbar";
 import { NavKnowledge } from "./nav-knowledge";
 import { HomeLinear } from "@/assets/icons/home-duotone";
-import { ChatbotSwitcher } from "./chatbot-switcher";
+import { ChatbotSwitcher } from "./agent/chatbot-switcher";
 import { HammerLinear } from "@/assets/icons/hammer-duotone";
 import { BoltLinear } from "@/assets/icons/bolt-duotone";
 import { NavActivity } from "./nav-activity";
@@ -26,12 +26,6 @@ import { DatabaseLinear } from "@/assets/icons/database-icon";
 import { NavPlayground } from "./nav-playground";
 
 const data = {
-	user: {
-		name: "Jack Maaye",
-		email: "kackmaay12@gmail.com",
-		avatar: "/avatars/alfred.jpg",
-	},
-
 	overview: [
 		{
 			title: "Overview",
@@ -53,8 +47,8 @@ const data = {
 			icon: DatabaseLinear,
 		},
 		// {
-		// 	title: "Coverage gaps",
-		// 	url: "/gaps",
+		// 	title: "Topics",
+		// 	url: "/topic",
 		// 	icon: SearchLinear,
 		// },
 	],
@@ -104,7 +98,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					<NavAccount items={data.account} />
 				</SidebarContent>
 				<SidebarFooter>
-					<NavUser user={data.user} />
+					<NavUser />
 				</SidebarFooter>
 			</Sidebar>
 			<SidebarInset className="min-h-0 flex flex-col">

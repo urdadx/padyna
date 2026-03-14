@@ -51,7 +51,7 @@ function RootComponent() {
 				<Toaster />
 			</ThemeProvider>
 			{/* <TanStackRouterDevtools position="bottom-left" /> */}
-			<ReactQueryDevtools position="bottom" buttonPosition="bottom-left" />
+			{/* <ReactQueryDevtools position="bottom" buttonPosition="bottom-left" /> */}
 		</>
 	);
 }

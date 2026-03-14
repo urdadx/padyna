@@ -1,7 +1,7 @@
-import { AnalyticsOverview } from "@/components/analytics/analytics-overview";
+import { AnalyticsOverview } from "@/components/overview/analytics-overview";
 import { SourcesOverview } from "@/components/analytics/sources-overview";
-import { MostRecentConversations } from "@/components/most-recent-conversations";
-import { Metrics } from "@/components/metrics";
+import { MostRecentConversations } from "@/components/overview/most-recent-conversations";
+import { Metrics } from "@/components/overview/metrics";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/(admin)/overview")({

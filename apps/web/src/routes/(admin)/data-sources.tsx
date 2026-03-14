@@ -1,4 +1,4 @@
-import { DataSourceTable } from "@/components/datasource-table";
+import { DataSourceTable } from "@/components/datasource/datasource-table";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/(admin)/data-sources")({

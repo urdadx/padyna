@@ -40,7 +40,7 @@ export const ChatHistorySidebar = ({
 	className,
 }: ChatHistorySidebarProps) => {
 	return (
-		<div className={cn("flex flex-col h-full rounded-2xl border bg-white", className)}>
+		<div className={cn("flex flex-col h-full rounded-xl border bg-white", className)}>
 			<div className=" px-6 pt-4">
 				<h1 className="text-2xl font-semibold">Chat logs</h1>
 			</div>

@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn, timeAgo } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -36,10 +36,6 @@ export const ChatLogItem = ({
 	const [currentStatus, setCurrentStatus] = useState(initialStatus);
 	const [isUpdating, setIsUpdating] = useState(false);
 
-	const formatMockDate = (dateStr: string) => {
-		return "2 hours ago";
-	};
-
 	const handleStatusChange = async (newStatus: string) => {
 		setIsUpdating(true);
 
@@ -75,7 +71,7 @@ export const ChatLogItem = ({
 					<h3 className="text-sm font-sans line-clamp-1">
 						{title || "Untitled Chat"}
 					</h3>
-					<p className="text-xs text-gray-500 mt-1">{formatMockDate(date)}</p>
+					<p className="text-xs text-gray-500 mt-1">{timeAgo(date)}</p>
 				</div>
 
 				<div className="flex items-center space-x-2 shrink-0">

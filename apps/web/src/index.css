@@ -244,6 +244,18 @@
   background: #cfcece;
 }
 
+@media (min-width: 1024px) {
+  .onboarding-height {
+    height: 90vh;
+  }
+}
+
+@media (min-width: 1450px) {
+  .onboarding-height {
+    height: 70vh;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

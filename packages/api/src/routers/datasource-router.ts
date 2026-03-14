@@ -5,6 +5,28 @@ import { eq, and, desc } from "drizzle-orm";
 import { datasources, datasourceChunks } from "@padyna/db/schema/index";
 
 export const datasourceRouter = router({
+  getSourceCounts: protectedProcedure.query(async ({ ctx }) => {
+    const organizationId = ctx.session.session.activeOrganization;
+    const chatbotId = ctx.session.session.activeChatbot;
+    if (!organizationId || !chatbotId) {
+      return { file: 0, text: 0, link: 0, qa: 0 };
+    }
+
+    const result = await db
+      .select({ sourceType: datasources.sourceType })
+      .from(datasources)
+      .where(
+        and(eq(datasources.chatbotId, chatbotId), eq(datasources.organizationId, organizationId)),
+      );
+
+    return {
+      file: result.filter((r) => r.sourceType === "file").length,
+      text: result.filter((r) => r.sourceType === "text").length,
+      link: result.filter((r) => r.sourceType === "link").length,
+      qa: result.filter((r) => r.sourceType === "qa").length,
+    };
+  }),
+
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const organizationId = ctx.session.session.activeOrganization;
     const chatbotId = ctx.session.session.activeChatbot;

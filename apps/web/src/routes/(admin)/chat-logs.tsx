@@ -20,7 +20,7 @@ function RouteComponent() {
 				/>
 				<ChatConversationPanel
 					chatId={selectedChatId}
-					className="relative flex-1 h-full bg-white border rounded-2xl flex flex-col min-h-0"
+					className="relative flex-1 h-full bg-white border rounded-xl flex flex-col min-h-0"
 				/>
 			</div>
 		</div>

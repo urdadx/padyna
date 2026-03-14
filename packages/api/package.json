@@ -18,6 +18,7 @@
     "@trpc/server": "catalog:",
     "dotenv": "catalog:",
     "drizzle-orm": "^0.45.1",
+    "nanoid": "^5.1.6",
     "zod": "catalog:"
   },
   "devDependencies": {

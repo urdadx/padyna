@@ -51,6 +51,9 @@ export function QASourceDialog({ open, onOpenChange, defaultValues }: QASourceDi
 			queryClient.invalidateQueries({
 				queryKey: trpc.datasource.getAll.queryOptions().queryKey,
 			});
+			queryClient.invalidateQueries({
+				queryKey: trpc.datasource.getSourceCounts.queryOptions().queryKey,
+			});
 			onOpenChange(false);
 		},
 		onError: (error: any) => {
