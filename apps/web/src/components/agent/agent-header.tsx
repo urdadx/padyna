@@ -12,9 +12,10 @@ interface Chatbot {
 interface AgentHeaderProps {
 	chatbot?: Chatbot | null;
 	isLoading?: boolean;
+	onReset?: () => void;
 }
 
-export const AgentHeader = ({ chatbot, isLoading }: AgentHeaderProps) => {
+export const AgentHeader = ({ chatbot, isLoading, onReset }: AgentHeaderProps) => {
 	return (
 		<div className="flex h-16 items-center justify-between border-b px-5">
 			<div className="flex items-center gap-3">
@@ -46,6 +47,7 @@ export const AgentHeader = ({ chatbot, isLoading }: AgentHeaderProps) => {
 				variant="ghost"
 				size="icon-sm"
 				type="button"
+				onClick={onReset}
 				aria-label="Reset conversation">
 				<RestartLinear color="black" className="size-5" />
 			</Button>

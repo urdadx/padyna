@@ -1,0 +1,40 @@
+import { createAgentUIStreamResponse } from "ai";
+import { Hono } from "hono";
+import { authMiddleware } from "../middlewares/authMiddleware";
+import { createSupportChatAgent } from "./agent";
+
+type Variables = {
+  user: any;
+  session: any;
+};
+
+export const chatRoutes = new Hono<{ Variables: Variables }>();
+
+chatRoutes.use(authMiddleware);
+
+chatRoutes.post("/", async (c) => {
+  const session = c.get("session");
+  const activeChatbot = session.activeChatbot;
+  const activeOrganization = session.activeOrganization;
+
+  if (!activeChatbot || !activeOrganization) {
+    return c.json({ message: "No active chatbot or organization" }, 400);
+  }
+
+  const body = await c.req.json();
+  const uiMessages = body.messages;
+
+  if (!Array.isArray(uiMessages)) {
+    return c.json({ message: "messages must be an array" }, 400);
+  }
+
+  const agent = createSupportChatAgent({
+    chatbotId: activeChatbot,
+    organizationId: activeOrganization,
+  });
+
+  return createAgentUIStreamResponse({
+    agent,
+    uiMessages,
+  });
+});

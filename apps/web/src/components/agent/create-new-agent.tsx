@@ -32,8 +32,6 @@ export const CreateNewAgent = ({ open, onOpenChange }: CreateNewAgentProps) => {
 				queryKey: trpc.agentsettings.getAllChatbots.queryOptions().queryKey,
 			});
 			onOpenChange(false);
-			setAgentName("");
-			setUseCase("support");
 		},
 	});
 

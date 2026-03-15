@@ -3,16 +3,26 @@ import {
 	ConversationContent,
 	ConversationScrollButton,
 } from "../ai-elements/conversation";
+
 import { Message, MessageContent, MessageResponse } from "../ai-elements/message";
+import { Shimmer } from "../ai-elements/shimmer";
+import { Suggestion, Suggestions } from "../ai-elements/suggestion";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { PlaneBold } from "@/assets/icons/plane-icon";
 import { AgentHeader } from "./agent-header";
 import { useSession } from "@/lib/auth-client";
+import { env } from "@padyna/env/web";
 import { trpc } from "@/utils/trpc";
 import { useQuery } from "@tanstack/react-query";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import { useMemo, useState } from "react";
+import { PureMessages } from "./pure-messages";
+import { AlertCircleIcon } from "lucide-react";
 
 export function AgentPreviewPanel() {
+	const [input, setInput] = useState("");
 	const { data: session } = useSession();
 	const chatbotId = session?.session.activeChatbot;
 
@@ -26,54 +36,138 @@ export function AgentPreviewPanel() {
 	const primaryColor = chatbot?.primaryColor || "#6366f1";
 	const suggestedMessages = chatbot?.suggestedMessages || [];
 
+	const transport = useMemo(
+		() =>
+			new DefaultChatTransport({
+				api: `${env.VITE_SERVER_URL}/api/chat`,
+				credentials: "include",
+			}),
+		[],
+	);
+
+	const { messages, setMessages, sendMessage, status } = useChat({ transport });
+
+	const isStreaming = status === "streaming";
+	const showThinking = status === "submitted";
+	const isError = status === "error";
+	const isReady = status === "ready";
+
+	const resetConversation = () => {
+		setInput("");
+		setMessages([]);
+	};
+
+	const submitMessage = async (text: string) => {
+		const next = text.trim();
+		if (!next || isStreaming) {
+			return;
+		}
+
+		setInput("");
+		await sendMessage({ text: next });
+	};
+
+	const borderStyle = {
+		"--ring": primaryColor,
+	} as Record<string, string>;
+
 	return (
-		<div className="relative grid h-full w-full place-items-center px-4 py-6 md:px-8">
-			<div className="mx-auto flex h-full w-full max-w-102 items-center justify-center">
+		<div className="relative grid h-full min-h-0 w-full place-items-center px-4 py-6 md:px-8">
+			<div className="mx-auto flex h-full min-h-0 w-full max-w-102 items-center justify-center">
 				<div
-					className="flex h-full max-h-183 w-full flex-col rounded-xl border bg-background"
-					style={{
-						"--primary": primaryColor,
-					} as React.CSSProperties}>
-					<AgentHeader chatbot={chatbot} isLoading={isLoading} />
-					<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-						<Conversation className="px-2 py-4">
-							<ConversationContent className="gap-4 px-0 py-0">
-								<Message from={"assistant"}>
-									<MessageContent
-										className="rounded-lg bg-muted px-4 py-3 leading-6 text-foreground max-w-[85%]">
-										<MessageResponse className="**:text-inherit">
-											{initialMessage}
-										</MessageResponse>
-									</MessageContent>
-								</Message>
+					className="flex h-full min-h-0 max-h-183 w-full flex-col rounded-xl border bg-background"
+					style={
+						{
+							"--primary": primaryColor,
+						} as React.CSSProperties
+					}>
+					<AgentHeader
+						chatbot={chatbot}
+						isLoading={isLoading}
+						onReset={resetConversation}
+					/>
+					<div className="flex min-h-0 flex-1 flex-col overflow-hidden smooth-div">
+						<Conversation className="min-h-0 py-4">
+							<ConversationContent className="gap-4 px-4 py-0">
+								{messages.length === 0 ? (
+									<Message from={"assistant"}>
+										<MessageContent className="max-w-[85%] rounded-lg bg-muted px-4 py-3 leading-6 text-foreground">
+											<MessageResponse className="**:text-inherit">
+												{initialMessage}
+											</MessageResponse>
+										</MessageContent>
+									</Message>
+								) : (
+									<PureMessages
+										messages={messages}
+										isReady={isReady}
+									/>
+								)}
+								{showThinking && (
+									<Shimmer className="text-sm">
+										Thinking
+									</Shimmer>
+								)}
+								{isError && (
+									<div className="rounded-md bg-red-50 p-4">
+										<div className="flex gap-2">
+											<AlertCircleIcon
+												className="h-5 w-5 shrink-0 text-red-800"
+												aria-hidden="true"
+											/>
+											<h3 className="text-sm font-sans font-normal text-red-800">
+												Something went wrong. Please
+												try again.
+											</h3>
+										</div>
+									</div>
+								)}
 							</ConversationContent>
 							<ConversationScrollButton />
 						</Conversation>
 
 						{suggestedMessages.length > 0 && (
-							<div className="flex flex-wrap gap-2 px-4 pb-2">
-								{suggestedMessages.map((msg, idx) => (
-									<Button
-										key={idx}
-										variant="outline"
-										size="sm"
-										className="text-xs text-muted-foreground">
-										{msg}
-									</Button>
-								))}
+							<div className="px-4 bg-gray-50/40 py-2 border-t">
+								<Suggestions>
+									{suggestedMessages.map((msg, idx) => (
+										<Suggestion
+											key={`${msg}-${idx}`}
+											suggestion={msg}
+											disabled={isStreaming}
+											onClick={(suggestion) => {
+												void submitMessage(
+													suggestion,
+												);
+											}}
+										/>
+									))}
+								</Suggestions>
 							</div>
 						)}
 
-						<div className="border-t rounded-b-xl px-4 py-4 bg-gray-50">
-							<div className="flex items-end gap-2">
+						<div className="rounded-b-xl px-4 pb-4 bg-gray-50/40">
+							<form
+								className="flex items-end gap-2"
+								onSubmit={(event) => {
+									event.preventDefault();
+									void submitMessage(input);
+								}}>
 								<Input
-									className="bg-white"
-									placeholder="Type your message here..."
+									style={borderStyle}
+									className="bg-white focus-visible:ring-ring"
+									placeholder="Ask me anything..."
+									value={input}
+									onChange={(event) =>
+										setInput(event.target.value)
+									}
 								/>
-								<Button type="button" aria-label="Send message">
+								<Button
+									type="submit"
+									aria-label="Send message"
+									disabled={isStreaming || !input.trim()}>
 									<PlaneBold color="white" className="size-4" />
 								</Button>
-							</div>
+							</form>
 							{!hidePoweredBy && (
 								<p className="mt-3 text-center text-xs text-muted-foreground">
 									Powered by Padyna

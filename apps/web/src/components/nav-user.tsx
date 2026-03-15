@@ -1,5 +1,5 @@
 import { ChevronsUpDown } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -15,19 +15,40 @@ import { authClient, useSession } from "@/lib/auth-client";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { SwitchTeamsDialog } from "./team/switch-teams-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function NavUser() {
 	const navigate = useNavigate();
 	const [showTeamSwitcher, setShowTeamSwitcher] = useState(false);
 
-	const { data: session } = useSession();
+	const { data: session, isPending } = useSession();
+
+	if (isPending) {
+		return (
+			<SidebarMenu>
+				<SidebarMenuItem className="w-full">
+					<div className="flex items-center gap-2 p-2 w-full">
+						<Skeleton className="h-8 w-8 rounded-lg" />
+						<div className="flex flex-col gap-1 flex-1">
+							<Skeleton className="h-3 w-20" />
+							<Skeleton className="h-2 w-28" />
+						</div>
+						<Skeleton className="h-4 w-4" />
+					</div>
+				</SidebarMenuItem>
+			</SidebarMenu>
+		);
+	}
+
 	const user = session?.user || { name: "User", email: "", image: "" };
 
 	const handleLogout = async () => {
 		await authClient.signOut({
 			fetchOptions: {
 				onSuccess: () => {
-					window.location.href = "/login";
+					navigate({
+						to: "/login",
+					});
 				},
 			},
 		});
@@ -51,9 +72,6 @@ export function NavUser() {
 										alt={user.name}
 										className="rounded-lg w-full h-full"
 									/>
-									<AvatarFallback className="rounded-lg">
-										{user.name.charAt(0).toUpperCase()}
-									</AvatarFallback>
 								</Avatar>
 								<div className="grid flex-1 text-left text-sm leading-tight">
 									<span className="truncate font-medium">

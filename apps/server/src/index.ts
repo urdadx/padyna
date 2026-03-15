@@ -7,6 +7,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { ingestionRoutes } from "./ingestion-routes";
+import { chatRoutes } from "./chat";
 
 const app = new Hono();
 
@@ -24,6 +25,7 @@ app.use(
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 app.route("/api/ingestion", ingestionRoutes);
+app.route("/api/chat", chatRoutes);
 
 app.use(
   "/trpc/*",

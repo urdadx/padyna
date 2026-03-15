@@ -1,5 +1,6 @@
 import {
   bigint,
+  customType,
   index,
   integer,
   jsonb,
@@ -10,9 +11,26 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 import { chatbot } from "./chatbot";
 import { organization } from "./organization";
+
+const vector = customType<{ data: number[]; driverData: string; config: { dimensions?: number } }>({
+  dataType(config) {
+    return config?.dimensions ? `vector(${config.dimensions})` : "vector";
+  },
+  toDriver(value) {
+    return `[${value.join(",")}]`;
+  },
+  fromDriver(value) {
+    return value
+      .slice(1, -1)
+      .split(",")
+      .filter(Boolean)
+      .map((part) => Number(part));
+  },
+});
 
 export const datasources = pgTable(
   "datasources",
@@ -81,6 +99,15 @@ export const datasources = pgTable(
     index("datasources_ingest_status_idx").on(table.ingestStatus),
     index("datasources_source_type_idx").on(table.sourceType),
     index("datasources_last_synced_at_idx").on(table.lastSyncedAt),
+    index("datasources_fulltext_search_idx").using(
+      "gin",
+      sql`(
+        setweight(to_tsvector('simple', coalesce(${table.sourceName}, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(${table.question}, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(${table.answer}, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(${table.contentText}, '')), 'B')
+      )`,
+    ),
   ],
 );
 
@@ -105,7 +132,7 @@ export const datasourceChunks = pgTable(
     tokenCount: integer("token_count"),
     charCount: integer("char_count"),
 
-    embedding: jsonb("embedding").$type<number[]>(),
+    embedding: vector("embedding", { dimensions: 1536 }),
     embeddingModel: text("embedding_model"),
     embeddingDimensions: integer("embedding_dimensions"),
     lastEmbeddedAt: timestamp("last_embedded_at"),
@@ -122,6 +149,10 @@ export const datasourceChunks = pgTable(
     index("datasource_chunks_datasource_id_idx").on(table.datasourceId),
     index("datasource_chunks_chatbot_id_idx").on(table.chatbotId),
     index("datasource_chunks_organization_id_idx").on(table.organizationId),
+    index("datasource_chunks_embedding_cosine_idx").using(
+      "ivfflat",
+      sql`${table.embedding} vector_cosine_ops`,
+    ),
     uniqueIndex("datasource_chunks_datasource_chunk_index_uidx").on(
       table.datasourceId,
       table.chunkIndex,

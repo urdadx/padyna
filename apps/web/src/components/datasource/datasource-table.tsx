@@ -223,7 +223,10 @@ export function DataSourceTable() {
 
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-	const { data: datasources, isLoading } = useQuery(trpc.datasource.getAll.queryOptions());
+	const { data: datasources, isLoading } = useQuery({
+		...trpc.datasource.getAll.queryOptions(),
+		refetchOnMount: true,
+	});
 
 	const tableData = useMemo(() => datasources?.map(mapDatasourceToItem) ?? [], [datasources]);
 	const totalSize = useMemo(

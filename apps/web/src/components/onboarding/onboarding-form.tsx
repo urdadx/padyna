@@ -23,13 +23,13 @@ export function OnboardingForm({ className, ...props }: React.ComponentProps<"di
 	return (
 		<div
 			className={cn(
-				"flex flex-col gap-6 h-full border rounded-xl onboarding-height overflow-hidden justify-center",
+				"flex h-full min-h-0 flex-col justify-center gap-6 overflow-hidden rounded-xl border onboarding-height",
 				className,
 			)}
 			{...props}>
-			<Card className="overflow-hidden p-0 onboarding-height rounded-none border-0">
-				<CardContent className="grid p-0 md:grid-cols-2 h-full">
-					<div className="relative overflow-hidden h-full">
+			<Card className="h-full min-h-0 overflow-hidden rounded-none border-0 p-0 onboarding-height">
+				<CardContent className="grid h-full min-h-0 p-0 md:grid-cols-2">
+					<div className="relative h-full min-h-0 overflow-hidden">
 						<AnimatePresence mode="wait">
 							{currentStep === "one" && (
 								<motion.div
@@ -41,7 +41,7 @@ export function OnboardingForm({ className, ...props }: React.ComponentProps<"di
 										duration: 0.1,
 										ease: "easeOut",
 									}}
-									className="h-full">
+									className="h-full min-h-0">
 									<StepOne onContinue={() => setStep("two")} />
 								</motion.div>
 							)}
@@ -55,7 +55,7 @@ export function OnboardingForm({ className, ...props }: React.ComponentProps<"di
 										duration: 0.1,
 										ease: "easeOut",
 									}}
-									className="h-full">
+									className="h-full min-h-0">
 									<StepTwo
 										onBack={() => setStep("one")}
 										onContinue={() => setStep("three")}
@@ -72,13 +72,13 @@ export function OnboardingForm({ className, ...props }: React.ComponentProps<"di
 										duration: 0.1,
 										ease: "easeOut",
 									}}
-									className="h-full">
+									className="h-full min-h-0">
 									<StepThree onBack={() => setStep("two")} />
 								</motion.div>
 							)}
 						</AnimatePresence>
 					</div>
-					<div className="relative hidden h-full border-l md:block bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[24px_24px]">
+					<div className="relative hidden h-full min-h-0 border-l bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[24px_24px] md:block">
 						<img
 							src={OnboardingImage}
 							alt="Image"
@@ -95,7 +95,7 @@ export function OnboardingForm({ className, ...props }: React.ComponentProps<"di
 									duration: 0.1,
 									ease: "easeIn",
 								}}
-								className="h-full">
+								className="h-full min-h-0">
 								<AgentPreviewPanel />
 							</motion.div>
 						)}

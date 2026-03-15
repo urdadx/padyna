@@ -5,7 +5,6 @@ import { ColorPickerDialog } from "../color-picker-dialog";
 import { MoreHorizontal } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import PadynaLogo from "@/assets/images/logo.svg";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import {
 	AlertDialog,
@@ -31,25 +30,25 @@ import { RestartLinear } from "@/assets/icons/restart-icon";
 import { useSession } from "@/lib/auth-client";
 import { queryClient, trpc } from "@/utils/trpc";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import Spinner from "../ui/spinner";
 import { AGENT_USECASES } from "../agent/agent-settings";
 
 export const StepThree = ({ onBack }: { onBack: () => void }) => {
 	const [agentName, setAgentName] = useState("");
-	const [_primaryColor, setPrimaryColor] = useState("#000000");
-	const [agentIcon, setAgentIcon] = useState(PadynaLogo);
+	const [primaryColor, setPrimaryColor] = useState("");
+	const [agentIcon, setAgentIcon] = useState("");
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [usecase, setUsecase] = useState<"support" | "technical" | "sales">("support");
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const { data: session } = useSession();
-	const navigate = useNavigate();
-
 	const chatbotId = session?.session.activeChatbot;
+
+	const navigate = useNavigate();
 
 	const { data: chatbot } = useQuery({
 		...trpc.agentsettings.getChatbot.queryOptions({ id: chatbotId! }),
 		enabled: !!chatbotId,
+		refetchOnMount: true,
 	});
 
 	const updateMutation = useMutation({
@@ -59,17 +58,30 @@ export const StepThree = ({ onBack }: { onBack: () => void }) => {
 				queryKey: trpc.agentsettings.getChatbot.queryOptions({ id: chatbotId! })
 					.queryKey,
 			});
-			navigate({
-				to: "/onboarding/pricing",
-			});
 		},
 	});
+
+	const saveChanges = (
+		name?: string,
+		image?: string,
+		color?: string,
+		usecaseValue?: "support" | "technical" | "sales",
+	) => {
+		if (!chatbotId) return;
+		updateMutation.mutate({
+			id: chatbotId,
+			name: name ?? agentName,
+			image: (image ?? agentIcon) || undefined,
+			primaryColor: color ?? primaryColor,
+			usecase: usecaseValue ?? usecase,
+		});
+	};
 
 	useEffect(() => {
 		if (chatbot) {
 			setAgentName(chatbot.name || "");
 			setPrimaryColor(chatbot.primaryColor || "#6366f1");
-			setAgentIcon(chatbot.image || PadynaLogo);
+			setAgentIcon(chatbot.image || "");
 			setUsecase(chatbot.usecase || "support");
 		}
 	}, [chatbot]);
@@ -80,7 +92,9 @@ export const StepThree = ({ onBack }: { onBack: () => void }) => {
 			const reader = new FileReader();
 			reader.onload = (event) => {
 				if (event.target?.result) {
-					setAgentIcon(event.target.result as string);
+					const newIcon = event.target.result as string;
+					setAgentIcon(newIcon);
+					saveChanges(undefined, newIcon);
 				}
 			};
 			reader.readAsDataURL(file);
@@ -90,29 +104,26 @@ export const StepThree = ({ onBack }: { onBack: () => void }) => {
 	const handleDeleteIcon = () => {
 		setAgentIcon("");
 		setIsDeleteDialogOpen(false);
+		saveChanges(undefined, "");
 	};
 
 	const handleContinue = () => {
-		if (!chatbotId) return;
-		updateMutation.mutate({
-			id: chatbotId,
-			name: agentName,
-			image: agentIcon || undefined,
-			primaryColor: _primaryColor,
-			usecase,
+		navigate({
+			to: "/onboarding/pricing",
 		});
 	};
 
 	return (
-		<div className="p-6 sm:p-10 sm:pt-14  flex flex-col justify-center h-full max-w-lg mx-auto w-full relative">
-			<div className="flex flex-col gap-2 mb-6 ">
+		<div className="relative mx-auto flex h-full min-h-0 w-full max-w-lg flex-col p-6 sm:p-10 sm:pt-14">
+			<div className="mb-6 min-h-0 flex-1 overflow-y-auto pr-1">
+				<div className="flex flex-col gap-2">
 				<h1 className="text-3xl font-semibold">Customize your agent</h1>
 				<p className="text-muted-foreground leading-relaxed">
 					Style your AI agent to match your brand. You can customize it further
 					in the settings later.
 				</p>
 
-				<div className="flex flex-col gap-5 mt-4">
+				<div className="mt-4 flex flex-col gap-5">
 					<div className="flex flex-col gap-3">
 						<Label className="text-muted-foreground font-medium">
 							Agent name
@@ -120,6 +131,7 @@ export const StepThree = ({ onBack }: { onBack: () => void }) => {
 						<Input
 							value={agentName}
 							onChange={(e) => setAgentName(e.target.value)}
+							onBlur={() => saveChanges(agentName)}
 							placeholder="Padyna Assistant"
 							className=""
 						/>
@@ -127,12 +139,20 @@ export const StepThree = ({ onBack }: { onBack: () => void }) => {
 
 					<div className="flex items-center justify-between">
 						<Label className="text-muted-foreground font-medium">
-							Primary color
+							Brand color
 						</Label>
 						<div className="flex items-center gap-2">
 							<div className="flex items-center gap-2">
 								<ColorPickerDialog
-									onColorSelect={setPrimaryColor}
+									initialColor={primaryColor}
+									onColorSelect={(color) => {
+										setPrimaryColor(color);
+										saveChanges(
+											undefined,
+											undefined,
+											color,
+										);
+									}}
 									isUpdating={false}
 								/>
 							</div>
@@ -146,11 +166,12 @@ export const StepThree = ({ onBack }: { onBack: () => void }) => {
 						<Select
 							items={AGENT_USECASES}
 							value={usecase}
-							onValueChange={(value) =>
+							onValueChange={(value) => {
 								setUsecase(
 									value as "support" | "technical" | "sales",
-								)
-							}>
+								);
+								saveChanges();
+							}}>
 							<SelectTrigger className="w-full">
 								<SelectValue placeholder="Select use case" />
 							</SelectTrigger>
@@ -254,20 +275,12 @@ export const StepThree = ({ onBack }: { onBack: () => void }) => {
 						</AlertDialogFooter>
 					</AlertDialogContent>
 				</AlertDialog>
+				</div>
 			</div>
 
 			<div className="flex flex-col gap-2">
-				<Button
-					onClick={handleContinue}
-					type="button"
-					disabled={updateMutation.isPending}>
-					{updateMutation.isPending ? (
-						<>
-							<Spinner color="white" /> Saving...
-						</>
-					) : (
-						"I like this"
-					)}
+				<Button onClick={handleContinue} type="button">
+					Continue
 				</Button>
 				<Button
 					className="text-gray-500"

@@ -64,7 +64,7 @@ const data = {
 			icon: ChartLinear,
 		},
 		{
-			title: "Custom actions",
+			title: "Agent workflows",
 			url: "/actions",
 			icon: BoltLinear,
 		},
