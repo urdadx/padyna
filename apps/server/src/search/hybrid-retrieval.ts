@@ -119,7 +119,9 @@ async function loadChunksForDatasources(
   return results;
 }
 
-export async function retrieveHybridChunks(input: HybridRetrievalInput): Promise<HybridRetrievedChunk[]> {
+export async function retrieveHybridChunks(
+  input: HybridRetrievalInput,
+): Promise<HybridRetrievedChunk[]> {
   const query = normalizeQuery(input.query);
   if (!query) {
     return [];
@@ -175,7 +177,9 @@ export async function retrieveHybridChunks(input: HybridRetrievalInput): Promise
     .sort((a, b) => b.score - a.score)
     .filter((row, index, list) => index === list.findIndex((item) => item.chunkId === row.chunkId));
 
-  const datasourceRank = new Map(fullTextDatasources.map((row, index) => [row.datasourceId, index + 1]));
+  const datasourceRank = new Map(
+    fullTextDatasources.map((row, index) => [row.datasourceId, index + 1]),
+  );
   const datasourceScore = new Map(fullTextDatasources.map((row) => [row.datasourceId, row.score]));
 
   const ftsRanked = ftsChunks
@@ -205,7 +209,13 @@ export async function retrieveHybridChunks(input: HybridRetrievalInput): Promise
     ftsScoreByChunk.set(row.chunkId, row.score);
   });
 
-  const metadataByChunk = new Map<string, Omit<HybridRetrievedChunk, "fusedScore" | "semanticScore" | "fullTextScore" | "semanticRank" | "fullTextRank">>();
+  const metadataByChunk = new Map<
+    string,
+    Omit<
+      HybridRetrievedChunk,
+      "fusedScore" | "semanticScore" | "fullTextScore" | "semanticRank" | "fullTextRank"
+    >
+  >();
   for (const row of semanticMerged) {
     metadataByChunk.set(row.chunkId, {
       chunkId: row.chunkId,
@@ -229,10 +239,7 @@ export async function retrieveHybridChunks(input: HybridRetrievalInput): Promise
     }
   }
 
-  const chunkIds = new Set<string>([
-    ...semanticRankByChunk.keys(),
-    ...ftsRankByChunk.keys(),
-  ]);
+  const chunkIds = new Set<string>([...semanticRankByChunk.keys(), ...ftsRankByChunk.keys()]);
 
   const ranked = Array.from(chunkIds)
     .map((chunkId) => {

@@ -7,33 +7,8 @@ import {
 } from "./chat-container";
 import { ChatLinear } from "@/assets/icons/chat-icon";
 import { ChatHeader } from "./chat-header";
-
-const MOCK_MESSAGES: Record<string, any[]> = {
-	"1": [
-		{
-			id: "m1",
-			role: "user",
-			content: "Hi, how do I use the platform?",
-		},
-		{
-			id: "m2",
-			role: "assistant",
-			content: "Welcome! You can start by exploring the dashboard. Would you like a guided tour or have a specific question?",
-		},
-	],
-	"2": [
-		{
-			id: "m3",
-			role: "user",
-			content: "What are the pricing options?",
-		},
-		{
-			id: "m4",
-			role: "assistant",
-			content: "We have three tiers: Free, Pro ($19/mo), and Enterprise. You can find more details in the billing section.",
-		},
-	],
-};
+import { useQuery } from "@tanstack/react-query";
+import { trpc } from "@/utils/trpc";
 
 interface ChatConversationPanelProps {
 	chatId?: string;
@@ -41,7 +16,11 @@ interface ChatConversationPanelProps {
 }
 
 export const ChatConversationPanel = ({ chatId, className }: ChatConversationPanelProps) => {
-	const messages = chatId ? MOCK_MESSAGES[chatId] || [] : [];
+	const { data: messages, isLoading } = useQuery({
+		...trpc.conversations.getMessages.queryOptions({ conversationId: chatId! }),
+		enabled: !!chatId,
+		refetchOnMount: true,
+	});
 
 	if (!chatId) {
 		return (
@@ -78,20 +57,37 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 				<ChatContainerContent className="">
 					<ChatHeader />
 					<div className="flex flex-col gap-4">
-						{messages.map((message) => (
-							<Message key={message.id} from={message.role}>
-								<MessageContent>
-									<MessageResponse
-										className={cn(
-											message.role === "user"
-												? ""
-												: "bg-primary p-3 rounded-lg border-primary text-white",
-										)}>
-										{message.content}
-									</MessageResponse>
-								</MessageContent>
-							</Message>
-						))}
+						{isLoading ? (
+							<div className="p-4 text-center text-muted-foreground">
+								Loading messages...
+							</div>
+						) : messages && messages.length > 0 ? (
+							messages.map((message) => (
+								<Message
+									key={message.id}
+									from={
+										message.role as
+											| "user"
+											| "assistant"
+											| "system"
+									}>
+									<MessageContent>
+										<MessageResponse
+											className={cn(
+												message.role === "user"
+													? ""
+													: "bg-primary p-3 rounded-lg border-primary text-white",
+											)}>
+											{message.contentText}
+										</MessageResponse>
+									</MessageContent>
+								</Message>
+							))
+						) : (
+							<div className="p-4 text-center text-muted-foreground">
+								No messages in this conversation
+							</div>
+						)}
 					</div>
 					<ChatContainerScrollAnchor />
 				</ChatContainerContent>

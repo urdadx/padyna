@@ -27,6 +27,25 @@ export const datasourceRouter = router({
     };
   }),
 
+  getMostReferenced: protectedProcedure.query(async ({ ctx }) => {
+    const organizationId = ctx.session.session.activeOrganization;
+    const chatbotId = ctx.session.session.activeChatbot;
+    if (!organizationId || !chatbotId) {
+      return [];
+    }
+
+    const result = await db
+      .select()
+      .from(datasources)
+      .where(
+        and(eq(datasources.chatbotId, chatbotId), eq(datasources.organizationId, organizationId)),
+      )
+      .orderBy(desc(datasources.timesReferenced))
+      .limit(10);
+
+    return result;
+  }),
+
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const organizationId = ctx.session.session.activeOrganization;
     const chatbotId = ctx.session.session.activeChatbot;

@@ -69,7 +69,7 @@ export function AgentPreviewPanel() {
 
 	const borderStyle = {
 		"--ring": primaryColor,
-	} as Record<string, string>;
+	} as React.CSSProperties;
 
 	return (
 		<div className="relative grid h-full min-h-0 w-full place-items-center px-4 py-6 md:px-8">

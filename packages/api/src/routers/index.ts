@@ -1,6 +1,7 @@
 import { protectedProcedure, publicProcedure, router } from "../index";
 import { datasourceRouter } from "./datasource-router";
 import { agentsettingsRouter } from "./agentsettings-router";
+import { conversationsRouter } from "./conversations-router";
 
 export const appRouter = router({
   healthCheck: publicProcedure.query(() => {
@@ -14,5 +15,6 @@ export const appRouter = router({
   }),
   datasource: datasourceRouter,
   agentsettings: agentsettingsRouter,
+  conversations: conversationsRouter,
 });
 export type AppRouter = typeof appRouter;

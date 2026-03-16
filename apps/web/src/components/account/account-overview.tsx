@@ -82,7 +82,7 @@ function AccountForm({ session }: { session: any }) {
 						<Label className="text-sm text-muted-foreground">Avatar</Label>
 
 						<div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
-							<Avatar className="h-16 w-16 rounded-2xl">
+							<Avatar className="h-16 w-16 rounded-2xl border">
 								<AvatarImage
 									className="rounded-2xl object-cover"
 									src={

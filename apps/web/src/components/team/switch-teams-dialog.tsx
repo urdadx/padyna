@@ -28,16 +28,17 @@ export const SwitchTeamsDialog = ({ open, onOpenChange }: SwitchTeamsDialogProps
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="w-full sm:max-w-lg ">
+			<DialogContent className="w-full sm:max-w-lg">
 				<DialogHeader>
 					<DialogTitle className="text-xl font-semibold">
 						Switch Teams
 					</DialogTitle>
 					<DialogDescription>
-						Switch to a different team to access its agents and settings.
+						Click to switch to a different team to access its agents and
+						settings.
 					</DialogDescription>
 				</DialogHeader>
-				<div className="grid gap-3 smooth-div max-h-[80vh]">
+				<div className="grid gap-3 smooth-div max-h-[65vh]">
 					{isPending ? (
 						<div className="flex justify-center flex-col gap-2">
 							<Spinner />

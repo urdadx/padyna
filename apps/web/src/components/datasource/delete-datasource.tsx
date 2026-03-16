@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 
 import {
 	AlertDialog,
@@ -11,7 +11,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { trpc, trpcClient } from "@/utils/trpc";
+import { queryClient, trpc, trpcClient } from "@/utils/trpc";
 import Spinner from "../ui/spinner";
 import type { Item } from "./datasource-table";
 
@@ -22,7 +22,6 @@ interface DeleteDataSourceProps {
 }
 
 export function DeleteDataSource({ item, open, onOpenChange }: DeleteDataSourceProps) {
-	const queryClient = useQueryClient();
 	const deleteDataSource = useMutation({
 		mutationFn: async () => {
 			return trpcClient.datasource.delete.mutate({ id: item.id });

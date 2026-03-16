@@ -1,11 +1,11 @@
 import Spinner from "./ui/spinner";
 
 export function GlobalLoader() {
-  return (
-    <div className="w-full p-2 sm:p-4">
-      <div className="fixed inset-0 flex items-center justify-center">
-        <Spinner size={28} className="text-gray-400" />
-      </div>
-    </div>
-  );
+	return (
+		<div className="max-w-5xl lg:max-w-6xl w-full max-h-screen mx-auto p-2 sm:p-6">
+			<div className="flex items-center justify-center h-96">
+				<Spinner size={30} />
+			</div>
+		</div>
+	);
 }

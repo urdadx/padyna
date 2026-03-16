@@ -2,6 +2,11 @@ import { createAgentUIStreamResponse } from "ai";
 import { Hono } from "hono";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { createSupportChatAgent } from "./agent";
+import {
+  clearConversationMessages,
+  loadConversationMessages,
+  persistConversationMessages,
+} from "./chat-persistence";
 
 type Variables = {
   user: any;
@@ -21,12 +26,26 @@ chatRoutes.post("/", async (c) => {
     return c.json({ message: "No active chatbot or organization" }, 400);
   }
 
+  const user = c.get("user");
+  const userId = user?.id;
+
+  if (!userId) {
+    return c.json({ message: "No active user" }, 400);
+  }
+
   const body = await c.req.json();
   const uiMessages = body.messages;
 
   if (!Array.isArray(uiMessages)) {
     return c.json({ message: "messages must be an array" }, 400);
   }
+
+  await persistConversationMessages({
+    chatbotId: activeChatbot,
+    organizationId: activeOrganization,
+    userId,
+    messages: uiMessages,
+  });
 
   const agent = createSupportChatAgent({
     chatbotId: activeChatbot,
@@ -36,5 +55,54 @@ chatRoutes.post("/", async (c) => {
   return createAgentUIStreamResponse({
     agent,
     uiMessages,
+    originalMessages: uiMessages,
+    onFinish: async ({ messages }) => {
+      await persistConversationMessages({
+        chatbotId: activeChatbot,
+        organizationId: activeOrganization,
+        userId,
+        messages,
+      });
+    },
   });
+});
+
+chatRoutes.get("/history", async (c) => {
+  const session = c.get("session");
+  const user = c.get("user");
+  const activeChatbot = session.activeChatbot;
+  const activeOrganization = session.activeOrganization;
+  const userId = user?.id;
+
+  if (!activeChatbot || !activeOrganization || !userId) {
+    return c.json({ message: "No active chatbot, organization, or user" }, 400);
+  }
+
+  const messages = await loadConversationMessages({
+    chatbotId: activeChatbot,
+    organizationId: activeOrganization,
+    userId,
+  });
+
+  return c.json({ messages });
+});
+
+chatRoutes.post("/reset", async (c) => {
+  const session = c.get("session");
+  const user = c.get("user");
+  const activeChatbot = session.activeChatbot;
+  const activeOrganization = session.activeOrganization;
+  const userId = user?.id;
+
+  if (!activeChatbot || !activeOrganization || !userId) {
+    return c.json({ message: "No active chatbot, organization, or user" }, 400);
+  }
+
+  await clearConversationMessages({
+    chatbotId: activeChatbot,
+    organizationId: activeOrganization,
+    userId,
+  });
+
+  return c.json({ success: true });
 });

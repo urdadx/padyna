@@ -1,64 +1,49 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExpandIcon } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import BarList from "./bar-list";
 import { ViewAllStats } from "./view-all-stats";
 import { FileLinear } from "@/assets/icons/file-icon";
 import { ChatLinear } from "@/assets/icons/chat-icon";
 import { TextLinear } from "@/assets/icons/text-icon";
 import { GlobeLinear } from "@/assets/icons/globe-icon";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { trpc } from "@/utils/trpc";
 
 export function TopSources() {
 	const [sourcesDialogOpen, setSourcesDialogOpen] = useState(false);
 
-	const mapSources = [
-		{
-			icon: <FileLinear color="black" className="w-4 h-4" />,
-			title: "documentation.pdf",
-			value: 450,
-			href: "",
-			linkId: "",
-		},
-		{
-			icon: <GlobeLinear color="black" className="w-4 h-4" />,
-			title: "https://example.com/blog",
-			value: 320,
-			href: "",
-			linkId: "",
-		},
-		{
-			icon: <ChatLinear color="black" className="w-4 h-4" />,
-			title: "What is your pricing?",
-			value: 210,
-			href: "",
-			linkId: "",
-		},
-		{
-			icon: <TextLinear color="black" className="w-4 h-4" />,
-			title: "Company Overview snippet",
-			value: 180,
-			href: "",
-			linkId: "",
-		},
-		{
-			icon: <FileLinear color="black" className="w-4 h-4" />,
-			title: "user_guide.docx",
-			value: 150,
-			href: "",
-			linkId: "",
-		},
-		{
-			icon: <GlobeLinear color="black" className="w-4 h-4" />,
-			title: "https://docs.padyna.com",
-			value: 120,
-			href: "",
-			linkId: "",
-		},
-	];
+	const { data: sourcesData } = useSuspenseQuery(
+		trpc.datasource.getMostReferenced.queryOptions(),
+	);
+
+	const mapSources = useMemo(() => {
+		return (sourcesData ?? []).map((source) => {
+			let icon = <FileLinear color="black" className="w-4 h-4" />;
+			if (source.sourceType === "link")
+				icon = <GlobeLinear color="black" className="w-4 h-4" />;
+			if (source.sourceType === "qa")
+				icon = <ChatLinear color="black" className="w-4 h-4" />;
+			if (source.sourceType === "text")
+				icon = <TextLinear color="black" className="w-4 h-4" />;
+
+			return {
+				icon,
+				title:
+					source.sourceName ||
+					source.question ||
+					source.url ||
+					"Untitled Source",
+				value: source.timesReferenced,
+				href: source.url || "",
+				linkId: source.id,
+			};
+		});
+	}, [sourcesData]);
 
 	const topSources = mapSources.slice(0, 5);
-	const maxSourceCount = Math.max(...mapSources.map((s) => s.value));
+	const maxSourceCount = Math.max(...mapSources.map((s) => s.value), 0);
 
 	return (
 		<div className="h-87.5 w-full z-0 rounded-xl border bg-white flex flex-col overflow-hidden">

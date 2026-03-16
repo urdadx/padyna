@@ -10,9 +10,28 @@ import {
 	AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { useState } from "react";
+import { authClient, useSession } from "@/lib/auth-client";
+import { toast } from "sonner";
+import { sleep } from "@/lib/utils";
 
 export function DeleteTeam() {
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const { data: session } = useSession();
+	const activeOrganizationId = session?.session.activeOrganization;
+
+	const handleDeleteTeam = async () => {
+		const { error } = await authClient.organization.delete({
+			organizationId: activeOrganizationId!,
+		});
+		if (error) {
+			toast.warning("Failed to delete team. Please try again.");
+			console.error("Failed to delete team:", error);
+		}
+		toast.success("Team deleted. Kindly login again.");
+		await sleep(1);
+		window.location.href = "/login";
+	};
+
 	return (
 		<>
 			<div className="rounded-2xl border border-red-300 bg-card text-card-foreground">
