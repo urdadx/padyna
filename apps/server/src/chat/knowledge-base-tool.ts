@@ -16,13 +16,15 @@ function clampResults(limit?: number) {
   return Math.max(1, Math.min(limit, MAX_RESULTS));
 }
 
-export function createKnowledgeBaseTool(input: {
+interface CreateKnowledgeBaseToolInput {
   chatbotId: string;
   organizationId: string;
-}) {
+}
+
+export function KnowledgeBaseTool(input: CreateKnowledgeBaseToolInput) {
   return tool({
     description:
-      "Search the business knowledge base for policy, product, pricing, and support answers.",
+      "Find the relevant information from the knowledge base to answer the user's question.",
     inputSchema: z.object({
       query: z.string().min(1).describe("What to search for in the knowledge base"),
       maxResults: z.number().int().min(1).max(MAX_RESULTS).optional(),

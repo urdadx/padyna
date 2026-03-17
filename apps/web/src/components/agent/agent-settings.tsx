@@ -332,7 +332,7 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 
 				<div className="flex items-center justify-between">
 					<Label className="text-muted-foreground font-medium">
-						Hide "Powered by Padyna"
+						Hide "Powered by Padyna" text
 					</Label>
 					<Switch
 						checked={form.hidePoweredBy}

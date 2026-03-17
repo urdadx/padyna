@@ -134,7 +134,7 @@ export function TeamMembersTable() {
 												}
 												className="justify-start h-8 px-2">
 												<PenLinear className="mr-2 h-3.5 w-3.5" />
-												Edit
+												Change role
 											</Button>
 											<Button
 												variant="ghost"

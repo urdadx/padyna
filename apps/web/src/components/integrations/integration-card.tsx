@@ -3,8 +3,8 @@ import { Button } from "../ui/button";
 
 export const IntegrationCard = ({ data }: { data: any }) => {
 	return (
-		<div className="bg-white rounded-lg p-4 border border-gray-200  w-full max-w-md mx-auto h-full">
-			<div className="flex flex-col gap-2 sm:gap-2.5 h-full">
+		<div className="bg-white rounded-xl p-3 border border-gray-200  w-full max-w-md mx-auto h-full">
+			<div className="flex flex-col gap-2 h-full">
 				<div className="flex justify-between items-center">
 					<div className="flex items-center gap-2">
 						<img
@@ -21,7 +21,7 @@ export const IntegrationCard = ({ data }: { data: any }) => {
 				</div>
 				<h3 className="font-medium font-sans text-sm sm:text-base">{data.name}</h3>
 				<p className="text-gray-600 text-sm sm:text-md grow">{data.description}</p>
-				<Button className="w-fit rounded-sm text-sm h-9" variant="outline">
+				<Button size="sm" className="w-fit rounded-sm text-sm" variant="outline">
 					Connect
 				</Button>
 			</div>

@@ -4,8 +4,7 @@ import {
 	ConversationScrollButton,
 } from "../ai-elements/conversation";
 
-import { Message, MessageContent, MessageResponse } from "../ai-elements/message";
-import { Shimmer } from "../ai-elements/shimmer";
+import { SupportMessage } from "./agent-components/message";
 import { Suggestion, Suggestions } from "../ai-elements/suggestion";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -20,6 +19,7 @@ import { DefaultChatTransport } from "ai";
 import { useMemo, useState } from "react";
 import { PureMessages } from "./pure-messages";
 import { AlertCircleIcon } from "lucide-react";
+import "streamdown/styles.css";
 
 export function AgentPreviewPanel() {
 	const [input, setInput] = useState("");
@@ -48,7 +48,6 @@ export function AgentPreviewPanel() {
 	const { messages, setMessages, sendMessage, status } = useChat({ transport });
 
 	const isStreaming = status === "streaming";
-	const showThinking = status === "submitted";
 	const isError = status === "error";
 	const isReady = status === "ready";
 
@@ -90,23 +89,16 @@ export function AgentPreviewPanel() {
 						<Conversation className="min-h-0 py-4">
 							<ConversationContent className="gap-4 px-4 py-0">
 								{messages.length === 0 ? (
-									<Message from={"assistant"}>
-										<MessageContent className="max-w-[85%] rounded-lg bg-muted px-4 py-3 leading-6 text-foreground">
-											<MessageResponse className="**:text-inherit">
-												{initialMessage}
-											</MessageResponse>
-										</MessageContent>
-									</Message>
+									<SupportMessage animate={false}>
+										{initialMessage}
+									</SupportMessage>
 								) : (
 									<PureMessages
 										messages={messages}
 										isReady={isReady}
+										isStreaming={isStreaming}
+										primaryColor={primaryColor}
 									/>
-								)}
-								{showThinking && (
-									<Shimmer className="text-sm">
-										Thinking
-									</Shimmer>
 								)}
 								{isError && (
 									<div className="rounded-md bg-red-50 p-4">
@@ -125,54 +117,58 @@ export function AgentPreviewPanel() {
 							</ConversationContent>
 							<ConversationScrollButton />
 						</Conversation>
-
-						{suggestedMessages.length > 0 && (
-							<div className="px-4 bg-gray-50/40 py-2 border-t">
-								<Suggestions>
-									{suggestedMessages.map((msg, idx) => (
-										<Suggestion
-											key={`${msg}-${idx}`}
-											suggestion={msg}
-											disabled={isStreaming}
-											onClick={(suggestion) => {
-												void submitMessage(
-													suggestion,
-												);
-											}}
-										/>
-									))}
-								</Suggestions>
-							</div>
-						)}
-
-						<div className="rounded-b-xl px-4 pb-4 bg-gray-50/40">
-							<form
-								className="flex items-end gap-2"
-								onSubmit={(event) => {
-									event.preventDefault();
-									void submitMessage(input);
-								}}>
-								<Input
-									style={borderStyle}
-									className="bg-white focus-visible:ring-ring"
-									placeholder="Ask me anything..."
-									value={input}
-									onChange={(event) =>
-										setInput(event.target.value)
-									}
-								/>
-								<Button
-									type="submit"
-									aria-label="Send message"
-									disabled={isStreaming || !input.trim()}>
-									<PlaneBold color="white" className="size-4" />
-								</Button>
-							</form>
-							{!hidePoweredBy && (
-								<p className="mt-3 text-center text-xs text-muted-foreground">
-									Powered by Padyna
-								</p>
+						<div className="p-4 space-y-3 border-t bg-gray-50/40 ">
+							{suggestedMessages.length > 0 && (
+								<div className="">
+									<Suggestions>
+										{suggestedMessages.map((msg, idx) => (
+											<Suggestion
+												key={`${msg}-${idx}`}
+												suggestion={msg}
+												disabled={isStreaming}
+												onClick={(suggestion) => {
+													void submitMessage(
+														suggestion,
+													);
+												}}
+											/>
+										))}
+									</Suggestions>
+								</div>
 							)}
+
+							<div className="">
+								<form
+									className="flex items-end gap-2"
+									onSubmit={(event) => {
+										event.preventDefault();
+										void submitMessage(input);
+									}}>
+									<Input
+										style={borderStyle}
+										className="bg-white focus-visible:ring-ring"
+										placeholder="Ask me anything..."
+										value={input}
+										onChange={(event) =>
+											setInput(event.target.value)
+										}
+									/>
+									<Button
+										type="submit"
+										aria-label="Send message"
+										disabled={isStreaming || !input.trim()}>
+										<PlaneBold
+											color="white"
+											className="size-4"
+										/>
+									</Button>
+								</form>
+								{!hidePoweredBy && (
+									<p className="mt-3 text-center text-xs text-muted-foreground">
+										Powered by Padyna
+									</p>
+								)}
+							</div>
 						</div>
 					</div>
 				</div>

@@ -20,16 +20,13 @@ export const Navbar = () => {
 				</div>
 				<div className="flex gap-1 sm:gap-2  items-center ml-auto">
 					<Button
-						className="text-primary h-9 font-normal hover:text-primary"
+						className="text-primary font-normal hover:text-primary"
 						variant="outline">
 						<RocketLinear color="#8b5cf6" className="size-4" />
 						<span className="flex sm:hidden">Deploy</span>
-						<span className="hidden sm:flex">Deploy your agent</span>{" "}
+						<span className="hidden sm:flex">Deploy your agent</span>
 					</Button>
-					<Button
-						onClick={() => setIsInviteDialogOpen(true)}
-						className="h-9"
-						size="sm">
+					<Button onClick={() => setIsInviteDialogOpen(true)}>
 						<LetterLinear color="white" className="size-4" />
 						<span className="flex sm:hidden">Invite team</span>
 						<span className="hidden sm:flex">Invite your team</span>

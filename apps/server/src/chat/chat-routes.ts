@@ -1,12 +1,15 @@
 import { createAgentUIStreamResponse } from "ai";
 import { Hono } from "hono";
 import { authMiddleware } from "../middlewares/authMiddleware";
-import { createSupportChatAgent } from "./agent";
+import { createSupportChatAgent } from "./agents";
 import {
   clearConversationMessages,
   loadConversationMessages,
   persistConversationMessages,
 } from "./chat-persistence";
+import { db } from "@padyna/db";
+import { chatbot } from "@padyna/db/schema/index";
+import { eq, and } from "drizzle-orm";
 
 type Variables = {
   user: any;
@@ -33,6 +36,17 @@ chatRoutes.post("/", async (c) => {
     return c.json({ message: "No active user" }, 400);
   }
 
+  const [chatbotData] = await db
+    .select({ name: chatbot.name })
+    .from(chatbot)
+    .where(and(eq(chatbot.id, activeChatbot), eq(chatbot.organizationId, activeOrganization)))
+    .limit(1);
+
+  if (!chatbotData) {
+    return c.json({ message: "Chatbot not found" }, 404);
+  }
+
+  const chatbotName = chatbotData.name || "AI Assistant";
   const body = await c.req.json();
   const uiMessages = body.messages;
 
@@ -50,6 +64,7 @@ chatRoutes.post("/", async (c) => {
   const agent = createSupportChatAgent({
     chatbotId: activeChatbot,
     organizationId: activeOrganization,
+    chatbotName,
   });
 
   return createAgentUIStreamResponse({

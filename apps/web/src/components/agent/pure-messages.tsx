@@ -1,109 +1,119 @@
-import { Message, MessageContent, MessageResponse } from "../ai-elements/message";
-import { Sources, SourcesTrigger, SourcesContent, Source } from "../ai-elements/sources";
+import { SupportMessage } from "./agent-components/message";
+import { StatusIndicator } from "./agent-components/status-indicator";
+import { SourceCitations, extractSources } from "./source-citations";
 import type { UIMessage } from "ai";
+import { Streamdown } from "streamdown";
+import { cjk } from "@streamdown/cjk";
+import { code } from "@streamdown/code";
+import { math } from "@streamdown/math";
+import { mermaid } from "@streamdown/mermaid";
+import { MarkdownCodeBlock } from "./agent-components/code-block";
 
-type KnowledgeBaseToolOutput = {
-	resultCount: number;
-	results: Array<{
-		chunkId: string;
-		datasourceId: string;
-		sourceName: string;
-		sourceType: "link" | "file" | "qa" | "text";
-	}>;
-};
+const streamdownPlugins = { cjk, code, math, mermaid };
 
-function isKnowledgeBaseOutput(value: unknown): value is KnowledgeBaseToolOutput {
-	if (!value || typeof value !== "object") {
-		return false;
-	}
-
-	const candidate = value as { resultCount?: unknown; results?: unknown };
-	return typeof candidate.resultCount === "number" && Array.isArray(candidate.results);
-}
-
-function getKnowledgeBaseResultsFromPart(part: unknown): KnowledgeBaseToolOutput["results"] {
-	if (!part || typeof part !== "object") {
-		return [];
-	}
-
-	const candidate = part as {
-		type?: unknown;
-		state?: unknown;
-		output?: unknown;
-	};
-
-	if (candidate.type !== "tool-knowledge_base" || candidate.state !== "output-available") {
-		return [];
-	}
-
-	if (!isKnowledgeBaseOutput(candidate.output)) {
-		return [];
-	}
-
-	return candidate.output.results;
-}
 type PureMessagesProps = {
 	messages: UIMessage[];
 	isReady?: boolean;
+	isStreaming?: boolean;
+	primaryColor?: string;
 };
 
-export const PureMessages = ({ messages, isReady }: PureMessagesProps) => {
-	return messages.map((message) => (
-		<Message from={message.role} key={message.id}>
-			{(() => {
-				const sourceRows = message.parts.flatMap(getKnowledgeBaseResultsFromPart);
+export const PureMessages = ({
+	messages,
+	isReady,
+	isStreaming,
+	primaryColor,
+}: PureMessagesProps) => {
+	return messages.map((message, index) => {
+		const isLastMessage = index === messages.length - 1;
+		const isCurrentlyStreaming = isStreaming && isLastMessage;
+		const isUser = message.role === "user";
 
-				const uniqueSources = sourceRows.filter(
-					(row, index, list) =>
-						index ===
-						list.findIndex(
-							(item) => item.datasourceId === row.datasourceId,
+		const sources = extractSources(
+			message.parts as { type: string; [key: string]: unknown }[],
+		);
+
+		const textParts = message.parts.filter(
+			(part): part is { type: "text"; text: string } =>
+				part.type === "text" && "text" in part && Boolean(part.text),
+		);
+
+		const hasTextContent = textParts.length > 0;
+
+		const hasVisibleContent = hasTextContent || message.parts.length === 0;
+
+		const getStatusLabel = () => {
+			if (!isCurrentlyStreaming || hasTextContent) return null;
+
+			const isSearchingDocs = message.parts.some(
+				(p: any) =>
+					p.type === "tool-knowledge_base" && p.state !== "output-available",
+			);
+
+			if (isSearchingDocs) return "Searching...";
+
+			return "Thinking...";
+		};
+
+		const statusLabel = getStatusLabel();
+
+		const messageContent = statusLabel ? (
+			<StatusIndicator label={statusLabel} />
+		) : (
+			textParts.map((part, partIndex) => (
+				<Streamdown
+					key={`${message.id}-${partIndex}`}
+					isAnimating={isCurrentlyStreaming}
+					plugins={streamdownPlugins}
+					controls={false}
+					components={{
+						h1: () => null,
+						h2: () => null,
+						h3: () => null,
+						h4: () => null,
+						h5: () => null,
+						h6: () => null,
+						a: ({ children, href }) => (
+							<a
+								href={href}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="cursor-help font-medium text-neutral-900 underline decoration-dotted underline-offset-2 hover:text-neutral-600">
+								{children}
+							</a>
 						),
-				);
+						ul: ({ children }) => (
+							<ul className="list-outside list-disc pl-6">
+								{children}
+							</ul>
+						),
+						ol: ({ children }) => (
+							<ol className="list-outside list-decimal pl-6">
+								{children}
+							</ol>
+						),
+						code: MarkdownCodeBlock,
+					}}
+					className="text-foreground text-content-emphasis">
+					{part.text}
+				</Streamdown>
+			))
+		);
 
-				return (
-					<>
-						<MessageContent
-							className={
-								message.role === "assistant"
-									? "max-w-[85%] rounded-lg bg-primary px-4 py-3 leading-6 text-white!"
-									: "max-w-[85%] rounded-lg bg-muted px-4 py-3 leading-6 text-foreground"
-							}>
-							{message.parts.map((part, index) => {
-								if (part.type === "text") {
-									return (
-										<MessageResponse
-											className="**:text-inherit"
-											key={`${message.id}-${index}`}>
-											{part.text}
-										</MessageResponse>
-									);
-								}
-
-								return null;
-							})}
-						</MessageContent>
-						{message.role === "assistant" &&
-							uniqueSources.length > 0 &&
-							isReady && (
-								<Sources className="ml-4 mt-1">
-									<SourcesTrigger
-										count={uniqueSources.length}
-									/>
-									<SourcesContent>
-										{uniqueSources.map((source) => (
-											<Source
-												key={source.datasourceId}
-												href={`${source.sourceType === "link" ? source.sourceName : "#"}`}
-												title={source.sourceName}
-											/>
-										))}
-									</SourcesContent>
-								</Sources>
-							)}
-					</>
-				);
-			})()}
-		</Message>
-	));
+		return (
+			<>
+				<SupportMessage
+					key={message.id}
+					isUser={isUser}
+					animate={isUser || isCurrentlyStreaming}
+					primaryColor={primaryColor}>
+					{!hasVisibleContent && !statusLabel ? null : messageContent}
+				</SupportMessage>
+				{message.role === "assistant" &&
+					sources.length > 0 &&
+					!isCurrentlyStreaming &&
+					isReady && <SourceCitations sources={sources} />}
+			</>
+		);
+	});
 };

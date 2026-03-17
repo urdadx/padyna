@@ -2,9 +2,10 @@ import { IntegrationCard } from "@/components/integrations/integration-card";
 import { createFileRoute } from "@tanstack/react-router";
 import CalendlyLogo from "@/assets/calendly.png";
 import DiscordLogo from "@/assets/discord.png";
-import SlackLogo from "@/assets/slack.png";
+import SlackLogo from "@/assets/slack-1.png";
 import TelegramLogo from "@/assets/telegram.png";
 import GithubLogo from "@/assets/github.png";
+import JiraLogo from "@/assets/jira.png";
 
 export const Route = createFileRoute("/(admin)/integrations")({
 	component: RouteComponent,
@@ -26,6 +27,12 @@ function RouteComponent() {
 			logo: GithubLogo,
 		},
 		{
+			id: "jira",
+			name: "Jira",
+			description: "Connect your agent to Jira to create support tickets",
+			logo: JiraLogo,
+		},
+		{
 			id: "calendly",
 			name: "Calendly",
 			description: "Connect your agent to Calendly to manage bookings and meetings.",
@@ -34,8 +41,7 @@ function RouteComponent() {
 		{
 			id: "discord",
 			name: "Discord",
-			description:
-				"Connect your agent to Discord to manage conversations and send notifications",
+			description: "Connect your agent to Discord to manage conversations",
 			logo: DiscordLogo,
 		},
 		{

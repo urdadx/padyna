@@ -1,2 +1,2 @@
 export { chatRoutes } from "./chat-routes";
-export { createSupportChatAgent } from "./agent";
+export { createSupportChatAgent } from "./agents";

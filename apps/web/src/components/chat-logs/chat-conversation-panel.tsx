@@ -76,7 +76,7 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 											className={cn(
 												message.role === "user"
 													? ""
-													: "bg-primary p-3 rounded-lg border-primary text-white",
+													: "",
 											)}>
 											{message.contentText}
 										</MessageResponse>
