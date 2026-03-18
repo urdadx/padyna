@@ -18,6 +18,14 @@ type PersistedMessageRow = {
   parts: unknown[] | null;
 };
 
+type NormalizedMessage = {
+  messageId: string;
+  role: ChatRole;
+  parts: unknown[];
+  contentText: string;
+  providerItemId: string | null;
+};
+
 function extractTextFromParts(parts: unknown[] | undefined): string {
   if (!parts || parts.length === 0) {
     return "";
@@ -41,6 +49,43 @@ function extractTextFromParts(parts: unknown[] | undefined): string {
     .trim();
 }
 
+function extractProviderItemIdFromParts(parts: unknown[] | undefined): string | null {
+  if (!parts || parts.length === 0) {
+    return null;
+  }
+
+  for (const part of parts) {
+    if (!part || typeof part !== "object") {
+      continue;
+    }
+
+    const candidate = part as {
+      providerMetadata?: {
+        openai?: {
+          itemId?: unknown;
+        };
+      };
+      callProviderMetadata?: {
+        openai?: {
+          itemId?: unknown;
+        };
+      };
+    };
+
+    const fromProviderMetadata = candidate.providerMetadata?.openai?.itemId;
+    if (typeof fromProviderMetadata === "string" && fromProviderMetadata.length > 0) {
+      return fromProviderMetadata;
+    }
+
+    const fromCallProviderMetadata = candidate.callProviderMetadata?.openai?.itemId;
+    if (typeof fromCallProviderMetadata === "string" && fromCallProviderMetadata.length > 0) {
+      return fromCallProviderMetadata;
+    }
+  }
+
+  return null;
+}
+
 function isChatRole(role: string): role is ChatRole {
   return role === "user" || role === "assistant" || role === "system";
 }
@@ -53,14 +98,18 @@ function normalizeIncomingMessages(messages: StoredUIMessage[]) {
       }
 
       const parts = Array.isArray(message.parts) ? message.parts : [];
+      const providerItemId = extractProviderItemIdFromParts(parts);
+      const rawMessageId = typeof message.id === "string" ? message.id.trim() : "";
+
       return {
-        messageId: message.id ?? randomUUID(),
+        messageId: providerItemId || rawMessageId || randomUUID(),
         role: message.role,
         parts,
         contentText: extractTextFromParts(parts),
+        providerItemId,
       };
     })
-    .filter((message): message is NonNullable<typeof message> => message !== null);
+    .filter((message): message is NormalizedMessage => message !== null);
 }
 
 async function getOrCreateConversation(input: {
@@ -176,7 +225,7 @@ export async function persistConversationMessages(input: {
     .select({
       messageId: chatMessage.messageId,
       role: chatMessage.role,
-      contentText: chatMessage.contentText,
+      parts: chatMessage.parts,
     })
     .from(chatMessage)
     .where(
@@ -188,29 +237,25 @@ export async function persistConversationMessages(input: {
       ),
     );
 
-  const existingByMessageId = new Map(existing.map((row) => [row.messageId, row]));
-  const existingByContent = new Map<string, (typeof existing)[0]>();
-  for (const row of existing) {
-    if (row.messageId === "") {
-      existingByContent.set(row.contentText, row);
-    }
-  }
+  const existingByMessageId = new Set(existing.map((row) => row.messageId));
+  const existingAssistantProviderItemIds = new Set(
+    existing
+      .filter((row) => row.role === "assistant")
+      .map((row) => extractProviderItemIdFromParts(Array.isArray(row.parts) ? row.parts : undefined))
+      .filter((itemId): itemId is string => itemId !== null),
+  );
 
   const toInsert = normalizedMessages.filter((message) => {
     if (existingByMessageId.has(message.messageId)) {
       return false;
     }
 
-    if (message.contentText) {
-      for (const [, existingRow] of existingByMessageId) {
-        if (existingRow.role === message.role && existingRow.contentText === message.contentText) {
-          return false;
-        }
-      }
-      const existingEmptyMsgId = existingByContent.get(message.contentText);
-      if (existingEmptyMsgId && existingEmptyMsgId.role === message.role) {
+    if (
+      message.role === "assistant" &&
+      message.providerItemId !== null &&
+      existingAssistantProviderItemIds.has(message.providerItemId)
+    ) {
         return false;
-      }
     }
 
     return true;
@@ -220,18 +265,21 @@ export async function persistConversationMessages(input: {
     return;
   }
 
-  await db.insert(chatMessage).values(
-    toInsert.map((message) => ({
-      conversationId,
-      chatbotId: input.chatbotId,
-      organizationId: input.organizationId,
-      userId: input.userId,
-      role: message.role,
-      messageId: message.messageId,
-      contentText: message.contentText,
-      parts: message.parts,
-    })),
-  );
+  await db
+    .insert(chatMessage)
+    .values(
+      toInsert.map((message) => ({
+        conversationId,
+        chatbotId: input.chatbotId,
+        organizationId: input.organizationId,
+        userId: input.userId,
+        role: message.role,
+        messageId: message.messageId,
+        contentText: message.contentText,
+        parts: message.parts,
+      })),
+    )
+    .onConflictDoNothing();
 
   await db
     .update(chatConversation)

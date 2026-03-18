@@ -3,7 +3,7 @@ import { ToolLoopAgent, stepCountIs } from "ai";
 import { KnowledgeBaseTool } from "./knowledge-base-tool";
 import { customerSupportPrompt } from "./prompt";
 
-const CHAT_MODEL = "gpt-5.4";
+const CHAT_MODEL = "gpt-5.4-mini";
 
 interface CreateSupportChatAgentInput {
   chatbotId: string;

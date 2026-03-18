@@ -20,7 +20,7 @@ export function SupportMessage({
 	return (
 		<div
 			className={cn(
-				"flex origin-top-left items-start gap-3",
+				"flex w-full origin-top-left items-start gap-3",
 				isUser && "flex-row-reverse items-end",
 				animate && "animate-scale-in-fade",
 			)}>
@@ -33,7 +33,11 @@ export function SupportMessage({
 				/>
 			)}
 
-			<div className={cn("max-w-[85%] grow py-1", isUser && "flex flex-col items-end")}>
+			<div
+				className={cn(
+					"max-w-[85%] grow min-w-0 py-1",
+					isUser && "flex flex-col items-end",
+				)}>
 				{content && (
 					<p
 						className={cn(
@@ -53,7 +57,7 @@ export function SupportMessage({
 				{children && (
 					<div
 						className={cn(
-							"rounded-2xl rounded-br px-3 py-2 text-sm",
+							"rounded-2xl rounded-br px-3 py-2 text-sm w-full min-w-0 overflow-hidden wrap-break-word",
 							isUser ? "text-white" : "bg-muted/40 text-neutral-800",
 						)}
 						style={

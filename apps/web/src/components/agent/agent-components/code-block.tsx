@@ -156,8 +156,8 @@ export function CodeBlock({ code, language }: { code: string; language: string }
 	}, [trimmedCode, language]);
 
 	return (
-		<div className="my-2 overflow-hidden rounded-xl border border-neutral-200 text-sm">
-			<div className="flex h-9 items-center justify-between border-b border-neutral-200 bg-neutral-50 px-3">
+		<div className="my-2 max-w-[85vw] md:max-w-xl lg:max-w-2xl overflow-hidden rounded-xl border border-neutral-200 text-sm">
+			<div className="flex h-9 w-full items-center justify-between border-b border-neutral-200 bg-neutral-50 px-3">
 				<span className="font-mono text-xs lowercase text-neutral-400">
 					{language || "code"}
 				</span>
@@ -167,12 +167,17 @@ export function CodeBlock({ code, language }: { code: string; language: string }
 				</div>
 			</div>
 
-			<div className="overflow-x-auto bg-white px-4 py-3">
-				<pre className="m-0 bg-transparent font-mono text-[13px] leading-relaxed">
+			<div className="w-full overflow-x-auto bg-white px-4 py-3">
+				<pre className="m-0 block w-full bg-transparent font-mono text-[13px] leading-relaxed">
 					{highlightedHtml ? (
-						<code dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
+						<code
+							dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+							className="float-left min-w-full"
+						/>
 					) : (
-						<code className="text-neutral-700">{trimmedCode}</code>
+						<code className="float-left min-w-full text-neutral-700 whitespace-pre">
+							{trimmedCode}
+						</code>
 					)}
 				</pre>
 			</div>

@@ -113,7 +113,7 @@ export const PureMessages = ({
 						),
 						code: MarkdownCodeBlock,
 					}}
-					className="text-foreground text-content-emphasis">
+					className="text-foreground text-content-emphasis overflow-wrap-anywhere wrap-break-word min-w-0 w-full overflow-hidden">
 					{part.text}
 				</Streamdown>
 			))

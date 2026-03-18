@@ -52,11 +52,11 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 	}
 
 	return (
-		<div className={cn("flex flex-col h-full", className)}>
-			<ChatContainerRoot optimize className="flex-1 w-full smooth-div relative">
+		<div className={cn("flex min-w-0 flex-col h-full", className)}>
+			<ChatContainerRoot optimize className="flex-1 min-w-0 w-full smooth-div relative">
 				<ChatContainerContent className="">
 					<ChatHeader />
-					<div className="flex flex-col gap-4">
+					<div className="flex w-full min-w-0 flex-col gap-4 overflow-x-hidden">
 						{isLoading ? (
 							<div className="p-4 text-center text-muted-foreground">
 								Loading messages...

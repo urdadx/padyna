@@ -86,7 +86,7 @@ export const CrawlWebsite = ({ onSuccess, onStarted }: CrawlWebsiteProps) => {
 					}
 					onSuccess?.();
 				} else {
-					toast.error(status.processed?.message || "Crawl failed", {
+					toast.error("Crawl failed", {
 						id: CRAWL_TOAST_ID,
 					});
 					toast.dismiss(CRAWL_TOAST_ID);
@@ -96,7 +96,7 @@ export const CrawlWebsite = ({ onSuccess, onStarted }: CrawlWebsiteProps) => {
 			}
 
 			if (status.status === "failed" || status.status === "cancelled") {
-				toast.error(status.processed?.message || "Crawl failed", {
+				toast.error("Crawl failed", {
 					id: CRAWL_TOAST_ID,
 				});
 				toast.dismiss(CRAWL_TOAST_ID);
@@ -127,7 +127,6 @@ export const CrawlWebsite = ({ onSuccess, onStarted }: CrawlWebsiteProps) => {
 			setCrawlStatus(null);
 			activeCrawlIdRef.current = null;
 		} else if (isMountedRef.current && activeCrawlIdRef.current === null) {
-			// Handle explicit cancellation
 			setIsPolling(false);
 			setCrawlStatus(null);
 		}
