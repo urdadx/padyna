@@ -12,7 +12,7 @@ import { PlaneBold } from "@/assets/icons/plane-icon";
 import { AgentHeader } from "./agent-header";
 import { useSession } from "@/lib/auth-client";
 import { env } from "@padyna/env/web";
-import { trpc } from "@/utils/trpc";
+import { queryClient, trpc } from "@/utils/trpc";
 import { useQuery } from "@tanstack/react-query";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
@@ -64,6 +64,9 @@ export function AgentPreviewPanel() {
 
 		setInput("");
 		await sendMessage({ text: next });
+		queryClient.invalidateQueries({
+			queryKey: trpc.conversations.getAll.queryOptions().queryKey,
+		});
 	};
 
 	const borderStyle = {
