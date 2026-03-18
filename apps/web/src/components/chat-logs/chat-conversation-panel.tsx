@@ -1,4 +1,4 @@
-import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { PureMessages } from "@/components/agent/pure-messages";
 import { cn } from "@/lib/utils";
 import {
 	ChatContainerContent,
@@ -62,27 +62,11 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 								Loading messages...
 							</div>
 						) : messages && messages.length > 0 ? (
-							messages.map((message) => (
-								<Message
-									key={message.id}
-									from={
-										message.role as
-											| "user"
-											| "assistant"
-											| "system"
-									}>
-									<MessageContent>
-										<MessageResponse
-											className={cn(
-												message.role === "user"
-													? ""
-													: "",
-											)}>
-											{message.contentText}
-										</MessageResponse>
-									</MessageContent>
-								</Message>
-							))
+							<PureMessages
+								messages={messages as any}
+								isReady={true}
+								isStreaming={false}
+							/>
 						) : (
 							<div className="p-4 text-center text-muted-foreground">
 								No messages in this conversation

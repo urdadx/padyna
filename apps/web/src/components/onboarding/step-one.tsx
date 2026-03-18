@@ -68,11 +68,16 @@ export const StepOne = ({ onContinue }: { onContinue: () => void }) => {
 						queryKey: trpc.datasource.getAll.queryOptions().queryKey,
 					});
 					onComplete();
+				} else {
+					toast.error("Failed to process website content.");
+					onComplete();
 				}
 				break;
 			}
 
 			if (status.status === "failed" || status.status === "cancelled") {
+				toast.error(`Website crawl ${status.status}.`);
+				onComplete();
 				break;
 			}
 
@@ -105,7 +110,6 @@ export const StepOne = ({ onContinue }: { onContinue: () => void }) => {
 				});
 
 				if (error || !orgData) {
-					console.error("Error creating organization:", error);
 					toast.warning("Failed to create your team. Please try again.");
 					return;
 				}
@@ -122,10 +126,17 @@ export const StepOne = ({ onContinue }: { onContinue: () => void }) => {
 						: `https://${rawUrl}`;
 
 					setIsPolling(true);
+					const loadingToastId = toast.loading(
+						"Fetching links for training...",
+					);
 					try {
 						const crawlData = await startCrawl.mutateAsync(fullUrl);
 						await pollCrawlStatus(crawlData.crawlId, onContinue);
-					} catch {
+						toast.dismiss(loadingToastId);
+					} catch (error: any) {
+						console.error("Error starting crawl:", error);
+						toast.dismiss(loadingToastId);
+						toast.error("Failed to fetch website links.");
 						onContinue();
 					}
 				} else {

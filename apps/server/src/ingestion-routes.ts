@@ -1,7 +1,12 @@
 import { Hono } from "hono";
 import { ingestFiles } from "./ingestion/file/ingest-files";
 import { ingestLink, runMapWebsite } from "./ingestion/scrape";
-import { ingestCrawl, checkCrawlStatus, processCompletedCrawl } from "./ingestion/crawl";
+import {
+  ingestCrawl,
+  checkCrawlStatus,
+  processCompletedCrawl,
+  cancelCrawl,
+} from "./ingestion/crawl";
 import { ingestQa, updateQa } from "./ingestion/qa";
 import { ingestText, updateText } from "./ingestion/text";
 import { authMiddleware } from "./middlewares/authMiddleware";
@@ -174,6 +179,32 @@ ingestionRoutes.get("/crawl/:id", async (c) => {
     return c.json(
       {
         message: error instanceof Error ? error.message : "Failed to get crawl status.",
+      },
+      500,
+    );
+  }
+});
+
+ingestionRoutes.delete("/crawl/:id", async (c) => {
+  const crawlId = c.req.param("id");
+
+  if (!crawlId) {
+    return c.json(
+      {
+        message: "No crawl ID provided.",
+      },
+      400,
+    );
+  }
+
+  try {
+    const result = await cancelCrawl(crawlId);
+    return c.json(result);
+  } catch (error) {
+    console.error("Crawl cancel error:", error);
+    return c.json(
+      {
+        message: error instanceof Error ? error.message : "Failed to cancel crawl.",
       },
       500,
     );

@@ -24,7 +24,7 @@ export async function startCrawl(options: StartCrawlOptions): Promise<StartCrawl
   const body: Record<string, unknown> = {
     sitemap: "include",
     crawlEntireDomain: options.crawlEntireDomain ?? false,
-    limit: options.limit ?? 10,
+    limit: options.limit ?? 15,
     scrapeOptions: {
       onlyMainContent: false,
       maxAge: 172800000,

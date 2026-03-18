@@ -30,14 +30,17 @@ import { DatabaseLinear } from "@/assets/icons/database-icon";
 import { AddSource } from "./add-source";
 import { FilterByTypes } from "./filter-by-types";
 import { FilterByStatus } from "./filter-by-status";
+import { MultiSelectToolbar } from "../multi-select-toolbar";
 import { CuteIconWrapper } from "../cute-icon-wrapper";
 import { GlobeLinear } from "@/assets/icons/globe-icon";
 import { TextLinear } from "@/assets/icons/text-icon";
 import { ChatLinear } from "@/assets/icons/chat-icon";
 import { PaperclipLinear } from "@/assets/icons/paperclip-icon";
 import { DataSourceActions } from "./datasource-actions";
-import { trpc } from "@/utils/trpc";
+import { queryClient, trpc, trpcClient } from "@/utils/trpc";
 import Spinner from "../ui/spinner";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export type Item = {
 	id: string;
@@ -228,6 +231,25 @@ export function DataSourceTable() {
 		refetchOnMount: true,
 	});
 
+	const deleteMany = useMutation({
+		mutationFn: async (data: { ids: string[] }) => {
+			return trpcClient.datasource.deleteMany.mutate(data);
+		},
+		onSuccess: () => {
+			table.resetRowSelection();
+			queryClient.invalidateQueries({
+				queryKey: trpc.datasource.getAll.queryOptions().queryKey,
+			});
+			queryClient.invalidateQueries({
+				queryKey: trpc.datasource.getSourceCounts.queryOptions().queryKey,
+			});
+			toast.success("Deleted selected data sources");
+		},
+		onError: () => {
+			toast.error("Failed to delete data sources. Please try again.");
+		},
+	});
+
 	const tableData = useMemo(() => datasources?.map(mapDatasourceToItem) ?? [], [datasources]);
 	const totalSize = useMemo(
 		() =>
@@ -261,6 +283,10 @@ export function DataSourceTable() {
 			},
 		},
 	});
+
+	const selectedRows = table.getFilteredSelectedRowModel().rows;
+	const isAnySelected = selectedRows.length > 0;
+	const isAllSelected = table.getIsAllPageRowsSelected();
 
 	return (
 		<div className="space-y-4">
@@ -433,6 +459,28 @@ export function DataSourceTable() {
 			</div>
 
 			<TablePagination table={table} totalSize={totalSize} isLoading={isLoading} />
+
+			{isAnySelected && (
+				<MultiSelectToolbar
+					isAllSelected={isAllSelected}
+					onSelectAll={() => table.toggleAllPageRowsSelected(!isAllSelected)}
+					onCopyUrls={() => {
+						const urls = selectedRows
+							.map((row) => row.original.url)
+							.filter(Boolean)
+							.join("\n");
+						if (urls) {
+							navigator.clipboard.writeText(urls);
+						}
+					}}
+					onDelete={() => {
+						deleteMany.mutate({
+							ids: selectedRows.map((r) => r.original.id),
+						});
+					}}
+					onClose={() => table.resetRowSelection()}
+				/>
+			)}
 		</div>
 	);
 }

@@ -258,3 +258,95 @@ curl --request POST \
 }
 ]
 }
+
+# BATCH SCRAPING
+
+curl --request POST \
+ --url https://api.firecrawl.dev/v2/batch/scrape \
+ --header 'Authorization: Bearer <token>' \
+ --header 'Content-Type: application/json' \
+ --data '
+{
+"urls": [
+"<string>"
+],
+"maxConcurrency": 2,
+"ignoreInvalidURLs": true,
+"formats": [
+"markdown"
+],
+"onlyMainContent": true,
+"maxAge": 172800000,
+"minAge": 123,
+"headers": {},
+"waitFor": 0,
+"mobile": false,
+"skipTlsVerification": true,
+"timeout": 30000,
+"parsers": [
+"pdf"
+],
+}
+'
+
+# BATCH SCRAPE RESULTS
+
+{
+"success": true,
+"id": "<string>",
+"url": "<string>",
+"invalidURLs": [
+"<string>"
+]
+}
+
+# GET BATCH SCRAPE STATUS
+
+curl --request GET \
+ --url https://api.firecrawl.dev/v2/batch/scrape/{id} \
+ --header 'Authorization: Bearer <token>'
+
+# GET BATCH SCRAPE STATUS RESULTS
+
+{
+"status": "<string>",
+"total": 123,
+"completed": 123,
+"creditsUsed": 123,
+"expiresAt": "2023-11-07T05:31:56Z",
+"next": "<string>",
+"data": [
+{
+"markdown": "<string>",
+
+      "metadata": {
+        "title": "<string>",
+        "description": "<string>",
+        "language": "<string>",
+        "sourceURL": "<string>",
+        "url": "<string>",
+        "keywords": "<string>",
+        "ogLocaleAlternate": [
+          "<string>"
+        ],
+        "<any other metadata> ": "<string>",
+        "statusCode": 123,
+        "error": "<string>"
+      }
+    }
+
+]
+}
+
+# CANCEL BATCH SCRAPE
+
+curl --request DELETE \
+ --url https://api.firecrawl.dev/v2/batch/scrape/{id} \
+ --header 'Authorization: Bearer <token>'
+
+# CANCEL BATCH SCRAPE RESPONSE
+
+{
+"success": true,
+"message": "Batch scrape job successfully cancelled."
+}

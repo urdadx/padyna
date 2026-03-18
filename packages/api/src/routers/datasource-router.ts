@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../index";
 import { db } from "@padyna/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { datasources, datasourceChunks } from "@padyna/db/schema/index";
 
 export const datasourceRouter = router({
@@ -132,6 +132,41 @@ export const datasourceRouter = router({
       await db.delete(datasourceChunks).where(eq(datasourceChunks.datasourceId, input.id));
 
       await db.delete(datasources).where(eq(datasources.id, input.id));
+
+      return { success: true };
+    }),
+
+  deleteMany: protectedProcedure
+    .input(
+      z.object({
+        ids: z.array(z.uuid()),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const organizationId = ctx.session.session.activeOrganization;
+      if (!organizationId) {
+        throw new Error("No active organization");
+      }
+
+      if (input.ids.length === 0) {
+        return { success: true };
+      }
+
+      // Check if all datasources belong to the organization
+      const count = await db
+        .select()
+        .from(datasources)
+        .where(
+          and(eq(datasources.organizationId, organizationId), inArray(datasources.id, input.ids)),
+        );
+
+      if (count.length !== input.ids.length) {
+        throw new Error("Some datasources not found or no permission");
+      }
+
+      await db.delete(datasourceChunks).where(inArray(datasourceChunks.datasourceId, input.ids));
+
+      await db.delete(datasources).where(inArray(datasources.id, input.ids));
 
       return { success: true };
     }),

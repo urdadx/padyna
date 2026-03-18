@@ -35,6 +35,7 @@ export const CrawlWebsite = ({ onSuccess, onStarted }: CrawlWebsiteProps) => {
 	const [isPolling, setIsPolling] = useState(false);
 
 	const isMountedRef = useRef(true);
+	const activeCrawlIdRef = useRef<string | null>(null);
 	const CRAWL_TOAST_ID = "crawl-status";
 
 	useEffect(() => {
@@ -50,8 +51,16 @@ export const CrawlWebsite = ({ onSuccess, onStarted }: CrawlWebsiteProps) => {
 		},
 	});
 
+	const cancelCrawl = useMutation({
+		mutationFn: async (id: string) => {
+			const response = await api.delete(`/api/ingestion/crawl/${id}`);
+			return response.data;
+		},
+	});
+
 	const pollCrawlStatus = async (id: string) => {
-		while (true) {
+		activeCrawlIdRef.current = id;
+		while (activeCrawlIdRef.current === id) {
 			const response = await api.get(`/api/ingestion/crawl/${id}`);
 			const status = response.data as CrawlResult;
 
@@ -94,15 +103,31 @@ export const CrawlWebsite = ({ onSuccess, onStarted }: CrawlWebsiteProps) => {
 				break;
 			}
 
-			toast.loading(`Crawling... (${status.completedPages}/${status.totalPages})`, {
-				id: CRAWL_TOAST_ID,
-				duration: Number.POSITIVE_INFINITY,
-			});
+			toast.loading(
+				`Extracting content... (${status.completedPages}/${status.totalPages})`,
+				{
+					id: CRAWL_TOAST_ID,
+					duration: Number.POSITIVE_INFINITY,
+					action: {
+						label: "Cancel",
+						onClick: () => {
+							cancelCrawl.mutate(id);
+							activeCrawlIdRef.current = null;
+							toast.dismiss(CRAWL_TOAST_ID);
+						},
+					},
+				},
+			);
 
 			await new Promise((resolve) => setTimeout(resolve, 3000));
 		}
 
-		if (isMountedRef.current) {
+		if (isMountedRef.current && activeCrawlIdRef.current === id) {
+			setIsPolling(false);
+			setCrawlStatus(null);
+			activeCrawlIdRef.current = null;
+		} else if (isMountedRef.current && activeCrawlIdRef.current === null) {
+			// Handle explicit cancellation
 			setIsPolling(false);
 			setCrawlStatus(null);
 		}

@@ -1,7 +1,6 @@
 import { SupportMessage } from "./agent-components/message";
 import { StatusIndicator } from "./agent-components/status-indicator";
 import { SourceCitations, extractSources } from "./source-citations";
-import type { UIMessage } from "ai";
 import { Streamdown } from "streamdown";
 import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
@@ -11,8 +10,26 @@ import { MarkdownCodeBlock } from "./agent-components/code-block";
 
 const streamdownPlugins = { cjk, code, math, mermaid };
 
+type MessagePart = {
+	type: string;
+	text?: string;
+	state?: string;
+	output?: unknown;
+	[key: string]: unknown;
+};
+
+type BaseMessage = {
+	id: string;
+	role: "user" | "assistant" | "system";
+	parts: MessagePart[] | null;
+};
+
+type UIMessageLike = BaseMessage & {
+	contentText?: string;
+};
+
 type PureMessagesProps = {
-	messages: UIMessage[];
+	messages: UIMessageLike[];
 	isReady?: boolean;
 	isStreaming?: boolean;
 	primaryColor?: string;
@@ -29,23 +46,23 @@ export const PureMessages = ({
 		const isCurrentlyStreaming = isStreaming && isLastMessage;
 		const isUser = message.role === "user";
 
-		const sources = extractSources(
-			message.parts as { type: string; [key: string]: unknown }[],
-		);
+		const parts = message.parts ?? [];
+		const sources = extractSources(parts as { type: string; [key: string]: unknown }[]);
 
-		const textParts = message.parts.filter(
-			(part): part is { type: "text"; text: string } =>
+		const textParts = parts.filter(
+			(part): part is MessagePart =>
 				part.type === "text" && "text" in part && Boolean(part.text),
 		);
 
 		const hasTextContent = textParts.length > 0;
+		const hasContentText = Boolean(message.contentText);
 
-		const hasVisibleContent = hasTextContent || message.parts.length === 0;
+		const hasVisibleContent = hasTextContent || hasContentText || parts.length === 0;
 
 		const getStatusLabel = () => {
 			if (!isCurrentlyStreaming || hasTextContent) return null;
 
-			const isSearchingDocs = message.parts.some(
+			const isSearchingDocs = parts.some(
 				(p: any) =>
 					p.type === "tool-knowledge_base" && p.state !== "output-available",
 			);
@@ -59,6 +76,8 @@ export const PureMessages = ({
 
 		const messageContent = statusLabel ? (
 			<StatusIndicator label={statusLabel} />
+		) : hasContentText && textParts.length === 0 ? (
+			<p className="whitespace-pre-wrap">{message.contentText}</p>
 		) : (
 			textParts.map((part, partIndex) => (
 				<Streamdown

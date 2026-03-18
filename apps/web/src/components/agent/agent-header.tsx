@@ -25,10 +25,16 @@ export const AgentHeader = ({ chatbot, isLoading, onReset }: AgentHeaderProps) =
 					<Avatar
 						className="w-9 h-9 rounded-md border-primary"
 						style={{ borderColor: chatbot?.primaryColor || "#6366f1" }}>
-						<AvatarImage className="rounded-md" src={chatbot?.image || ""} />
+						<AvatarImage
+							className="rounded-md"
+							src={chatbot?.image || ""}
+						/>
 						<AvatarFallback
 							className="font-semibold rounded-md"
-							style={{ backgroundColor: chatbot?.primaryColor || "#6366f1", color: "white" }}>
+							style={{
+								backgroundColor: chatbot?.primaryColor || "#6366f1",
+								color: "white",
+							}}>
 							{chatbot?.name?.charAt(0) || "A"}
 						</AvatarFallback>
 					</Avatar>
@@ -37,7 +43,7 @@ export const AgentHeader = ({ chatbot, isLoading, onReset }: AgentHeaderProps) =
 					{isLoading ? (
 						<Skeleton className="h-4 w-24" />
 					) : (
-						<p className="text-sm font-medium tracking-tight">
+						<p className="text-sm font-medium capitalize tracking-tight">
 							{chatbot?.name || "Agent"}
 						</p>
 					)}
