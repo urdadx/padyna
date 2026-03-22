@@ -1,0 +1,618 @@
+import { z } from "zod";
+import { protectedProcedure, publicProcedure, router } from "../index";
+import { db } from "@padyna/db";
+import { eq, and, gte, lte, lt, sql, desc, count, countDistinct, avg } from "drizzle-orm";
+import {
+  visitorSessions,
+  visitorEvents,
+  analyticsDaily,
+  analyticsWeekly,
+  analyticsMonthly,
+} from "@padyna/db/schema/index";
+import { TRPCError } from "@trpc/server";
+
+const timeRangeSchema = z.enum(["24h", "7d", "30d", "90d"]).default("24h");
+
+const paginatedInput = z.object({
+  timeRange: timeRangeSchema,
+  limit: z.number().min(1).max(100).default(10),
+});
+
+function getActiveChatbot(ctx: { session: { session: { activeChatbot?: string | null } } }) {
+  const chatbotId = ctx.session.session.activeChatbot;
+  if (!chatbotId) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "No active chatbot" });
+  }
+  return chatbotId;
+}
+
+function getDateRange(timeRange: z.infer<typeof timeRangeSchema>) {
+  const now = new Date();
+  const start = new Date(now);
+
+  switch (timeRange) {
+    case "24h":
+      start.setHours(start.getHours() - 24);
+      break;
+    case "7d":
+      start.setDate(start.getDate() - 7);
+      break;
+    case "30d":
+      start.setDate(start.getDate() - 30);
+      break;
+    case "90d":
+      start.setDate(start.getDate() - 90);
+      break;
+  }
+
+  return { start, end: now };
+}
+
+const n = (val: unknown) => Number(val ?? 0);
+
+const calcPercentChange = (curr: number, prev: number) => {
+  if (prev === 0) return curr > 0 ? 100 : 0;
+  return Math.round(((curr - prev) / prev) * 100);
+};
+
+const calcBounceRate = (bounces: number, total: number) =>
+  total > 0 ? Math.round((bounces / total) * 100 * 10) / 10 : 0;
+
+// ─── TREND BUILDER ───────────────────────────────────────────────────────────
+
+interface TrendRow {
+  totalSessions: unknown;
+  uniqueVisitors: unknown;
+  avgSessionDurationMs: unknown;
+  totalChatsStarted: unknown;
+  bounceCount: unknown;
+}
+
+function buildTrendResult(current: TrendRow | undefined, previous: TrendRow | undefined) {
+  const totalSessions = n(current?.totalSessions);
+  const totalSessionsPrev = n(previous?.totalSessions);
+  const uniqueVisitors = n(current?.uniqueVisitors);
+  const uniqueVisitorsPrev = n(previous?.uniqueVisitors);
+  const totalChats = n(current?.totalChatsStarted);
+  const totalChatsPrev = n(previous?.totalChatsStarted);
+  const avgDuration = n(current?.avgSessionDurationMs);
+  const avgDurationPrev = n(previous?.avgSessionDurationMs);
+  const bounceCount = n(current?.bounceCount);
+  const bounceCountPrev = n(previous?.bounceCount);
+
+  const bounceRate = calcBounceRate(bounceCount, totalSessions);
+  const bounceRatePrev = calcBounceRate(bounceCountPrev, totalSessionsPrev);
+
+  return {
+    totalSessions: {
+      value: totalSessions,
+      previousValue: totalSessionsPrev,
+      change: calcPercentChange(totalSessions, totalSessionsPrev),
+      direction: totalSessions >= totalSessionsPrev ? "up" : "down",
+      isPositive: totalSessions >= totalSessionsPrev,
+    },
+    uniqueVisitors: {
+      value: uniqueVisitors,
+      previousValue: uniqueVisitorsPrev,
+      change: calcPercentChange(uniqueVisitors, uniqueVisitorsPrev),
+      direction: uniqueVisitors >= uniqueVisitorsPrev ? "up" : "down",
+      isPositive: uniqueVisitors >= uniqueVisitorsPrev,
+    },
+    totalChats: {
+      value: totalChats,
+      previousValue: totalChatsPrev,
+      change: calcPercentChange(totalChats, totalChatsPrev),
+      direction: totalChats >= totalChatsPrev ? "up" : "down",
+      isPositive: totalChats >= totalChatsPrev,
+    },
+    bounceRate: {
+      value: bounceRate,
+      previousValue: bounceRatePrev,
+      change: calcPercentChange(bounceRate, bounceRatePrev),
+      direction: bounceRate <= bounceRatePrev ? "down" : "up",
+      isPositive: bounceRate <= bounceRatePrev,
+    },
+    avgSessionDuration: {
+      value: Math.round(avgDuration / 1000),
+      previousValue: Math.round(avgDurationPrev / 1000),
+      change: calcPercentChange(avgDuration, avgDurationPrev),
+      direction: avgDuration >= avgDurationPrev ? "up" : "down",
+      isPositive: avgDuration >= avgDurationPrev,
+    },
+  };
+}
+
+// ─── ROUTER ──────────────────────────────────────────────────────────────────
+
+export const analyticsRouter = router({
+  getOverview: protectedProcedure
+    .input(z.object({ timeRange: timeRangeSchema }))
+    .query(async ({ ctx, input }) => {
+      const chatbotId = getActiveChatbot(ctx);
+      const { start, end } = getDateRange(input.timeRange);
+      const activeThreshold = new Date(Date.now() - 5 * 60 * 1000);
+
+      const [sessionsResult, eventsResult, activeVisitorsResult] = await Promise.all([
+        db
+          .select({
+            totalSessions: count().as("total_sessions"),
+            uniqueVisitors: countDistinct(visitorSessions.visitorId).as("unique_visitors"),
+            avgDuration: avg(visitorSessions.durationMs).as("avg_duration"),
+          })
+          .from(visitorSessions)
+          .where(
+            and(
+              eq(visitorSessions.chatbotId, chatbotId),
+              gte(visitorSessions.startedAt, start),
+              lte(visitorSessions.startedAt, end),
+            ),
+          ),
+        db
+          .select({ totalChats: count().as("total_chats") })
+          .from(visitorEvents)
+          .where(
+            and(
+              eq(visitorEvents.chatbotId, chatbotId),
+              eq(visitorEvents.event, "chat_started"),
+              gte(visitorEvents.timestamp, start),
+              lte(visitorEvents.timestamp, end),
+            ),
+          ),
+        db
+          .select({
+            count: countDistinct(visitorSessions.visitorId).as("active_visitors"),
+          })
+          .from(visitorSessions)
+          .where(
+            and(
+              eq(visitorSessions.chatbotId, chatbotId),
+              gte(visitorSessions.startedAt, activeThreshold),
+            ),
+          ),
+      ]);
+
+      return {
+        totalVisits: n(sessionsResult[0]?.totalSessions),
+        uniqueVisitors: n(sessionsResult[0]?.uniqueVisitors),
+        totalChats: n(eventsResult[0]?.totalChats),
+        averageSessionTime: Math.round(n(sessionsResult[0]?.avgDuration) / 1000),
+        activeVisitors: n(activeVisitorsResult[0]?.count),
+      };
+    }),
+
+  getChartData: protectedProcedure
+    .input(z.object({ timeRange: timeRangeSchema }))
+    .query(async ({ ctx, input }) => {
+      const chatbotId = getActiveChatbot(ctx);
+      const { start, end } = getDateRange(input.timeRange);
+
+      const rows = await db
+        .select({
+          date: sql<string>`DATE(${visitorSessions.startedAt})`.as("date"),
+          visitors: count().as("visitors"),
+          chats: sql<number>`
+            COUNT(CASE WHEN ${visitorEvents.event} = 'chat_started' THEN 1 END)
+          `.as("chats"),
+        })
+        .from(visitorSessions)
+        .leftJoin(
+          visitorEvents,
+          and(
+            eq(visitorEvents.sessionId, visitorSessions.id),
+            eq(visitorEvents.event, "chat_started"),
+          ),
+        )
+        .where(
+          and(
+            eq(visitorSessions.chatbotId, chatbotId),
+            gte(visitorSessions.startedAt, start),
+            lte(visitorSessions.startedAt, end),
+          ),
+        )
+        .groupBy(sql`DATE(${visitorSessions.startedAt})`)
+        .orderBy(sql`DATE(${visitorSessions.startedAt})`);
+
+      return rows.map((r) => ({
+        date: r.date,
+        visitors: n(r.visitors),
+        chats: n(r.chats),
+      }));
+    }),
+
+  getTopCountries: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
+    const chatbotId = getActiveChatbot(ctx);
+    const { start, end } = getDateRange(input.timeRange);
+
+    const result = await db
+      .select({
+        countryCode: visitorSessions.countryCode,
+        country: visitorSessions.country,
+        count: count().as("count"),
+      })
+      .from(visitorSessions)
+      .where(
+        and(
+          eq(visitorSessions.chatbotId, chatbotId),
+          gte(visitorSessions.startedAt, start),
+          lte(visitorSessions.startedAt, end),
+        ),
+      )
+      .groupBy(visitorSessions.countryCode, visitorSessions.country)
+      .orderBy(desc(count()))
+      .limit(input.limit);
+
+    return result.map((r) => ({
+      countryCode: r.countryCode ?? "unknown",
+      country: r.country ?? "Unknown",
+      value: n(r.count),
+    }));
+  }),
+
+  getTopCities: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
+    const chatbotId = getActiveChatbot(ctx);
+    const { start, end } = getDateRange(input.timeRange);
+
+    const result = await db
+      .select({
+        city: visitorSessions.city,
+        countryCode: visitorSessions.countryCode,
+        count: count().as("count"),
+      })
+      .from(visitorSessions)
+      .where(
+        and(
+          eq(visitorSessions.chatbotId, chatbotId),
+          gte(visitorSessions.startedAt, start),
+          lte(visitorSessions.startedAt, end),
+        ),
+      )
+      .groupBy(visitorSessions.city, visitorSessions.countryCode)
+      .orderBy(desc(count()))
+      .limit(input.limit);
+
+    return result.map((r) => ({
+      city: r.city ?? "Unknown",
+      countryCode: r.countryCode ?? "unknown",
+      value: n(r.count),
+    }));
+  }),
+
+  getTopContinents: protectedProcedure
+    .input(z.object({ timeRange: timeRangeSchema, limit: z.number().min(1).max(10).default(7) }))
+    .query(async ({ ctx, input }) => {
+      const chatbotId = getActiveChatbot(ctx);
+      const { start, end } = getDateRange(input.timeRange);
+
+      const result = await db
+        .select({
+          continent: visitorSessions.continent,
+          count: count().as("count"),
+        })
+        .from(visitorSessions)
+        .where(
+          and(
+            eq(visitorSessions.chatbotId, chatbotId),
+            gte(visitorSessions.startedAt, start),
+            lte(visitorSessions.startedAt, end),
+          ),
+        )
+        .groupBy(visitorSessions.continent)
+        .orderBy(desc(count()))
+        .limit(input.limit);
+
+      return result.map((r) => ({
+        continent: r.continent ?? "Unknown",
+        value: n(r.count),
+      }));
+    }),
+
+  getTopPlatforms: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
+    const chatbotId = getActiveChatbot(ctx);
+    const { start, end } = getDateRange(input.timeRange);
+
+    const result = await db
+      .select({
+        deviceType: visitorSessions.deviceType,
+        count: count().as("count"),
+      })
+      .from(visitorSessions)
+      .where(
+        and(
+          eq(visitorSessions.chatbotId, chatbotId),
+          gte(visitorSessions.startedAt, start),
+          lte(visitorSessions.startedAt, end),
+        ),
+      )
+      .groupBy(visitorSessions.deviceType)
+      .orderBy(desc(count()))
+      .limit(input.limit);
+
+    return result.map((r) => ({
+      platform: r.deviceType ?? "unknown",
+      value: n(r.count),
+    }));
+  }),
+
+  getTopReferrers: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
+    const chatbotId = getActiveChatbot(ctx);
+    const { start, end } = getDateRange(input.timeRange);
+
+    const result = await db
+      .select({
+        referrer: visitorSessions.referrer,
+        count: count().as("count"),
+      })
+      .from(visitorSessions)
+      .where(
+        and(
+          eq(visitorSessions.chatbotId, chatbotId),
+          gte(visitorSessions.startedAt, start),
+          lte(visitorSessions.startedAt, end),
+        ),
+      )
+      .groupBy(visitorSessions.referrer)
+      .orderBy(desc(count()))
+      .limit(input.limit);
+
+    return result.map((r) => ({
+      referrer: r.referrer ?? "direct",
+      value: n(r.count),
+    }));
+  }),
+
+  getDaily: protectedProcedure
+    .input(
+      z.object({
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+        limit: z.number().min(1).max(365).default(30),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const chatbotId = getActiveChatbot(ctx);
+      const end = input.endDate ?? new Date();
+      const start = input.startDate ?? new Date(end.getTime() - input.limit * 24 * 60 * 60 * 1000);
+
+      return db
+        .select()
+        .from(analyticsDaily)
+        .where(
+          and(
+            eq(analyticsDaily.chatbotId, chatbotId),
+            gte(analyticsDaily.date, start),
+            lte(analyticsDaily.date, end),
+          ),
+        )
+        .orderBy(analyticsDaily.date)
+        .limit(input.limit);
+    }),
+
+  getWeekly: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(52).default(12) }))
+    .query(async ({ ctx, input }) => {
+      const chatbotId = getActiveChatbot(ctx);
+
+      return db
+        .select()
+        .from(analyticsWeekly)
+        .where(eq(analyticsWeekly.chatbotId, chatbotId))
+        .orderBy(desc(analyticsWeekly.weekStart))
+        .limit(input.limit);
+    }),
+
+  getMonthly: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(24).default(12) }))
+    .query(async ({ ctx, input }) => {
+      const chatbotId = getActiveChatbot(ctx);
+
+      return db
+        .select()
+        .from(analyticsMonthly)
+        .where(eq(analyticsMonthly.chatbotId, chatbotId))
+        .orderBy(desc(analyticsMonthly.year), desc(analyticsMonthly.month))
+        .limit(input.limit);
+    }),
+
+  getDailyTrend: protectedProcedure.query(async ({ ctx }) => {
+    const chatbotId = getActiveChatbot(ctx);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const trendFields = {
+      totalSessions: analyticsDaily.totalSessions,
+      uniqueVisitors: analyticsDaily.uniqueVisitors,
+      avgSessionDurationMs: analyticsDaily.avgSessionDurationMs,
+      totalChatsStarted: analyticsDaily.totalChatsStarted,
+      bounceCount: analyticsDaily.bounceCount,
+    };
+
+    const [todayData, yesterdayData] = await Promise.all([
+      db
+        .select(trendFields)
+        .from(analyticsDaily)
+        .where(and(eq(analyticsDaily.chatbotId, chatbotId), eq(analyticsDaily.date, today)))
+        .limit(1),
+      db
+        .select(trendFields)
+        .from(analyticsDaily)
+        .where(and(eq(analyticsDaily.chatbotId, chatbotId), eq(analyticsDaily.date, yesterday)))
+        .limit(1),
+    ]);
+
+    return buildTrendResult(todayData[0], yesterdayData[0]);
+  }),
+
+  getWeeklyTrend: protectedProcedure.query(async ({ ctx }) => {
+    const chatbotId = getActiveChatbot(ctx);
+
+    const now = new Date();
+    const thisWeekStart = new Date(now);
+    thisWeekStart.setDate(now.getDate() - now.getDay());
+    thisWeekStart.setHours(0, 0, 0, 0);
+
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    const lastWeekEnd = new Date(thisWeekStart);
+    lastWeekEnd.setMilliseconds(-1);
+
+    const trendFields = {
+      totalSessions: analyticsWeekly.totalSessions,
+      uniqueVisitors: analyticsWeekly.uniqueVisitors,
+      avgSessionDurationMs: analyticsWeekly.avgSessionDurationMs,
+      totalChatsStarted: analyticsWeekly.totalChatsStarted,
+      bounceCount: analyticsWeekly.bounceCount,
+    };
+
+    const [thisWeek, lastWeek] = await Promise.all([
+      db
+        .select(trendFields)
+        .from(analyticsWeekly)
+        .where(
+          and(
+            eq(analyticsWeekly.chatbotId, chatbotId),
+            gte(analyticsWeekly.weekStart, thisWeekStart),
+          ),
+        )
+        .limit(1),
+      db
+        .select(trendFields)
+        .from(analyticsWeekly)
+        .where(
+          and(
+            eq(analyticsWeekly.chatbotId, chatbotId),
+            gte(analyticsWeekly.weekStart, lastWeekStart),
+            lt(analyticsWeekly.weekStart, thisWeekStart),
+          ),
+        )
+        .limit(1),
+    ]);
+
+    return buildTrendResult(thisWeek[0], lastWeek[0]);
+  }),
+
+  getMonthlyTrend: protectedProcedure.query(async ({ ctx }) => {
+    const chatbotId = getActiveChatbot(ctx);
+
+    const now = new Date();
+    const thisMonth = now.getMonth() + 1;
+    const thisYear = now.getFullYear();
+    const lastMonth = thisMonth === 1 ? 12 : thisMonth - 1;
+    const lastMonthYear = thisMonth === 1 ? thisYear - 1 : thisYear;
+
+    const trendFields = {
+      totalSessions: analyticsMonthly.totalSessions,
+      uniqueVisitors: analyticsMonthly.uniqueVisitors,
+      avgSessionDurationMs: analyticsMonthly.avgSessionDurationMs,
+      totalChatsStarted: analyticsMonthly.totalChatsStarted,
+      bounceCount: analyticsMonthly.bounceCount,
+    };
+
+    const [thisMonthData, lastMonthData] = await Promise.all([
+      db
+        .select(trendFields)
+        .from(analyticsMonthly)
+        .where(
+          and(
+            eq(analyticsMonthly.chatbotId, chatbotId),
+            eq(analyticsMonthly.month, thisMonth),
+            eq(analyticsMonthly.year, thisYear),
+          ),
+        )
+        .limit(1),
+      db
+        .select(trendFields)
+        .from(analyticsMonthly)
+        .where(
+          and(
+            eq(analyticsMonthly.chatbotId, chatbotId),
+            eq(analyticsMonthly.month, lastMonth),
+            eq(analyticsMonthly.year, lastMonthYear),
+          ),
+        )
+        .limit(1),
+    ]);
+
+    return buildTrendResult(thisMonthData[0], lastMonthData[0]);
+  }),
+
+  trackEvent: publicProcedure
+    .input(
+      z.object({
+        chatbotId: z.string().uuid(),
+        sessionId: z.string().uuid(),
+        visitorId: z.string(),
+        event: z.enum([
+          "session_start",
+          "session_end",
+          "page_view",
+          "chat_started",
+          "chat_message",
+          "widget_open",
+          "widget_close",
+          "cta_click",
+          "form_submit",
+          "file_download",
+          "error",
+          "custom",
+        ]),
+        durationMs: z.number().optional(),
+        conversationId: z.string().uuid().optional(),
+        extra: z.record(z.string(), z.unknown()).optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const [event] = await db
+        .insert(visitorEvents)
+        .values({ ...input, timestamp: new Date() })
+        .returning();
+      return event;
+    }),
+
+  createSession: publicProcedure
+    .input(
+      z.object({
+        chatbotId: z.string().uuid(),
+        visitorId: z.string(),
+        userAgent: z.string().optional(),
+        deviceType: z.enum(["desktop", "mobile", "tablet", "bot", "unknown"]).default("unknown"),
+        platform: z.string().optional(),
+        city: z.string().optional(),
+        region: z.string().optional(),
+        country: z.string().optional(),
+        countryCode: z.string().optional(),
+        continent: z.string().optional(),
+        ip: z.string().optional(),
+        referrer: z.string().optional(),
+        extra: z.record(z.string(), z.unknown()).optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const [session] = await db
+        .insert(visitorSessions)
+        .values({ ...input, startedAt: new Date() })
+        .returning();
+      return session;
+    }),
+
+  endSession: publicProcedure
+    .input(
+      z.object({
+        sessionId: z.string().uuid(),
+        durationMs: z.number().optional(),
+        pageViews: z.number().optional(),
+        isBounce: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { sessionId, ...rest } = input;
+      const [session] = await db
+        .update(visitorSessions)
+        .set({ ...rest, endedAt: new Date() })
+        .where(eq(visitorSessions.id, sessionId))
+        .returning();
+      return session;
+    }),
+});

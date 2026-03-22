@@ -1,0 +1,12 @@
+export type PadynaInitOptions = {
+  widgetId: string;
+  serverUrl?: string;
+};
+
+export type PadynaCommand = "init" | "open" | "close" | "destroy";
+
+export type PadynaCallable = {
+  (command: "init", options: PadynaInitOptions): void;
+  (command: Exclude<PadynaCommand, "init">): void;
+  q?: unknown[][];
+};

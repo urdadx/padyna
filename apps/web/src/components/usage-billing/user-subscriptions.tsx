@@ -5,78 +5,63 @@ import { CuteIconWrapper } from "../cute-icon-wrapper";
 import { WalletLinear } from "@/assets/icons/wallet";
 
 export function UserSubscriptions() {
-	const subscriptions = [
-		{
-			name: "Growth Plan",
-			usage: "3,000 credits",
-			price: "$0 / mo",
-			endDate: "2024-12-31",
-		},
-	];
+  const subscriptions = [
+    {
+      name: "Growth Plan",
+      usage: "3,000 credits",
+      price: "$0 / mo",
+      endDate: "2024-12-31",
+    },
+  ];
 
-	return (
-		<div className="rounded-2xl border bg-card text-card-foreground">
-			<div className="p-3 px-4 sm:px-6">
-				<h3 className="text-xl font-semibold text-foreground">Subscriptions</h3>
-				<div className="space-y-0 relative">
-					{subscriptions.map((sub, index) => (
-						<div
-							key={sub.name}
-							className={`flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between ${
-								index !== subscriptions.length - 1
-									? "border-b border-border/50"
-									: ""
-							}`}>
-							<div className="text-sm flex items-center gap-2 text-muted-foreground">
-								<CuteIconWrapper
-									color="green"
-									icon={WalletLinear}
-								/>
-								<span>{sub.name}</span>
-							</div>
-							<div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:gap-8">
-								<div className="text-sm text-foreground">
-									{sub.usage}
-								</div>
-								<div className="text-sm text-foreground w-16 text-right">
-									{sub.price}
-								</div>
-								<Popover>
-									<PopoverTrigger>
-										<Button
-											variant="outline"
-											size="icon"
-											className="rounded-lg">
-											<MoreHorizontal className="w-4 h-4" />
-										</Button>
-									</PopoverTrigger>
-									<PopoverContent
-										className="w-40 p-1"
-										align="end">
-										<div className="flex flex-col">
-											<Button
-												variant="ghost"
-												size="sm"
-												className="justify-start gap-2 font-normal">
-												Upgrade
-											</Button>
-											<Button
-												variant="ghost"
-												size="sm"
-												className="justify-start gap-2 font-normal text-destructive hover:text-destructive">
-												Cancel
-											</Button>
-										</div>
-									</PopoverContent>
-								</Popover>
-							</div>
-						</div>
-					))}
-				</div>
-			</div>
-			<div className="border-t border-border bg-gray-50 p-3 px-4 sm:px-6 rounded-b-2xl">
-				<Button size="sm">Upgrade</Button>
-			</div>
-		</div>
-	);
+  return (
+    <div className="rounded-2xl border bg-card text-card-foreground">
+      <div className="p-3 px-4 sm:px-6">
+        <h3 className="text-xl font-semibold text-foreground">Subscriptions</h3>
+        <div className="space-y-0 relative">
+          {subscriptions.map((sub, index) => (
+            <div
+              key={sub.name}
+              className={`flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between ${
+                index !== subscriptions.length - 1 ? "border-b border-border/50" : ""
+              }`}
+            >
+              <div className="text-sm flex items-center gap-2 text-muted-foreground">
+                <CuteIconWrapper color="green" icon={WalletLinear} />
+                <span>{sub.name}</span>
+              </div>
+              <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:gap-8">
+                <div className="text-sm text-foreground">{sub.usage}</div>
+                <div className="text-sm text-foreground w-16 text-right">{sub.price}</div>
+                <Popover>
+                  <PopoverTrigger>
+                    <Button variant="outline" size="icon" className="rounded-lg">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-40 p-1" align="end">
+                    <div className="flex flex-col">
+                      <Button variant="ghost" size="sm" className="justify-start gap-2 font-normal">
+                        Upgrade
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="justify-start gap-2 font-normal text-destructive hover:text-destructive"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="border-t border-border bg-gray-50 p-3 px-4 sm:px-6 rounded-b-2xl">
+        <Button size="sm">Upgrade</Button>
+      </div>
+    </div>
+  );
 }

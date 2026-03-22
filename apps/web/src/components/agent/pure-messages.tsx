@@ -1,12 +1,14 @@
 import { SupportMessage } from "./agent-components/message";
 import { StatusIndicator } from "./agent-components/status-indicator";
-import { SourceCitations, extractSources } from "./source-citations";
+import { extractSources, SourceCitations } from "./source-citations";
 import { Streamdown } from "streamdown";
 import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
 import { MarkdownCodeBlock } from "./agent-components/code-block";
+import { VoteBlock } from "./vote-block";
+import { Fragment } from "react";
 
 const streamdownPlugins = { cjk, code, math, mermaid };
 
@@ -28,18 +30,28 @@ type UIMessageLike = BaseMessage & {
 	contentText?: string;
 };
 
+type BottomComponent = "source-citations" | "vote-block";
+
 type PureMessagesProps = {
 	messages: UIMessageLike[];
+	chatId?: string;
+	chatbotId?: string;
 	isReady?: boolean;
 	isStreaming?: boolean;
 	primaryColor?: string;
+	bottomComponent?: BottomComponent;
+	showVoteBlock?: boolean;
 };
 
 export const PureMessages = ({
 	messages,
+	chatId,
+	chatbotId,
 	isReady,
 	isStreaming,
 	primaryColor,
+	bottomComponent = "vote-block",
+	showVoteBlock = false,
 }: PureMessagesProps) => {
 	return messages.map((message, index) => {
 		const isLastMessage = index === messages.length - 1;
@@ -120,19 +132,27 @@ export const PureMessages = ({
 		);
 
 		return (
-			<>
+			<Fragment key={message.id}>
 				<SupportMessage
-					key={message.id}
 					isUser={isUser}
 					animate={isUser || isCurrentlyStreaming}
 					primaryColor={primaryColor}>
 					{!hasVisibleContent && !statusLabel ? null : messageContent}
 				</SupportMessage>
-				{message.role === "assistant" &&
-					sources.length > 0 &&
+				{isLastMessage &&
+					message.role === "assistant" &&
 					!isCurrentlyStreaming &&
-					isReady && <SourceCitations sources={sources} />}
-			</>
+					isReady &&
+					(bottomComponent === "source-citations" ? (
+						<SourceCitations sources={sources} />
+					) : showVoteBlock && chatbotId ? (
+						<VoteBlock
+							messageId={message.id}
+							chatId={chatId}
+							chatbotId={chatbotId}
+						/>
+					) : null)}
+			</Fragment>
 		);
 	});
 };

@@ -11,6 +11,7 @@ export interface RankedSemanticChunk {
   chunkIndex: number;
   sourceName: string;
   sourceType: "link" | "file" | "qa" | "text";
+  url: string | null;
 }
 
 export interface SearchSemanticChunksInput {
@@ -62,6 +63,7 @@ export async function searchSemanticChunks(input: SearchSemanticChunksInput) {
       chunkIndex: datasourceChunks.chunkIndex,
       sourceName: datasources.sourceName,
       sourceType: datasources.sourceType,
+      url: datasources.url,
     })
     .from(datasourceChunks)
     .innerJoin(datasources, eq(datasourceChunks.datasourceId, datasources.id))

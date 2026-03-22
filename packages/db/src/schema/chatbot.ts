@@ -34,6 +34,8 @@ export const chatbot = pgTable(
     trainingStatus: text("training_status").default("idle"),
     lastTrainedAt: timestamp("last_trained_at"),
     dataSourcesCount: integer("data_sources_count").default(0).notNull(),
+    upvotes: integer("upvotes").default(0).notNull(),
+    downvotes: integer("downvotes").default(0).notNull(),
 
     isEnabled: boolean("is_enabled").notNull().default(true),
     embedToken: text("embed_token").unique(),

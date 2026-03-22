@@ -24,6 +24,7 @@ export const datasourceRouter = router({
       text: result.filter((r) => r.sourceType === "text").length,
       link: result.filter((r) => r.sourceType === "link").length,
       qa: result.filter((r) => r.sourceType === "qa").length,
+      all: result.length,
     };
   }),
 
@@ -152,7 +153,6 @@ export const datasourceRouter = router({
         return { success: true };
       }
 
-      // Check if all datasources belong to the organization
       const count = await db
         .select()
         .from(datasources)

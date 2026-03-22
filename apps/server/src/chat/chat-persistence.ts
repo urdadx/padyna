@@ -116,6 +116,7 @@ async function getOrCreateConversation(input: {
   chatbotId: string;
   organizationId: string;
   userId: string;
+  title?: string;
 }) {
   const existing = await db
     .select({ id: chatConversation.id })
@@ -142,6 +143,7 @@ async function getOrCreateConversation(input: {
       chatbotId: input.chatbotId,
       organizationId: input.organizationId,
       userId: input.userId,
+      title: input.title || "New Conversation",
     })
     .returning({ id: chatConversation.id });
 
@@ -209,6 +211,7 @@ export async function persistConversationMessages(input: {
   organizationId: string;
   userId: string;
   messages: StoredUIMessage[];
+  title?: string;
 }) {
   const normalizedMessages = normalizeIncomingMessages(input.messages);
   if (normalizedMessages.length === 0) {
@@ -219,6 +222,7 @@ export async function persistConversationMessages(input: {
     chatbotId: input.chatbotId,
     organizationId: input.organizationId,
     userId: input.userId,
+    title: input.title,
   });
 
   const existing = await db
@@ -241,7 +245,9 @@ export async function persistConversationMessages(input: {
   const existingAssistantProviderItemIds = new Set(
     existing
       .filter((row) => row.role === "assistant")
-      .map((row) => extractProviderItemIdFromParts(Array.isArray(row.parts) ? row.parts : undefined))
+      .map((row) =>
+        extractProviderItemIdFromParts(Array.isArray(row.parts) ? row.parts : undefined),
+      )
       .filter((itemId): itemId is string => itemId !== null),
   );
 
@@ -255,7 +261,7 @@ export async function persistConversationMessages(input: {
       message.providerItemId !== null &&
       existingAssistantProviderItemIds.has(message.providerItemId)
     ) {
-        return false;
+      return false;
     }
 
     return true;

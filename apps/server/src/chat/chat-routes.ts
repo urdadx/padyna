@@ -37,7 +37,7 @@ chatRoutes.post("/", async (c) => {
   }
 
   const [chatbotData] = await db
-    .select({ name: chatbot.name })
+    .select()
     .from(chatbot)
     .where(and(eq(chatbot.id, activeChatbot), eq(chatbot.organizationId, activeOrganization)))
     .limit(1);
@@ -47,6 +47,7 @@ chatRoutes.post("/", async (c) => {
   }
 
   const chatbotName = chatbotData.name || "AI Assistant";
+  const chatbotUseCase = chatbotData.usecase || "support";
   const body = await c.req.json();
   const uiMessages = body.messages;
 
@@ -54,17 +55,25 @@ chatRoutes.post("/", async (c) => {
     return c.json({ message: "messages must be an array" }, 400);
   }
 
+  const firstMessage = uiMessages[0];
+  const firstTextPart = firstMessage?.parts?.find(
+    (part: any) => part?.type === "text" && typeof part?.text === "string",
+  );
+  const title = firstTextPart?.text || "New Conversation";
+
   await persistConversationMessages({
     chatbotId: activeChatbot,
     organizationId: activeOrganization,
     userId,
     messages: uiMessages,
+    title,
   });
 
   const agent = createSupportChatAgent({
     chatbotId: activeChatbot,
     organizationId: activeOrganization,
     chatbotName,
+    chatbotUseCase,
   });
 
   return createAgentUIStreamResponse({

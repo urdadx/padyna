@@ -25,7 +25,11 @@ function Avatar({
   );
 }
 
-function AvatarImage({ className, onLoad, ...props }: AvatarPrimitive.Image.Props & { onLoad?: () => void }) {
+function AvatarImage({
+  className,
+  onLoad,
+  ...props
+}: AvatarPrimitive.Image.Props & { onLoad?: () => void }) {
   const [loaded, setLoaded] = React.useState(false);
 
   return (
@@ -34,7 +38,7 @@ function AvatarImage({ className, onLoad, ...props }: AvatarPrimitive.Image.Prop
       className={cn(
         "aspect-square size-full object-cover transition-opacity duration-200",
         loaded ? "opacity-100" : "opacity-0",
-        className
+        className,
       )}
       onLoad={() => {
         setLoaded(true);

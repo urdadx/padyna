@@ -3,7 +3,7 @@ import { ChatLogItem } from "./chatlog-item";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { trpc } from "@/utils/trpc";
 import { Button } from "../ui/button";
-import { SolarFilterBoldDuotone } from "@/assets/icons/filter-icon";
+import { InboxUnread } from "@/assets/icons/inbox-unread";
 
 interface ChatHistorySidebarProps {
 	selectedId?: string;
@@ -21,11 +21,11 @@ export const ChatHistorySidebar = ({
 	return (
 		<div className={cn("flex flex-col h-full rounded-xl border bg-white", className)}>
 			<div className=" px-6 pt-4 flex justify-between items-center">
-				<h1 className="text-2xl font-semibold">Chat logs</h1>
-				<Button variant="outline">
-					<SolarFilterBoldDuotone />
-					Filter
-				</Button>
+				<h1 className="text-xl font-semibold">All messages</h1>
+				<div className="flex gap-2 items-center">
+					<Button variant="outline">All</Button>
+					<Button variant="outline">Recent</Button>
+				</div>
 			</div>
 			<div className="flex-1 overflow-y-auto p-2">
 				{conversations && conversations.length > 0 ? (
@@ -33,7 +33,7 @@ export const ChatHistorySidebar = ({
 						<ChatLogItem
 							key={conversation.id}
 							id={conversation.id}
-							title={`Conversation ${conversation.id.slice(0, 8)}`}
+							title={conversation.title}
 							status="unresolved"
 							date={conversation.updatedAt.toString()}
 							isSelected={selectedId === conversation.id}
@@ -41,8 +41,14 @@ export const ChatHistorySidebar = ({
 						/>
 					))
 				) : (
-					<div className="p-4 text-center text-muted-foreground">
-						No conversations yet
+					<div className="h-full flex flex-col gap-2 justify-center items-center">
+						<InboxUnread
+							color="#888888"
+							className="h-10 w-10 text-muted-foreground"
+						/>
+						<div className="text-muted-foreground">
+							New messages will appear here
+						</div>
 					</div>
 				)}
 			</div>

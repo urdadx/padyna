@@ -23,39 +23,61 @@ export type Conversation = {
 	date: string;
 	title: string;
 	status: "Escalated" | "Unresolved" | "Resolved";
-	channel: "Widget" | "Link in Bio" | "Telegram" | "WhatsApp";
+	channel: "Widget" | "Link in Bio" | "Telegram" | "WhatsApp" | string;
 };
 
-const dummyConversations: Conversation[] = [
-	{
-		id: "1",
-		date: "Oct, 11, 2024 14:30",
-		title: "Pricing inquiry about Pro plan",
-		status: "Resolved",
-		channel: "Widget",
-	},
-	{
-		id: "2",
-		date: "Oct, 10, 2024 13:15",
-		title: "Technical issue with API key",
-		status: "Escalated",
-		channel: "Telegram",
-	},
-	{
-		id: "3",
-		date: "Oct, 10, 2024 12:00",
-		title: "Feature request for dark mode",
-		status: "Unresolved",
-		channel: "Link in Bio",
-	},
-	{
-		id: "4",
-		date: "Dec, 10, 2024 10:45",
-		title: "General feedback - very helpful!",
-		status: "Resolved",
-		channel: "Widget",
-	},
-];
+export type DBConversation = {
+	id: string;
+	title: string;
+	channel: string;
+	status: string;
+	updatedAt: Date | string;
+	createdAt: Date | string;
+	chatbotId: string;
+	organizationId: string;
+	userId: string;
+	visibility: string;
+	metadata: Record<string, unknown> | null;
+};
+
+const channelMap: Record<string, Conversation["channel"]> = {
+	widget: "Widget",
+	whatsapp: "WhatsApp",
+	telegram: "Telegram",
+	web: "Link in Bio",
+	discord: "Discord",
+	slack: "Slack",
+	googlechat: "Google Chat",
+	linear: "Linear",
+	teams: "Teams",
+	instagram: "Instagram",
+	messenger: "Messenger",
+};
+
+function formatDate(date: Date | string): string {
+	return new Intl.DateTimeFormat("en-US", {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+	}).format(new Date(date));
+}
+
+function mapConversation(dbConv: DBConversation): Conversation {
+	return {
+		id: dbConv.id,
+		date: formatDate(dbConv.updatedAt),
+		title: dbConv.title,
+		status:
+			dbConv.status === "escalated"
+				? "Escalated"
+				: dbConv.status === "resolved"
+					? "Resolved"
+					: "Unresolved",
+		channel: channelMap[dbConv.channel] ?? dbConv.channel,
+	};
+}
 
 const columns: ColumnDef<Conversation>[] = [
 	{
@@ -66,7 +88,7 @@ const columns: ColumnDef<Conversation>[] = [
 	{
 		accessorKey: "title",
 		cell: ({ row }) => (
-			<span className="font-medium truncate max-w-24 md:max-w-52 block">
+			<span className="font-medium truncate capitalize max-w-24 md:max-w-52 block">
 				{row.getValue("title")}
 			</span>
 		),
@@ -97,10 +119,16 @@ const columns: ColumnDef<Conversation>[] = [
 	},
 ];
 
-export function MostRecentConversations() {
+interface MostRecentConversationsProps {
+	conversations: DBConversation[];
+}
+
+export function MostRecentConversations({ conversations }: MostRecentConversationsProps) {
+	const mappedConversations = conversations.map(mapConversation);
+
 	const table = useReactTable({
 		columns,
-		data: dummyConversations,
+		data: mappedConversations,
 		getCoreRowModel: getCoreRowModel(),
 	});
 
@@ -153,6 +181,15 @@ export function MostRecentConversations() {
 								))}
 							</TableRow>
 						))}
+						{table.getRowModel().rows.length === 0 && (
+							<TableRow>
+								<TableCell
+									colSpan={columns.length}
+									className="text-center py-4">
+									No conversations yet.
+								</TableCell>
+							</TableRow>
+						)}
 					</TableBody>
 				</Table>
 			</div>

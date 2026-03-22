@@ -5,33 +5,27 @@ import { eq, and, desc } from "drizzle-orm";
 import { chatConversation, chatMessage } from "@padyna/db/schema/chat";
 
 export const conversationsRouter = router({
-  getAll: protectedProcedure
-    .input(
-      z.object({
-        chatbotId: z.uuid().optional(),
-      }).optional(),
-    )
-    .query(async ({ input, ctx }) => {
-      const organizationId = ctx.session.session.activeOrganization;
-      const chatbotId = input?.chatbotId ?? ctx.session.session.activeChatbot;
-      
-      if (!organizationId || !chatbotId) {
-        throw new Error("No active organization or chatbot");
-      }
+  getAll: protectedProcedure.query(async ({ ctx }) => {
+    const organizationId = ctx.session.session.activeOrganization;
+    const chatbotId = ctx.session.session.activeChatbot;
 
-      const result = await db
-        .select()
-        .from(chatConversation)
-        .where(
-          and(
-            eq(chatConversation.chatbotId, chatbotId),
-            eq(chatConversation.organizationId, organizationId),
-          ),
-        )
-        .orderBy(desc(chatConversation.updatedAt));
+    if (!organizationId || !chatbotId) {
+      throw new Error("No active organization or chatbot");
+    }
 
-      return result;
-    }),
+    const result = await db
+      .select()
+      .from(chatConversation)
+      .where(
+        and(
+          eq(chatConversation.chatbotId, chatbotId),
+          eq(chatConversation.organizationId, organizationId),
+        ),
+      )
+      .orderBy(desc(chatConversation.updatedAt));
+
+    return result;
+  }),
 
   getMessages: protectedProcedure
     .input(
@@ -124,5 +118,56 @@ export const conversationsRouter = router({
       await db.delete(chatConversation).where(eq(chatConversation.id, input.id));
 
       return { success: true };
+    }),
+  getConversationCount: protectedProcedure.query(async ({ ctx }) => {
+    const organizationId = ctx.session.session.activeOrganization;
+    const chatbotId = ctx.session.session.activeChatbot;
+
+    if (!organizationId || !chatbotId) {
+      throw new Error("No active organization or chatbot");
+    }
+
+    const result = await db
+      .select()
+      .from(chatConversation)
+      .where(
+        and(
+          eq(chatConversation.chatbotId, chatbotId),
+          eq(chatConversation.organizationId, organizationId),
+        ),
+      );
+
+    return {
+      count: result.length,
+    };
+  }),
+
+  getRecent: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(20).default(5),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const organizationId = ctx.session.session.activeOrganization;
+      const chatbotId = ctx.session.session.activeChatbot;
+
+      if (!organizationId || !chatbotId) {
+        throw new Error("No active organization or chatbot");
+      }
+
+      const result = await db
+        .select()
+        .from(chatConversation)
+        .where(
+          and(
+            eq(chatConversation.chatbotId, chatbotId),
+            eq(chatConversation.organizationId, organizationId),
+          ),
+        )
+        .orderBy(desc(chatConversation.updatedAt))
+        .limit(input.limit);
+
+      return result;
     }),
 });

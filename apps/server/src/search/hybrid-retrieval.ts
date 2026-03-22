@@ -22,6 +22,7 @@ export interface HybridRetrievedChunk {
   chunkIndex: number;
   sourceName: string;
   sourceType: "link" | "file" | "qa" | "text";
+  url: string | null;
   fusedScore: number;
   semanticScore: number | null;
   fullTextScore: number | null;
@@ -58,6 +59,7 @@ type ChunkCandidate = {
   chunkIndex: number;
   sourceName: string;
   sourceType: "link" | "file" | "qa" | "text";
+  url: string | null;
   score: number;
 };
 
@@ -80,6 +82,7 @@ async function loadChunksForDatasources(
       chunkIndex: datasourceChunks.chunkIndex,
       sourceName: datasources.sourceName,
       sourceType: datasources.sourceType,
+      url: datasources.url,
     })
     .from(datasourceChunks)
     .innerJoin(datasources, eq(datasourceChunks.datasourceId, datasources.id))
@@ -112,6 +115,7 @@ async function loadChunksForDatasources(
       chunkIndex: row.chunkIndex,
       sourceName: row.sourceName,
       sourceType: row.sourceType,
+      url: row.url,
       score: 0,
     });
   }
@@ -224,6 +228,7 @@ export async function retrieveHybridChunks(
       chunkIndex: row.chunkIndex,
       sourceName: row.sourceName,
       sourceType: row.sourceType,
+      url: row.url,
     });
   }
   for (const row of ftsRanked) {
@@ -235,6 +240,7 @@ export async function retrieveHybridChunks(
         chunkIndex: row.chunkIndex,
         sourceName: row.sourceName,
         sourceType: row.sourceType,
+        url: row.url,
       });
     }
   }

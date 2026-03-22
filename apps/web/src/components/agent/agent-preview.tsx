@@ -31,6 +31,11 @@ export function AgentPreviewPanel() {
 		enabled: !!chatbotId,
 	});
 
+	const { data: conversations } = useQuery({
+		...trpc.conversations.getAll.queryOptions(),
+		enabled: !!chatbotId,
+	});
+
 	const initialMessage = chatbot?.initialMessage || "Hi! What can I help you with?";
 	const hidePoweredBy = chatbot?.hidePoweredBy || false;
 	const primaryColor = chatbot?.primaryColor || "#6366f1";
@@ -50,6 +55,10 @@ export function AgentPreviewPanel() {
 	const isStreaming = status === "streaming";
 	const isError = status === "error";
 	const isReady = status === "ready";
+
+	const showVoteBlock =
+		messages.length > 0 && messages[messages.length - 1].role === "assistant" && isReady;
+	const activeConversationId = conversations?.[0]?.id;
 
 	const resetConversation = () => {
 		setInput("");
@@ -90,7 +99,7 @@ export function AgentPreviewPanel() {
 					/>
 					<div className="flex min-h-0 flex-1 flex-col overflow-hidden smooth-div">
 						<Conversation className="min-h-0 py-4">
-							<ConversationContent className="gap-4 px-4 py-0">
+							<ConversationContent className="gap-4 p-4">
 								{messages.length === 0 ? (
 									<SupportMessage animate={false}>
 										{initialMessage}
@@ -98,9 +107,12 @@ export function AgentPreviewPanel() {
 								) : (
 									<PureMessages
 										messages={messages}
+										chatId={activeConversationId}
+										chatbotId={chatbotId || undefined}
 										isReady={isReady}
 										isStreaming={isStreaming}
 										primaryColor={primaryColor}
+										showVoteBlock={showVoteBlock}
 									/>
 								)}
 								{isError && (

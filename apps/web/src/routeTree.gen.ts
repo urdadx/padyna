@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WidgetRouteImport } from './routes/widget'
 import { Route as SuccessRouteImport } from './routes/success'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
@@ -28,6 +29,11 @@ import { Route as adminChatLogsRouteImport } from './routes/(admin)/chat-logs'
 import { Route as adminAnalyticsRouteImport } from './routes/(admin)/analytics'
 import { Route as adminActionsRouteImport } from './routes/(admin)/actions'
 
+const WidgetRoute = WidgetRouteImport.update({
+  id: '/widget',
+  path: '/widget',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SuccessRoute = SuccessRouteImport.update({
   id: '/success',
   path: '/success',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/success': typeof SuccessRoute
+  '/widget': typeof WidgetRoute
   '/actions': typeof adminActionsRoute
   '/analytics': typeof adminAnalyticsRoute
   '/chat-logs': typeof adminChatLogsRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/success': typeof SuccessRoute
+  '/widget': typeof WidgetRoute
   '/actions': typeof adminActionsRoute
   '/analytics': typeof adminAnalyticsRoute
   '/chat-logs': typeof adminChatLogsRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/success': typeof SuccessRoute
+  '/widget': typeof WidgetRoute
   '/(admin)/actions': typeof adminActionsRoute
   '/(admin)/analytics': typeof adminAnalyticsRoute
   '/(admin)/chat-logs': typeof adminChatLogsRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/success'
+    | '/widget'
     | '/actions'
     | '/analytics'
     | '/chat-logs'
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/success'
+    | '/widget'
     | '/actions'
     | '/analytics'
     | '/chat-logs'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/success'
+    | '/widget'
     | '/(admin)/actions'
     | '/(admin)/analytics'
     | '/(admin)/chat-logs'
@@ -244,12 +256,20 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   SuccessRoute: typeof SuccessRoute
+  WidgetRoute: typeof WidgetRoute
   OnboardingPricingRoute: typeof OnboardingPricingRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/widget': {
+      id: '/widget'
+      path: '/widget'
+      fullPath: '/widget'
+      preLoaderRoute: typeof WidgetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/success': {
       id: '/success'
       path: '/success'
@@ -417,6 +437,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   SuccessRoute: SuccessRoute,
+  WidgetRoute: WidgetRoute,
   OnboardingPricingRoute: OnboardingPricingRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
 }

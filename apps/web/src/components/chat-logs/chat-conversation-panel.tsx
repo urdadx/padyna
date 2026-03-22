@@ -31,11 +31,11 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 				)}>
 				<div className="relative inline-block">
 					<div
-						className="bg-gray-50 max-w-2xl mx-auto flex items-center mb-2 size-20 shrink-0 justify-center rounded-full border"
+						className="bg-gray-50 max-w-2xl mx-auto flex items-center mb-2 size-18 shrink-0 justify-center rounded-full border"
 						aria-hidden="true">
-						<ChatLinear className="h-10 w-10 text-muted-foreground" />
+						<ChatLinear className="h-8 w-8 text-muted-foreground" />
 					</div>
-					<span className="absolute top-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground border-2 border-background">
+					<span className="absolute top-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-[#888888] text-[12px] font-bold text-primary-foreground border-2 border-background">
 						0
 					</span>
 				</div>
@@ -64,8 +64,12 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 						) : messages && messages.length > 0 ? (
 							<PureMessages
 								messages={messages as any}
+								chatId={chatId}
+								chatbotId={messages[0]?.chatbotId}
 								isReady={true}
 								isStreaming={false}
+								bottomComponent="source-citations"
+								showVoteBlock={true}
 							/>
 						) : (
 							<div className="p-4 text-center text-muted-foreground">

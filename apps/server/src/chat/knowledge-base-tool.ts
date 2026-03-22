@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { db } from "@padyna/db";
 import { datasources } from "@padyna/db/schema/index";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { retrieveHybridChunks } from "../search/hybrid-retrieval";
 
@@ -37,21 +37,41 @@ export function KnowledgeBaseTool(input: CreateKnowledgeBaseToolInput) {
         limit: clampResults(maxResults),
       });
 
-      const usedDatasourceIds = Array.from(new Set(rows.map((row) => row.datasourceId)));
+      const datasourceChunkCounts = new Map<string, number>();
 
-      if (usedDatasourceIds.length > 0) {
-        await db
-          .update(datasources)
-          .set({
-            timesReferenced: sql`${datasources.timesReferenced} + 1`,
-          })
-          .where(
-            and(
-              inArray(datasources.id, usedDatasourceIds),
-              eq(datasources.chatbotId, input.chatbotId),
-              eq(datasources.organizationId, input.organizationId),
-            ),
+      for (const row of rows) {
+        if (row.datasourceId) {
+          datasourceChunkCounts.set(
+            row.datasourceId,
+            (datasourceChunkCounts.get(row.datasourceId) ?? 0) + 1,
           );
+        }
+      }
+
+      const MAX_WEIGHT_PER_SOURCE = 3;
+
+      if (datasourceChunkCounts.size > 0) {
+        const updates = Array.from(datasourceChunkCounts.entries()).map(
+          ([datasourceId, count]) => ({
+            datasourceId,
+            increment: Math.min(count, MAX_WEIGHT_PER_SOURCE),
+          }),
+        );
+
+        for (const { datasourceId, increment } of updates) {
+          await db
+            .update(datasources)
+            .set({
+              timesReferenced: sql`${datasources.timesReferenced} + ${increment}`,
+            })
+            .where(
+              and(
+                eq(datasources.id, datasourceId),
+                eq(datasources.chatbotId, input.chatbotId),
+                eq(datasources.organizationId, input.organizationId),
+              ),
+            );
+        }
       }
 
       return {
@@ -62,6 +82,7 @@ export function KnowledgeBaseTool(input: CreateKnowledgeBaseToolInput) {
           datasourceId: row.datasourceId,
           sourceName: row.sourceName,
           sourceType: row.sourceType,
+          url: row.url,
           content: row.content,
           scores: {
             fused: row.fusedScore,

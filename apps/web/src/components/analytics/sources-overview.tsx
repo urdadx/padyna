@@ -1,22 +1,27 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowUpRight } from "lucide-react";
-import BarList from "./bar-list";
 import { FileLinear } from "@/assets/icons/file-icon";
 import { ChatLinear } from "@/assets/icons/chat-icon";
 import { TextLinear } from "@/assets/icons/text-icon";
 import { GlobeLinear } from "@/assets/icons/globe-icon";
 import { useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { trpc } from "@/utils/trpc";
 import { useMemo } from "react";
+import BarList from "./bar-list";
 
-export function SourcesOverview() {
+interface SourcesOverviewProps {
+	sourcesData?: {
+		id: string;
+		sourceName?: string | null;
+		url?: string | null;
+		question?: string | null;
+		sourceType: "file" | "link" | "qa" | "text";
+		timesReferenced: number;
+	}[];
+}
+
+export function SourcesOverview({ sourcesData }: SourcesOverviewProps) {
 	const navigate = useNavigate();
-
-	const { data: sourcesData } = useSuspenseQuery(
-		trpc.datasource.getMostReferenced.queryOptions(),
-	);
 
 	const mapSources = useMemo(() => {
 		return (sourcesData ?? []).map((source) => {

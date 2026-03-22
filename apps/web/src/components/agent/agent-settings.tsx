@@ -138,36 +138,43 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 								</Button>
 							</PopoverTrigger>
 							<PopoverContent className="w-40 p-1" align="end">
-								<input
-									type="file"
-									ref={fileInputRef}
-									className="hidden"
-									accept="image/*"
-									onChange={handleImageUpload}
-								/>
-								<Button
-									variant="ghost"
-									className="w-full justify-start gap-2"
-									onClick={() => fileInputRef.current?.click()}>
-									<UploadLinear
-										color="black"
-										className="w-4 h-4"
-									/>{" "}
-									Upload icon
-								</Button>
-								<Button
-									variant="ghost"
-									className="w-full justify-start gap-2 text-destructive hover:text-destructive"
-									onClick={() => {
-										setForm((p) => ({ ...p, image: "" }));
-										save({ image: undefined });
-									}}>
-									<TrashBinLinear
-										color="red"
-										className="w-4 h-4"
-									/>{" "}
-									Delete
-								</Button>
+								<div className="flex flex-col">
+									<input
+										type="file"
+										ref={fileInputRef}
+										className="hidden"
+										accept="image/*"
+										onChange={handleImageUpload}
+									/>
+									<Button
+										variant="ghost"
+										className="w-full justify-start gap-2"
+										onClick={() =>
+											fileInputRef.current?.click()
+										}>
+										<UploadLinear
+											color="black"
+											className="w-4 h-4"
+										/>{" "}
+										Upload icon
+									</Button>
+									<Button
+										variant="ghost"
+										className="w-full justify-start gap-2 text-destructive hover:text-destructive"
+										onClick={() => {
+											setForm((p) => ({
+												...p,
+												image: "",
+											}));
+											save({ image: "" });
+										}}>
+										<TrashBinLinear
+											color="red"
+											className="w-4 h-4"
+										/>{" "}
+										Delete
+									</Button>
+								</div>
 							</PopoverContent>
 						</Popover>
 					</div>

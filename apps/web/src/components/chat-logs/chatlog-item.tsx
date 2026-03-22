@@ -68,9 +68,7 @@ export const ChatLogItem = ({
 				</div>
 
 				<div className="flex-1 min-w-0">
-					<h3 className="text-sm font-sans line-clamp-1">
-						{title || "Untitled Chat"}
-					</h3>
+					<h3 className="text-sm font-sans capitalize line-clamp-1">{title}</h3>
 					<p className="text-xs text-gray-500 mt-1">{timeAgo(date)}</p>
 				</div>
 

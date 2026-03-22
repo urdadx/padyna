@@ -1,0 +1,18 @@
+{
+  "name": "@padyna/widget-sdk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun ./scripts/build.ts",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@padyna/config": "workspace:*",
+    "rolldown": "^1.0.0-rc.5",
+    "typescript": "catalog:"
+  }
+}

@@ -3,3 +3,6 @@ export * from "./organization";
 export * from "./chatbot";
 export * from "./datasource";
 export * from "./chat";
+export * from "./visitor-sessions";
+export * from "./visitor-events";
+export * from "./analytics-ranges";

@@ -18,7 +18,11 @@ interface ColorPickerDialogProps {
   initialColor?: string;
 }
 
-export const ColorPickerDialog = ({ onColorSelect, isUpdating, initialColor }: ColorPickerDialogProps) => {
+export const ColorPickerDialog = ({
+  onColorSelect,
+  isUpdating,
+  initialColor,
+}: ColorPickerDialogProps) => {
   const [color, setColor] = useState(initialColor || "#6366f1");
   const [hexInput, setHexInput] = useState(initialColor || "#6366f1");
   const [isOpen, setIsOpen] = useState(false);

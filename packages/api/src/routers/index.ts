@@ -1,7 +1,10 @@
 import { protectedProcedure, publicProcedure, router } from "../index";
-import { datasourceRouter } from "./datasource-router";
 import { agentsettingsRouter } from "./agentsettings-router";
+import { analyticsRouter } from "./analytics-router";
 import { conversationsRouter } from "./conversations-router";
+import { datasourceRouter } from "./datasource-router";
+import { metricsRouter } from "./metrics-router";
+import { voteRouter } from "./vote-router";
 
 export const appRouter = router({
   healthCheck: publicProcedure.query(() => {
@@ -13,8 +16,11 @@ export const appRouter = router({
       user: ctx.session.user,
     };
   }),
-  datasource: datasourceRouter,
   agentsettings: agentsettingsRouter,
+  analytics: analyticsRouter,
   conversations: conversationsRouter,
+  datasource: datasourceRouter,
+  metrics: metricsRouter,
+  vote: voteRouter,
 });
 export type AppRouter = typeof appRouter;
