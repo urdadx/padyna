@@ -48,7 +48,7 @@ chatRoutes.post("/", async (c) => {
 
   const chatbotName = chatbotData.name || "AI Assistant";
   const chatbotUseCase = chatbotData.usecase || "support";
-  const body = await c.req.json();
+  const { body } = await c.req.json();
   const uiMessages = body.messages;
 
   if (!Array.isArray(uiMessages)) {

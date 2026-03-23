@@ -32,7 +32,7 @@ type UIMessageLike = BaseMessage & {
 
 type BottomComponent = "source-citations" | "vote-block";
 
-type PureMessagesProps = {
+type PreviewMessagesProps = {
 	messages: UIMessageLike[];
 	chatId?: string;
 	chatbotId?: string;
@@ -43,7 +43,7 @@ type PureMessagesProps = {
 	showVoteBlock?: boolean;
 };
 
-export const PureMessages = ({
+export const PreviewMessages = ({
 	messages,
 	chatId,
 	chatbotId,
@@ -52,7 +52,7 @@ export const PureMessages = ({
 	primaryColor,
 	bottomComponent = "vote-block",
 	showVoteBlock = false,
-}: PureMessagesProps) => {
+}: PreviewMessagesProps) => {
 	return messages.map((message, index) => {
 		const isLastMessage = index === messages.length - 1;
 		const isCurrentlyStreaming = isStreaming && isLastMessage;

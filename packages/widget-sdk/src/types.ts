@@ -1,6 +1,7 @@
 export type PadynaInitOptions = {
   widgetId: string;
   serverUrl?: string;
+  apiUrl?: string;
 };
 
 export type PadynaCommand = "init" | "open" | "close" | "destroy";

@@ -115,8 +115,9 @@ function normalizeIncomingMessages(messages: StoredUIMessage[]) {
 async function getOrCreateConversation(input: {
   chatbotId: string;
   organizationId: string;
-  userId: string;
+  userId: string | undefined;
   title?: string;
+  metadata?: Record<string, unknown>;
 }) {
   const existing = await db
     .select({ id: chatConversation.id })
@@ -125,7 +126,7 @@ async function getOrCreateConversation(input: {
       and(
         eq(chatConversation.chatbotId, input.chatbotId),
         eq(chatConversation.organizationId, input.organizationId),
-        eq(chatConversation.userId, input.userId),
+        input.userId ? eq(chatConversation.userId, input.userId) : undefined,
       ),
     )
     .limit(1);
@@ -142,8 +143,9 @@ async function getOrCreateConversation(input: {
     .values({
       chatbotId: input.chatbotId,
       organizationId: input.organizationId,
-      userId: input.userId,
+      userId: input.userId ?? undefined,
       title: input.title || "New Conversation",
+      metadata: input.metadata,
     })
     .returning({ id: chatConversation.id });
 
@@ -209,9 +211,10 @@ export async function loadConversationMessages(input: {
 export async function persistConversationMessages(input: {
   chatbotId: string;
   organizationId: string;
-  userId: string;
+  userId: string | undefined;
   messages: StoredUIMessage[];
   title?: string;
+  metadata?: Record<string, unknown>;
 }) {
   const normalizedMessages = normalizeIncomingMessages(input.messages);
   if (normalizedMessages.length === 0) {
@@ -223,6 +226,7 @@ export async function persistConversationMessages(input: {
     organizationId: input.organizationId,
     userId: input.userId,
     title: input.title,
+    metadata: input.metadata,
   });
 
   const existing = await db
@@ -237,7 +241,7 @@ export async function persistConversationMessages(input: {
         eq(chatMessage.conversationId, conversationId),
         eq(chatMessage.chatbotId, input.chatbotId),
         eq(chatMessage.organizationId, input.organizationId),
-        eq(chatMessage.userId, input.userId),
+        input.userId ? eq(chatMessage.userId, input.userId) : undefined,
       ),
     );
 
@@ -278,7 +282,7 @@ export async function persistConversationMessages(input: {
         conversationId,
         chatbotId: input.chatbotId,
         organizationId: input.organizationId,
-        userId: input.userId,
+        userId: input.userId ?? undefined,
         role: message.role,
         messageId: message.messageId,
         contentText: message.contentText,

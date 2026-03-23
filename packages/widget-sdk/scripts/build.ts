@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, copyFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { rolldown } from "rolldown";
 
@@ -24,6 +24,11 @@ async function main() {
 	const output = await readFile(outPath);
 	const kb = (output.byteLength / 1024).toFixed(2);
 	console.log(`Built dist/sdk.js (${kb} KB)`);
+
+	const webPublicPath = resolve(root, "..", "..", "apps", "web", "public", "sdk.js");
+	await copyFile(outPath, webPublicPath);
+	console.log(`Synced to apps/web/public/sdk.js`);
+
 	console.log("Global API: window.Padyna");
 }
 

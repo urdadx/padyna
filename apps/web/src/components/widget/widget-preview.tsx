@@ -7,7 +7,7 @@ import { Suggestion, Suggestions } from "../ai-elements/suggestion";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { PlaneBold } from "@/assets/icons/plane-icon";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertCircleIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useChat } from "@ai-sdk/react";
@@ -16,6 +16,7 @@ import { WidgetHeader } from "./widget-header";
 import { WidgetMessages } from "./widget-messages";
 import { WidgetMessage } from "./widget-components/message";
 import "streamdown/styles.css";
+import Spinner from "../ui/spinner";
 
 export type WidgetConfig = {
 	id: string;
@@ -25,17 +26,25 @@ export type WidgetConfig = {
 	initialMessage: string;
 	hidePoweredBy: boolean;
 	suggestedMessages: string[];
+	isEnabled: boolean;
 };
 
 type WidgetPreviewProps = {
 	widgetId: string;
 	serverUrl: string;
 	hostOrigin?: string;
+	chatId?: string;
+	resetChatId?: () => void;
 };
 
-export function WidgetPreview({ widgetId, serverUrl, hostOrigin }: WidgetPreviewProps) {
+export function WidgetPreview({
+	widgetId,
+	serverUrl,
+	hostOrigin,
+	chatId,
+	resetChatId,
+}: WidgetPreviewProps) {
 	const [input, setInput] = useState("");
-	const [chatId] = useState(() => crypto.randomUUID());
 
 	const hostOriginQuery = useMemo(() => {
 		if (!hostOrigin) {
@@ -67,13 +76,14 @@ export function WidgetPreview({ widgetId, serverUrl, hostOrigin }: WidgetPreview
 		[serverUrl, widgetId, hostOriginQuery],
 	);
 
-	const { messages, setMessages, sendMessage, status } = useChat({ transport });
+	const { messages, setMessages, sendMessage, status } = useChat({ id: chatId, transport });
 
 	const isStreaming = status === "streaming";
 	const isError = status === "error";
 	const isReady = status === "ready";
 
 	const resetConversation = () => {
+		resetChatId?.();
 		setInput("");
 		setMessages([]);
 	};
@@ -83,34 +93,27 @@ export function WidgetPreview({ widgetId, serverUrl, hostOrigin }: WidgetPreview
 		if (!next || isStreaming) {
 			return;
 		}
-
 		setInput("");
 		await sendMessage({ text: next });
 	};
 
-	const initialMessage = widgetConfig?.initialMessage || "Hi! What can I help you with?";
-	const hidePoweredBy = widgetConfig?.hidePoweredBy || false;
-	const primaryColor = widgetConfig?.primaryColor || "#6366f1";
+	const initialMessage = widgetConfig?.initialMessage;
+	const hidePoweredBy = widgetConfig?.hidePoweredBy;
+	const primaryColor = widgetConfig?.primaryColor;
 	const suggestedMessages = widgetConfig?.suggestedMessages || [];
+	const isEnabled = widgetConfig?.isEnabled ?? false;
 
 	const borderStyle = {
 		"--ring": primaryColor,
 	} as React.CSSProperties;
 
-	useEffect(() => {
-		if (!widgetConfig?.primaryColor) {
-			return;
-		}
-
-		window.parent?.postMessage(
-			{
-				type: "padyna:widget:config",
-				widgetId,
-				primaryColor: widgetConfig.primaryColor,
-			},
-			"*",
+	if (isLoading) {
+		return (
+			<div className="flex-1 flex min-h-full items-center justify-center">
+				<Spinner size={30} />
+			</div>
 		);
-	}, [widgetConfig?.primaryColor, widgetId]);
+	}
 
 	return (
 		<div
@@ -121,10 +124,10 @@ export function WidgetPreview({ widgetId, serverUrl, hostOrigin }: WidgetPreview
 				isLoading={isLoading}
 				onReset={resetConversation}
 			/>
-			<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+			<div className="flex min-h-0 flex-1 flex-col smooth-div">
 				<Conversation className="min-h-0 py-4">
 					<ConversationContent className="gap-4 p-4">
-						{messages.length === 0 ? (
+						{isEnabled && messages.length === 0 ? (
 							<WidgetMessage animate={false}>
 								{initialMessage}
 							</WidgetMessage>
@@ -138,7 +141,8 @@ export function WidgetPreview({ widgetId, serverUrl, hostOrigin }: WidgetPreview
 								chatbotId={widgetConfig?.id}
 							/>
 						)}
-						{isError && (
+
+						{isError && !isStreaming && (
 							<div className="rounded-md bg-red-50 p-4">
 								<div className="flex gap-2">
 									<AlertCircleIcon
@@ -147,6 +151,21 @@ export function WidgetPreview({ widgetId, serverUrl, hostOrigin }: WidgetPreview
 									/>
 									<h3 className="text-sm font-sans font-normal text-red-800">
 										Something went wrong. Please try again.
+									</h3>
+								</div>
+							</div>
+						)}
+						{!isEnabled && (
+							<div className="rounded-md bg-blue-50 p-4">
+								<div className="flex gap-2 items-center">
+									<AlertCircleIcon
+										className="h-5 w-5 shrink-0 text-blue-800"
+										aria-hidden="true"
+									/>
+									<h3 className="text-sm font-sans font-normal text-blue-800">
+										This widget is currently disabled.
+										Please contact the site administrator
+										for help
 									</h3>
 								</div>
 							</div>
@@ -179,7 +198,7 @@ export function WidgetPreview({ widgetId, serverUrl, hostOrigin }: WidgetPreview
 						}}>
 						<Input
 							style={borderStyle}
-							className="bg-white focus-visible:ring-ring"
+							className="bg-white text-sm focus-visible:ring-ring"
 							placeholder="Ask me anything..."
 							value={input}
 							onChange={(event) => setInput(event.target.value)}

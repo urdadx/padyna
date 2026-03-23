@@ -17,6 +17,58 @@
   animation: scale-in-fade 0.2s ease-out forwards;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scrollY {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(var(--scroll));
+  }
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s ease-in-out;
+}
+
+.animate-infinite-scroll-y {
+  animation: scrollY 10s linear infinite;
+}
+
+.animate-accordion-down {
+  animation: accordion-down 0.2s ease-out;
+}
+
+.animate-accordion-up {
+  animation: accordion-up 0.2s ease-out;
+}
+
 @font-face {
   font-family: "Inter";
   src: url("./assets/fonts/inter/Inter-Regular.ttf") format("truetype");

@@ -4,6 +4,7 @@ import { chatbot } from "@padyna/db/schema/index";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { createSupportChatAgent } from "../chat";
+import { persistConversationMessages } from "../chat/chat-persistence";
 
 type PublicWidgetChatbot = {
   id: string;
@@ -124,6 +125,7 @@ widgetRoutes.get("/:widgetId/config", async (c) => {
     hidePoweredBy: chatbotRecord.hidePoweredBy,
     suggestedMessages: chatbotRecord.suggestedMessages ?? [],
     initialMessage: chatbotRecord.initialMessage,
+    isEnabled: chatbotRecord.isEnabled,
   });
 });
 
@@ -151,6 +153,16 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
     return c.json({ message: "messages must be an array" }, 400);
   }
 
+  const visitorMetadata = requestOrigin ? { origin: requestOrigin } : undefined;
+
+  await persistConversationMessages({
+    chatbotId: chatbotRecord.id,
+    organizationId: chatbotRecord.organizationId,
+    userId: undefined,
+    messages: uiMessages,
+    metadata: visitorMetadata,
+  });
+
   const agent = createSupportChatAgent({
     chatbotId: chatbotRecord.id,
     organizationId: chatbotRecord.organizationId,
@@ -162,5 +174,14 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
     agent,
     uiMessages,
     originalMessages: uiMessages,
+    onFinish: async ({ messages }) => {
+      await persistConversationMessages({
+        chatbotId: chatbotRecord.id,
+        organizationId: chatbotRecord.organizationId,
+        userId: undefined,
+        messages,
+        metadata: visitorMetadata,
+      });
+    },
   });
 });

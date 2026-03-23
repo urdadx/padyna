@@ -17,6 +17,7 @@ import { Route as adminRouteRouteImport } from './routes/(admin)/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as OnboardingPricingRouteImport } from './routes/onboarding/pricing'
+import { Route as adminWorkflowsRouteImport } from './routes/(admin)/workflows'
 import { Route as adminTextRouteImport } from './routes/(admin)/text'
 import { Route as adminSettingsRouteImport } from './routes/(admin)/settings'
 import { Route as adminQuestionsRouteImport } from './routes/(admin)/questions'
@@ -27,7 +28,6 @@ import { Route as adminFilesRouteImport } from './routes/(admin)/files'
 import { Route as adminDataSourcesRouteImport } from './routes/(admin)/data-sources'
 import { Route as adminChatLogsRouteImport } from './routes/(admin)/chat-logs'
 import { Route as adminAnalyticsRouteImport } from './routes/(admin)/analytics'
-import { Route as adminActionsRouteImport } from './routes/(admin)/actions'
 
 const WidgetRoute = WidgetRouteImport.update({
   id: '/widget',
@@ -67,6 +67,11 @@ const OnboardingPricingRoute = OnboardingPricingRouteImport.update({
   id: '/onboarding/pricing',
   path: '/onboarding/pricing',
   getParentRoute: () => rootRouteImport,
+} as any)
+const adminWorkflowsRoute = adminWorkflowsRouteImport.update({
+  id: '/workflows',
+  path: '/workflows',
+  getParentRoute: () => adminRouteRoute,
 } as any)
 const adminTextRoute = adminTextRouteImport.update({
   id: '/text',
@@ -118,11 +123,6 @@ const adminAnalyticsRoute = adminAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => adminRouteRoute,
 } as any)
-const adminActionsRoute = adminActionsRouteImport.update({
-  id: '/actions',
-  path: '/actions',
-  getParentRoute: () => adminRouteRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -130,7 +130,6 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/success': typeof SuccessRoute
   '/widget': typeof WidgetRoute
-  '/actions': typeof adminActionsRoute
   '/analytics': typeof adminAnalyticsRoute
   '/chat-logs': typeof adminChatLogsRoute
   '/data-sources': typeof adminDataSourcesRoute
@@ -141,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/questions': typeof adminQuestionsRoute
   '/settings': typeof adminSettingsRoute
   '/text': typeof adminTextRoute
+  '/workflows': typeof adminWorkflowsRoute
   '/onboarding/pricing': typeof OnboardingPricingRoute
   '/onboarding/': typeof OnboardingIndexRoute
 }
@@ -150,7 +150,6 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/success': typeof SuccessRoute
   '/widget': typeof WidgetRoute
-  '/actions': typeof adminActionsRoute
   '/analytics': typeof adminAnalyticsRoute
   '/chat-logs': typeof adminChatLogsRoute
   '/data-sources': typeof adminDataSourcesRoute
@@ -161,6 +160,7 @@ export interface FileRoutesByTo {
   '/questions': typeof adminQuestionsRoute
   '/settings': typeof adminSettingsRoute
   '/text': typeof adminTextRoute
+  '/workflows': typeof adminWorkflowsRoute
   '/onboarding/pricing': typeof OnboardingPricingRoute
   '/onboarding': typeof OnboardingIndexRoute
 }
@@ -172,7 +172,6 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/success': typeof SuccessRoute
   '/widget': typeof WidgetRoute
-  '/(admin)/actions': typeof adminActionsRoute
   '/(admin)/analytics': typeof adminAnalyticsRoute
   '/(admin)/chat-logs': typeof adminChatLogsRoute
   '/(admin)/data-sources': typeof adminDataSourcesRoute
@@ -183,6 +182,7 @@ export interface FileRoutesById {
   '/(admin)/questions': typeof adminQuestionsRoute
   '/(admin)/settings': typeof adminSettingsRoute
   '/(admin)/text': typeof adminTextRoute
+  '/(admin)/workflows': typeof adminWorkflowsRoute
   '/onboarding/pricing': typeof OnboardingPricingRoute
   '/onboarding/': typeof OnboardingIndexRoute
 }
@@ -194,7 +194,6 @@ export interface FileRouteTypes {
     | '/register'
     | '/success'
     | '/widget'
-    | '/actions'
     | '/analytics'
     | '/chat-logs'
     | '/data-sources'
@@ -205,6 +204,7 @@ export interface FileRouteTypes {
     | '/questions'
     | '/settings'
     | '/text'
+    | '/workflows'
     | '/onboarding/pricing'
     | '/onboarding/'
   fileRoutesByTo: FileRoutesByTo
@@ -214,7 +214,6 @@ export interface FileRouteTypes {
     | '/register'
     | '/success'
     | '/widget'
-    | '/actions'
     | '/analytics'
     | '/chat-logs'
     | '/data-sources'
@@ -225,6 +224,7 @@ export interface FileRouteTypes {
     | '/questions'
     | '/settings'
     | '/text'
+    | '/workflows'
     | '/onboarding/pricing'
     | '/onboarding'
   id:
@@ -235,7 +235,6 @@ export interface FileRouteTypes {
     | '/register'
     | '/success'
     | '/widget'
-    | '/(admin)/actions'
     | '/(admin)/analytics'
     | '/(admin)/chat-logs'
     | '/(admin)/data-sources'
@@ -246,6 +245,7 @@ export interface FileRouteTypes {
     | '/(admin)/questions'
     | '/(admin)/settings'
     | '/(admin)/text'
+    | '/(admin)/workflows'
     | '/onboarding/pricing'
     | '/onboarding/'
   fileRoutesById: FileRoutesById
@@ -319,6 +319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingPricingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(admin)/workflows': {
+      id: '/(admin)/workflows'
+      path: '/workflows'
+      fullPath: '/workflows'
+      preLoaderRoute: typeof adminWorkflowsRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
     '/(admin)/text': {
       id: '/(admin)/text'
       path: '/text'
@@ -389,18 +396,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof adminAnalyticsRouteImport
       parentRoute: typeof adminRouteRoute
     }
-    '/(admin)/actions': {
-      id: '/(admin)/actions'
-      path: '/actions'
-      fullPath: '/actions'
-      preLoaderRoute: typeof adminActionsRouteImport
-      parentRoute: typeof adminRouteRoute
-    }
   }
 }
 
 interface adminRouteRouteChildren {
-  adminActionsRoute: typeof adminActionsRoute
   adminAnalyticsRoute: typeof adminAnalyticsRoute
   adminChatLogsRoute: typeof adminChatLogsRoute
   adminDataSourcesRoute: typeof adminDataSourcesRoute
@@ -411,10 +410,10 @@ interface adminRouteRouteChildren {
   adminQuestionsRoute: typeof adminQuestionsRoute
   adminSettingsRoute: typeof adminSettingsRoute
   adminTextRoute: typeof adminTextRoute
+  adminWorkflowsRoute: typeof adminWorkflowsRoute
 }
 
 const adminRouteRouteChildren: adminRouteRouteChildren = {
-  adminActionsRoute: adminActionsRoute,
   adminAnalyticsRoute: adminAnalyticsRoute,
   adminChatLogsRoute: adminChatLogsRoute,
   adminDataSourcesRoute: adminDataSourcesRoute,
@@ -425,6 +424,7 @@ const adminRouteRouteChildren: adminRouteRouteChildren = {
   adminQuestionsRoute: adminQuestionsRoute,
   adminSettingsRoute: adminSettingsRoute,
   adminTextRoute: adminTextRoute,
+  adminWorkflowsRoute: adminWorkflowsRoute,
 }
 
 const adminRouteRouteWithChildren = adminRouteRoute._addFileChildren(

@@ -20,7 +20,7 @@ export const ChatHistorySidebar = ({
 
 	return (
 		<div className={cn("flex flex-col h-full rounded-xl border bg-white", className)}>
-			<div className=" px-6 pt-4 flex justify-between items-center">
+			<div className="px-4 pt-4 flex justify-between items-center">
 				<h1 className="text-xl font-semibold">All messages</h1>
 				<div className="flex gap-2 items-center">
 					<Button variant="outline">All</Button>
@@ -46,7 +46,7 @@ export const ChatHistorySidebar = ({
 							color="#888888"
 							className="h-10 w-10 text-muted-foreground"
 						/>
-						<div className="text-muted-foreground">
+						<div className="text-muted-foreground text-sm">
 							New messages will appear here
 						</div>
 					</div>

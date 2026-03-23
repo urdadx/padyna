@@ -9,12 +9,14 @@ Build output is a single script file at `dist/sdk.js`.
 Global: `window.Padyna`
 
 - `Padyna("init", { widgetId, serverUrl? })`
+- `Padyna("init", { widgetId, serverUrl?, apiUrl? })`
 - `Padyna("open")`
 - `Padyna("close")`
 - `Padyna("destroy")`
 
 `serverUrl` should point to the web app host that serves `/widget` and `/sdk.js`.
 The widget iframe itself will call the API host configured by `VITE_SERVER_URL` in the web app.
+If you want the launcher color to be correct before the bubble appears, pass `apiUrl` directly.
 
 ## Script Usage
 
@@ -23,7 +25,8 @@ The widget iframe itself will call the API host configured by `VITE_SERVER_URL` 
 <script>
   window.Padyna("init", {
     widgetId: "pd_xxxxxxxx",
-    serverUrl: "https://YOUR_WEB_ORIGIN"
+    serverUrl: "https://YOUR_WEB_ORIGIN",
+    apiUrl: "https://YOUR_API_ORIGIN"
   });
 </script>
 ```
@@ -43,7 +46,8 @@ export default function App() {
     script.onload = () => {
       window.Padyna("init", {
         widgetId: "pd_xxxxxxxx",
-        serverUrl: "https://YOUR_WEB_ORIGIN"
+        serverUrl: "https://YOUR_WEB_ORIGIN",
+        apiUrl: "https://YOUR_API_ORIGIN"
       });
     };
   }, []);
@@ -63,7 +67,8 @@ export default function App() {
 <script>
   window.Padyna("init", {
     widgetId: "pd_fZtwHhKTb4QX",
-    serverUrl: "http://localhost:3001"
+    serverUrl: "http://localhost:3001",
+    apiUrl: "http://localhost:3000"
   });
 </script>
 ```

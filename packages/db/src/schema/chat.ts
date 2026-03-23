@@ -25,9 +25,7 @@ export const chatConversation = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => user.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -62,13 +60,6 @@ export const chatConversation = pgTable(
     index("chat_conversation_chatbot_id_idx").on(table.chatbotId),
     index("chat_conversation_organization_id_idx").on(table.organizationId),
     index("chat_conversation_user_id_idx").on(table.userId),
-    uniqueIndex("chat_conversation_chatbot_org_user_uidx").on(
-      table.chatbotId,
-      table.organizationId,
-      table.userId,
-      table.channel,
-      table.visibility,
-    ),
   ],
 );
 
@@ -85,9 +76,7 @@ export const chatMessage = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => user.id, { onDelete: "cascade" }),
     role: varchar("role", { enum: ["user", "assistant", "system"] }).notNull(),
     messageId: text("message_id").notNull(),
     contentText: text("content_text").notNull().default(""),

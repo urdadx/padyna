@@ -7,28 +7,29 @@ import { queryClient, trpc } from "./utils/trpc";
 import { GlobalLoader } from "./components/global-loader";
 
 const router = createRouter({
-  routeTree,
-  defaultPreload: "intent",
-  defaultPendingComponent: GlobalLoader,
-  context: { trpc, queryClient },
-  Wrap: function WrapComponent({ children }: { children: React.ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  },
+	routeTree,
+	defaultPreload: "intent",
+	defaultPendingComponent: GlobalLoader,
+	scrollRestoration: true,
+	context: { trpc, queryClient },
+	Wrap: function WrapComponent({ children }: { children: React.ReactNode }) {
+		return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+	},
 });
 
 declare module "@tanstack/react-router" {
-  interface Register {
-    router: typeof router;
-  }
+	interface Register {
+		router: typeof router;
+	}
 }
 
 const rootElement = document.getElementById("app");
 
 if (!rootElement) {
-  throw new Error("Root element not found");
+	throw new Error("Root element not found");
 }
 
 if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(<RouterProvider router={router} />);
+	const root = ReactDOM.createRoot(rootElement);
+	root.render(<RouterProvider router={router} />);
 }
