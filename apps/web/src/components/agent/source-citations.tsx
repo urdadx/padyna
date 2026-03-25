@@ -76,21 +76,21 @@ export function extractSources(
       const results = output.results;
       if (!Array.isArray(results)) continue;
 
-        for (const r of results) {
-          const sourceName = r?.sourceName;
-          const url = r?.url;
-          const sourceType = r?.sourceType;
+      for (const r of results) {
+        const sourceName = r?.sourceName;
+        const url = r?.url;
+        const sourceType = r?.sourceType;
 
-          if (typeof sourceName !== "string") continue;
+        if (typeof sourceName !== "string") continue;
 
-          if (seen.has(sourceName)) continue;
-          seen.add(sourceName);
+        if (seen.has(sourceName)) continue;
+        seen.add(sourceName);
 
-          sources.push({
-            url: url || (sourceType === "link" ? sourceName : "#"),
-            heading: sourceName,
-          });
-        }
+        sources.push({
+          url: url || (sourceType === "link" ? sourceName : "#"),
+          heading: sourceName,
+        });
+      }
     }
   }
 

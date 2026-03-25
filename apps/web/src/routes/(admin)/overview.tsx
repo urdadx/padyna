@@ -7,41 +7,39 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/(admin)/overview")({
-	component: RouteComponent,
+  component: RouteComponent,
 });
 
 function RouteComponent() {
-	const { data: metricsData } = useSuspenseQuery(trpc.metrics.getOverview.queryOptions());
-	const { data: recentConversations } = useSuspenseQuery(
-		trpc.conversations.getRecent.queryOptions({ limit: 5 }),
-	);
-	const { data: sourcesData } = useSuspenseQuery(
-		trpc.datasource.getMostReferenced.queryOptions(),
-	);
+  const { data: metricsData } = useSuspenseQuery(trpc.metrics.getOverview.queryOptions());
+  const { data: recentConversations } = useSuspenseQuery(
+    trpc.conversations.getRecent.queryOptions({ limit: 5 }),
+  );
+  const { data: sourcesData } = useSuspenseQuery(trpc.datasource.getMostReferenced.queryOptions());
 
-	return (
-		<div className="relative p-4 md:p-6 w-full max-w-7xl mx-auto space-y-6 overflow-x-hidden">
-			<Metrics
-				sourcesCount={metricsData.sourcesCount}
-				conversationsCount={metricsData.conversationsCount}
-				voteCounts={{
-					upvotes: metricsData.upvotes,
-					downvotes: metricsData.downvotes,
-				}}
-				meter={{ balance: 89 }}
-				visitorData={[]}
-			/>
-			<div className="flex flex-col lg:flex-row gap-6 w-full items-stretch">
-				<div className="w-full lg:w-[60%] flex">
-					<AnalyticsOverview />
-				</div>
-				<div className="w-full lg:w-[40%] flex">
-					<SourcesOverview sourcesData={sourcesData} />
-				</div>
-			</div>
-			<div className="w-full min-w-0">
-				<MostRecentConversations conversations={recentConversations ?? []} />
-			</div>
-		</div>
-	);
+  return (
+    <div className="relative p-4 md:p-6 w-full max-w-7xl mx-auto space-y-6 overflow-x-hidden">
+      <Metrics
+        sourcesCount={metricsData.sourcesCount}
+        conversationsCount={metricsData.conversationsCount}
+        voteCounts={{
+          upvotes: metricsData.upvotes,
+          downvotes: metricsData.downvotes,
+        }}
+        meter={{ balance: 89 }}
+        uniqueVisitors={metricsData.uniqueVisitors}
+      />
+      <div className="flex flex-col lg:flex-row gap-6 w-full items-stretch">
+        <div className="w-full lg:w-[60%] flex">
+          <AnalyticsOverview />
+        </div>
+        <div className="w-full lg:w-[40%] flex">
+          <SourcesOverview sourcesData={sourcesData} />
+        </div>
+      </div>
+      <div className="w-full min-w-0">
+        <MostRecentConversations conversations={recentConversations ?? []} />
+      </div>
+    </div>
+  );
 }

@@ -20,24 +20,18 @@ interface DeleteChatProps {
   onDeleted?: () => void;
 }
 
-export const DeleteChat = ({ id, open, onOpenChange }: DeleteChatProps) => {
+export const DeleteChat = ({ id, open, onOpenChange, onDeleted }: DeleteChatProps) => {
   const deleteMutation = useMutation({
-    mutationFn: async ({ id }: { id: string }) => {
+    mutationFn: async () => {
       return trpcClient.conversations.delete.mutate({ id });
     },
     onSuccess: () => {
       toast.success("Chat deleted");
-      if (onOpenChange) onOpenChange(false);
+      onOpenChange(false);
       queryClient.invalidateQueries({
         queryKey: trpc.conversations.getAll.queryOptions().queryKey,
       });
-      if (id) {
-        queryClient.invalidateQueries({
-          queryKey: trpc.conversations.getMessages.queryOptions({
-            conversationId: id,
-          }).queryKey,
-        });
-      }
+      onDeleted?.();
     },
     onError: (error) => {
       console.log("Delete error:", error);
@@ -46,7 +40,7 @@ export const DeleteChat = ({ id, open, onOpenChange }: DeleteChatProps) => {
   });
 
   const handleDelete = async () => {
-    await deleteMutation.mutateAsync({ id });
+    await deleteMutation.mutateAsync();
   };
 
   return (

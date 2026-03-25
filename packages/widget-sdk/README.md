@@ -26,7 +26,7 @@ If you want the launcher color to be correct before the bubble appears, pass `ap
   window.Padyna("init", {
     widgetId: "pd_xxxxxxxx",
     serverUrl: "https://YOUR_WEB_ORIGIN",
-    apiUrl: "https://YOUR_API_ORIGIN"
+    apiUrl: "https://YOUR_API_ORIGIN",
   });
 </script>
 ```
@@ -47,7 +47,7 @@ export default function App() {
       window.Padyna("init", {
         widgetId: "pd_xxxxxxxx",
         serverUrl: "https://YOUR_WEB_ORIGIN",
-        apiUrl: "https://YOUR_API_ORIGIN"
+        apiUrl: "https://YOUR_API_ORIGIN",
       });
     };
   }, []);
@@ -68,7 +68,7 @@ export default function App() {
   window.Padyna("init", {
     widgetId: "pd_fZtwHhKTb4QX",
     serverUrl: "http://localhost:3001",
-    apiUrl: "http://localhost:3000"
+    apiUrl: "http://localhost:3000",
   });
 </script>
 ```

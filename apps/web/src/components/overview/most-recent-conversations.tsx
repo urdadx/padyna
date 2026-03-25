@@ -1,4 +1,8 @@
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import {
 	Table,
@@ -16,15 +20,20 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link } from "@tanstack/react-router";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { trpc, trpcClient } from "@/utils/trpc";
+import Spinner from "@/components/ui/spinner";
 
-export type Conversation = {
-	id: string;
-	date: string;
-	title: string;
-	status: "Escalated" | "Unresolved" | "Resolved";
-	channel: "Widget" | "Link in Bio" | "Telegram" | "WhatsApp" | string;
-};
+// ---- Types ----
 
 export type DBConversation = {
 	id: string;
@@ -35,12 +44,22 @@ export type DBConversation = {
 	createdAt: Date | string;
 	chatbotId: string;
 	organizationId: string;
-	userId: string;
+	userId: string | null;
 	visibility: string;
 	metadata: Record<string, unknown> | null;
 };
 
-const channelMap: Record<string, Conversation["channel"]> = {
+type Conversation = {
+	id: string;
+	date: string;
+	title: string;
+	status: "Escalated" | "Unresolved" | "Resolved";
+	channel: string;
+};
+
+// ---- Helpers ----
+
+const CHANNEL_MAP: Record<string, string> = {
 	widget: "Widget",
 	whatsapp: "WhatsApp",
 	telegram: "Telegram",
@@ -75,62 +94,203 @@ function mapConversation(dbConv: DBConversation): Conversation {
 				: dbConv.status === "resolved"
 					? "Resolved"
 					: "Unresolved",
-		channel: channelMap[dbConv.channel] ?? dbConv.channel,
+		channel: CHANNEL_MAP[dbConv.channel] ?? dbConv.channel,
 	};
 }
 
-const columns: ColumnDef<Conversation>[] = [
-	{
-		accessorKey: "date",
-		header: "Date & Time",
-		cell: ({ row }) => <span className="text-xs md:text-sm">{row.getValue("date")}</span>,
-	},
-	{
-		accessorKey: "title",
-		cell: ({ row }) => (
-			<span className="font-medium truncate capitalize max-w-24 md:max-w-52 block">
-				{row.getValue("title")}
-			</span>
-		),
-		header: "Title",
-	},
+// ---- Delete Dialog ----
 
-	{
-		accessorKey: "channel",
-		header: "Channel",
-		cell: ({ row }) => <span className="">{row.getValue("channel")}</span>,
-	},
-	{
-		id: "actions",
-		header: "Action",
-		cell: () => (
-			<DropdownMenu>
-				<DropdownMenuTrigger>
-					<Button variant="ghost" className="h-8 w-8 p-0">
-						<MoreHorizontal className="h-4 w-4" />
-					</Button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end">
-					<DropdownMenuItem>View details</DropdownMenuItem>
-					<DropdownMenuItem className="text-red-500">Delete</DropdownMenuItem>
-				</DropdownMenuContent>
-			</DropdownMenu>
-		),
-	},
-];
+function DeleteConversationDialog({
+	id,
+	open,
+	onOpenChange,
+	onDeleted,
+}: {
+	id: string;
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	onDeleted?: () => void;
+}) {
+	const queryClient = useQueryClient();
 
-interface MostRecentConversationsProps {
-	conversations: DBConversation[];
+	const { mutate, isPending } = useMutation({
+		mutationFn: () => trpcClient.conversations.delete.mutate({ id }),
+		onSuccess: () => {
+			toast.success("Conversation deleted");
+			onOpenChange(false);
+			queryClient.invalidateQueries({
+				queryKey: trpc.conversations.getRecent.queryOptions({ limit: 5 }).queryKey,
+			});
+			onDeleted?.();
+		},
+		onError: () => {
+			toast.error("Failed to delete conversation. Please try again.");
+		},
+	});
+
+	return (
+		<AlertDialog open={open} onOpenChange={onOpenChange}>
+			<AlertDialogContent className="p-5">
+				<AlertDialogHeader>
+					<AlertDialogTitle className="text-lg font-semibold">
+						Are you absolutely sure?
+					</AlertDialogTitle>
+					<AlertDialogDescription>
+						This action cannot be undone. This will permanently delete the
+						conversation and remove the data from our servers.
+					</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+					<AlertDialogAction
+						onClick={(e) => {
+							e.preventDefault();
+							mutate();
+						}}
+						disabled={isPending}
+						className="bg-red-600 hover:bg-red-700 text-white">
+						{isPending ? (
+							<>
+								<Spinner color="white" />
+								Deleting...
+							</>
+						) : (
+							"Yes, delete"
+						)}
+					</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
+	);
 }
 
-export function MostRecentConversations({ conversations }: MostRecentConversationsProps) {
-	const mappedConversations = conversations.map(mapConversation);
+function ConversationsTable({
+	conversations,
+	onDelete,
+}: {
+	conversations: Conversation[];
+	onDelete: (id: string) => void;
+}) {
+	const columns: ColumnDef<Conversation>[] = [
+		{
+			accessorKey: "date",
+			header: "Date & Time",
+			cell: ({ row }) => (
+				<span className="font-medium truncate capitalize max-w-24 md:max-w-52 block text-xs md:text-sm">
+					{row.getValue("date")}
+				</span>
+			),
+		},
+		{
+			accessorKey: "title",
+			header: "Title",
+			cell: ({ row }) => (
+				<span className="font-medium truncate capitalize max-w-24 md:max-w-52 block">
+					{row.getValue("title")}
+				</span>
+			),
+		},
+		{
+			accessorKey: "channel",
+			header: "Channel",
+			cell: ({ row }) => <span>{row.getValue("channel")}</span>,
+		},
+		{
+			id: "actions",
+			header: "Action",
+			cell: ({ row }) => (
+				<DropdownMenu>
+					<DropdownMenuTrigger>
+						<Button variant="ghost" className="h-8 w-8 p-0">
+							<MoreHorizontal className="h-4 w-4" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end">
+						<DropdownMenuItem>
+							<Link to="/chat-logs">View details</Link>
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							variant="destructive"
+							onClick={(e) => {
+								e.preventDefault();
+								onDelete(row.original.id);
+							}}>
+							Delete
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			),
+		},
+	];
 
 	const table = useReactTable({
 		columns,
-		data: mappedConversations,
+		data: conversations,
 		getCoreRowModel: getCoreRowModel(),
 	});
+
+	return (
+		<div className="rounded-xl border bg-background overflow-x-auto">
+			<Table>
+				<TableHeader className="bg-gray-50">
+					{table.getHeaderGroups().map((headerGroup) => (
+						<TableRow key={headerGroup.id} className="hover:bg-transparent">
+							{headerGroup.headers.map((header) => (
+								<TableHead
+									key={header.id}
+									className="h-10 text-sm text-muted-foreground">
+									{flexRender(
+										header.column.columnDef.header,
+										header.getContext(),
+									)}
+								</TableHead>
+							))}
+						</TableRow>
+					))}
+				</TableHeader>
+				<TableBody>
+					{table.getRowModel().rows.length === 0 ? (
+						<TableRow>
+							<TableCell
+								colSpan={columns.length}
+								className="text-center py-4">
+								No conversations yet.
+							</TableCell>
+						</TableRow>
+					) : (
+						table.getRowModel().rows.map((row) => (
+							<TableRow key={row.id}>
+								{row.getVisibleCells().map((cell) => (
+									<TableCell
+										key={cell.id}
+										className="py-3 px-2 md:px-4 h-14">
+										{flexRender(
+											cell.column.columnDef.cell,
+											cell.getContext(),
+										)}
+									</TableCell>
+								))}
+							</TableRow>
+						))
+					)}
+				</TableBody>
+			</Table>
+		</div>
+	);
+}
+
+interface MostRecentConversationsProps {
+	conversations: DBConversation[];
+	onConversationDeleted?: () => void;
+}
+
+export function MostRecentConversations({
+	conversations,
+	onConversationDeleted,
+}: MostRecentConversationsProps) {
+	const [deleteId, setDeleteId] = useState<string | null>(null);
+
+	const mapped = conversations.map(mapConversation);
 
 	return (
 		<div className="space-y-4 w-full">
@@ -146,53 +306,15 @@ export function MostRecentConversations({ conversations }: MostRecentConversatio
 					</Button>
 				</Link>
 			</div>
-			<div className="rounded-xl border bg-background overflow-x-auto">
-				<Table className="">
-					<TableHeader className="bg-gray-50">
-						{table.getHeaderGroups().map((headerGroup) => (
-							<TableRow
-								key={headerGroup.id}
-								className="hover:bg-transparent">
-								{headerGroup.headers.map((header) => (
-									<TableHead
-										key={header.id}
-										className="h-10 text-sm  text-muted-foreground ">
-										{flexRender(
-											header.column.columnDef.header,
-											header.getContext(),
-										)}
-									</TableHead>
-								))}
-							</TableRow>
-						))}
-					</TableHeader>
-					<TableBody>
-						{table.getRowModel().rows.map((row) => (
-							<TableRow key={row.id}>
-								{row.getVisibleCells().map((cell) => (
-									<TableCell
-										key={cell.id}
-										className="py-3 px-2 md:px-4 h-14">
-										{flexRender(
-											cell.column.columnDef.cell,
-											cell.getContext(),
-										)}
-									</TableCell>
-								))}
-							</TableRow>
-						))}
-						{table.getRowModel().rows.length === 0 && (
-							<TableRow>
-								<TableCell
-									colSpan={columns.length}
-									className="text-center py-4">
-									No conversations yet.
-								</TableCell>
-							</TableRow>
-						)}
-					</TableBody>
-				</Table>
-			</div>
+
+			<ConversationsTable conversations={mapped} onDelete={setDeleteId} />
+
+			<DeleteConversationDialog
+				id={deleteId ?? ""}
+				open={!!deleteId}
+				onOpenChange={(open) => !open && setDeleteId(null)}
+				onDeleted={onConversationDeleted}
+			/>
 		</div>
 	);
 }

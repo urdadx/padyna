@@ -33,11 +33,6 @@ export const visitorEvents = pgTable(
         "chat_message",
         "widget_open",
         "widget_close",
-        "cta_click",
-        "form_submit",
-        "file_download",
-        "error",
-        "custom",
       ],
     }).notNull(),
 

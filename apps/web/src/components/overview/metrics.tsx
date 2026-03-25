@@ -7,7 +7,7 @@ interface MetricsProps {
   conversationsCount: number;
   voteCounts: { upvotes: number; downvotes: number };
   meter: { balance: number } | undefined;
-  visitorData: unknown[] | undefined;
+  uniqueVisitors: number;
 }
 
 export function Metrics({
@@ -15,10 +15,9 @@ export function Metrics({
   conversationsCount,
   voteCounts,
   meter,
-  visitorData,
+  uniqueVisitors,
 }: MetricsProps) {
   const balance = meter?.balance ?? 0;
-  const totalVisits = visitorData ? visitorData.length : 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -52,7 +51,7 @@ export function Metrics({
       <MetricCard
         icon={Globe}
         title="Unique visitors"
-        value={totalVisits}
+        value={uniqueVisitors}
         gradientFrom="blue-50"
         gradientVia="blue-25"
         href="/analytics"

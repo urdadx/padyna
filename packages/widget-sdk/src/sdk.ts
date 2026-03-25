@@ -23,6 +23,7 @@ type PadynaDom = {
 type PadynaState = {
   isInitialized: boolean;
   isOpen: boolean;
+  isVisible: boolean;
   initOptions: PadynaInitOptions | null;
   defaultServerUrl: string;
   dom: PadynaDom | null;
@@ -70,7 +71,10 @@ function normalizeApiUrl(options: PadynaInitOptions, fallback: string) {
   return normalizeServerUrl(options.serverUrl, fallback);
 }
 
-function buildWidgetUrl(options: PadynaInitOptions, defaultServerUrl: string) {
+function buildWidgetUrl(
+  options: PadynaInitOptions,
+  defaultServerUrl: string,
+) {
   const serverUrl = normalizeServerUrl(options.serverUrl, defaultServerUrl);
   if (!serverUrl) {
     return "";
@@ -269,6 +273,7 @@ function createDom(defaultServerUrl: string): PadynaDom {
 const state: PadynaState = {
   isInitialized: false,
   isOpen: false,
+  isVisible: false,
   initOptions: null,
   defaultServerUrl: typeof window !== "undefined" ? inferDefaultServerUrl() : "",
   dom: null,
@@ -332,7 +337,9 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
       return;
     }
     state.isOpen = true;
+    state.isVisible = true;
     applyOpenState(state.dom, true);
+
     if (!state.isIframeLoaded) {
       state.loaderShownAt = Date.now();
       setLoadingVisual(state.dom, true);
@@ -347,7 +354,8 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
         }
       };
       state.dom.iframe.src =
-        buildWidgetUrl(state.initOptions, state.defaultServerUrl) || "about:blank";
+        buildWidgetUrl(state.initOptions, state.defaultServerUrl) ||
+        "about:blank";
     }
 
     return;
@@ -358,6 +366,7 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
       return;
     }
     state.isOpen = false;
+
     if (state.hideLoaderTimer) {
       clearTimeout(state.hideLoaderTimer);
       state.hideLoaderTimer = null;
@@ -378,6 +387,7 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
 
   state.dom = null;
   state.isOpen = false;
+  state.isVisible = false;
   state.isInitialized = false;
   state.initOptions = null;
   state.isIframeBootstrapped = false;
@@ -402,9 +412,11 @@ function drainQueue(queued: unknown[][]) {
   }
 }
 
-export const Padyna: PadynaCallable = ((command: PadynaCommand, options?: PadynaInitOptions) => {
-  void runCommand(command, options);
-}) as PadynaCallable;
+export const Padyna: PadynaCallable = Object.assign(
+  (command: PadynaCommand, options?: PadynaInitOptions) => {
+    void runCommand(command, options);
+  },
+) as PadynaCallable;
 
 if (typeof window !== "undefined") {
   const queued = Array.isArray(window.Padyna?.q) ? window.Padyna.q : [];

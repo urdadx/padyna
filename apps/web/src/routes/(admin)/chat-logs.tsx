@@ -17,6 +17,7 @@ function RouteComponent() {
           className="w-full max-w-sm"
           selectedId={selectedChatId}
           onSelect={setSelectedChatId}
+          onDeleted={() => setSelectedChatId(undefined)}
         />
         <ChatConversationPanel
           chatId={selectedChatId}

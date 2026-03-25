@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Area, Bar, CartesianGrid, ComposedChart, XAxis, YAxis } from "recharts";
 
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,24 +19,7 @@ import {
 import NumberFlow from "@number-flow/react";
 import { Checkbox } from "../ui/checkbox";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-
-const DUMMY_CHART_DATA = [
-	{ date: "2024-03-01", visitors: 450, chats: 120 },
-	{ date: "2024-03-02", visitors: 520, chats: 150 },
-	{ date: "2024-03-03", visitors: 380, chats: 90 },
-	{ date: "2024-03-04", visitors: 610, chats: 210 },
-	{ date: "2024-03-05", visitors: 590, chats: 180 },
-	{ date: "2024-03-06", visitors: 720, chats: 250 },
-	{ date: "2024-03-07", visitors: 810, chats: 310 },
-];
-
-const DUMMY_REALTIME = {
-	totalVisits: 4082,
-	totalChats: 1310,
-	averageSessionTime: 245,
-	bounceRate: 10,
-	activeVisitors: 12,
-};
+import { trpc } from "@/utils/trpc";
 
 const TIME_RANGE_ITEMS = [
 	{ label: "Last 24 hours", value: "24h" },
@@ -43,6 +27,8 @@ const TIME_RANGE_ITEMS = [
 	{ label: "Last 30 days", value: "30d" },
 	{ label: "Last 3 months", value: "90d" },
 ] as const;
+
+type TimeRange = (typeof TIME_RANGE_ITEMS)[number]["value"];
 
 const formatDuration = (seconds: number) => {
 	const mins = Math.floor(seconds / 60);
@@ -64,10 +50,21 @@ const chartConfig = {
 export function AgentAnalytics() {
 	const [showChats, setShowChats] = React.useState(true);
 	const [showVisitors, setShowVisitors] = React.useState(true);
+
 	const navigate = useNavigate({ from: "/analytics" });
 	const { timeRange } = useSearch({ from: "/(admin)/analytics" });
-	const selectedTimeRange = (timeRange as "24h" | "7d" | "30d" | "90d") || "24h";
+	const selectedTimeRange: TimeRange = (timeRange as TimeRange) || "24h";
 
+	const overviewQuery = useQuery(
+		trpc.analytics.getOverview.queryOptions({ timeRange: selectedTimeRange }),
+	);
+
+	const chartQuery = useQuery(
+		trpc.analytics.getChartData.queryOptions({ timeRange: selectedTimeRange }),
+	);
+
+	const overview = overviewQuery.data;
+	const chartData = chartQuery.data ?? [];
 	return (
 		<div className="mt-4 flex flex-col space-y-4 w-full">
 			<div className="flex items-center justify-between">
@@ -78,13 +75,7 @@ export function AgentAnalytics() {
 					onValueChange={(value) => {
 						if (value !== null) {
 							navigate({
-								search: {
-									timeRange: value as
-										| "24h"
-										| "7d"
-										| "30d"
-										| "90d",
-								},
+								search: { timeRange: value as TimeRange },
 							});
 						}
 					}}>
@@ -107,11 +98,11 @@ export function AgentAnalytics() {
 			</div>
 
 			<div className="px-1 py-5 w-full rounded-xl border bg-white">
-				<CardHeader className=" flex flex-row flex-wrap justify-between gap-4">
+				<CardHeader className="flex flex-row flex-wrap justify-between gap-4">
 					<div className="flex flex-col gap-1 text-left min-w-24">
 						<CardTitle className="flex items-center gap-3 text-muted-foreground text-xs">
 							<div className="flex items-center gap-1">
-								<div className="inset-0 size-2 items-center justify-center rounded-full bg-yellow-500" />
+								<div className="inset-0 size-2 rounded-full bg-yellow-500" />
 								<span>Total visits</span>
 							</div>
 							<Checkbox
@@ -122,14 +113,14 @@ export function AgentAnalytics() {
 							/>
 						</CardTitle>
 						<CardDescription className="text-xl md:text-2xl font-semibold text-black">
-							<NumberFlow value={DUMMY_REALTIME.totalVisits} />
+							<NumberFlow value={overview?.totalVisits ?? 0} />
 						</CardDescription>
 					</div>
 
 					<div className="flex flex-col gap-1 text-left min-w-24">
 						<CardTitle className="flex items-center gap-3 text-muted-foreground text-xs">
 							<div className="flex items-center gap-1">
-								<div className="inset-0 size-2 items-center justify-center rounded-full bg-purple-500" />
+								<div className="inset-0 size-2 rounded-full bg-purple-500" />
 								<span>Total chats</span>
 							</div>
 							<Checkbox
@@ -140,30 +131,38 @@ export function AgentAnalytics() {
 							/>
 						</CardTitle>
 						<CardDescription className="text-xl md:text-2xl font-semibold text-black">
-							<NumberFlow value={DUMMY_REALTIME.totalChats} />
+							<NumberFlow value={overview?.totalChats ?? 0} />
 						</CardDescription>
 					</div>
 
 					<div className="flex flex-col gap-1 text-left min-w-24">
 						<CardTitle className="flex items-center gap-3 text-muted-foreground text-xs">
 							<div className="flex items-center gap-1">
-								<div className="inset-0 size-2 items-center justify-center rounded-full bg-gray-500" />
+								<div className="inset-0 size-2 rounded-full bg-gray-500" />
 								<span>Bounce rate</span>
 							</div>
 						</CardTitle>
 						<CardDescription className="text-xl md:text-2xl font-semibold text-black">
-							10%
+							{overview
+								? `${Math.round(
+										((overview.totalVisits -
+											overview.totalChats) /
+											overview.totalVisits) *
+											100,
+									)}%`
+								: "0%"}
 						</CardDescription>
 					</div>
+
 					<div className="flex flex-col gap-1 text-left min-w-24">
 						<CardTitle className="flex items-center gap-3 text-muted-foreground text-xs">
 							<div className="flex items-center gap-1">
-								<div className="inset-0 size-2 items-center justify-center rounded-full bg-orange-500" />
-								<span>Avg. session time </span>
+								<div className="inset-0 size-2 rounded-full bg-orange-500" />
+								<span>Avg. session time</span>
 							</div>
 						</CardTitle>
 						<CardDescription className="text-xl md:text-2xl font-semibold text-black">
-							{formatDuration(DUMMY_REALTIME.averageSessionTime)}
+							{formatDuration(overview?.averageSessionTime ?? 0)}
 						</CardDescription>
 					</div>
 
@@ -171,20 +170,20 @@ export function AgentAnalytics() {
 						<CardTitle className="flex items-center gap-3 text-muted-foreground text-xs">
 							<div className="flex items-center gap-1">
 								<div className="inset-0 size-2 animate-pulse rounded-full bg-green-500" />
-								<span>Live users </span>
+								<span>Live users</span>
 							</div>
 						</CardTitle>
 						<CardDescription className="text-xl md:text-2xl font-semibold text-black">
-							<NumberFlow value={DUMMY_REALTIME.activeVisitors} />
+							<NumberFlow value={overview?.activeVisitors ?? 0} />
 						</CardDescription>
 					</div>
 				</CardHeader>
 
-				<CardContent className=" pt-4 sm:pt-6">
+				<CardContent className="pt-4 sm:pt-6">
 					<ChartContainer
 						config={chartConfig}
 						className="aspect-auto h-75 w-full">
-						<ComposedChart data={DUMMY_CHART_DATA}>
+						<ComposedChart data={chartData}>
 							<defs>
 								<linearGradient
 									id="fillChats"
@@ -241,19 +240,18 @@ export function AgentAnalytics() {
 								cursor={false}
 								content={
 									<ChartTooltipContent
-										labelFormatter={(value) => {
-											return new Date(
+										labelFormatter={(value) =>
+											new Date(
 												value,
 											).toLocaleDateString("en-US", {
 												month: "short",
 												day: "numeric",
-											});
-										}}
+											})
+										}
 										indicator="dot"
 									/>
 								}
 							/>
-
 							{showVisitors && (
 								<Area
 									dataKey="visitors"
@@ -263,7 +261,6 @@ export function AgentAnalytics() {
 									fillOpacity={0.3}
 								/>
 							)}
-
 							{showChats && (
 								<Bar
 									dataKey="chats"

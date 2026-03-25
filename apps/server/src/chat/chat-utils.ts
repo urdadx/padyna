@@ -118,7 +118,34 @@ async function getOrCreateConversation(input: {
   userId: string | undefined;
   title?: string;
   metadata?: Record<string, unknown>;
+  conversationId?: string;
 }) {
+  // If conversationId is provided, check if it exists
+  if (input.conversationId) {
+    const [existing] = await db
+      .select({ id: chatConversation.id })
+      .from(chatConversation)
+      .where(eq(chatConversation.id, input.conversationId))
+      .limit(1);
+
+    if (existing) {
+      return existing.id;
+    }
+
+    // Create with the specific ID
+    await db.insert(chatConversation).values({
+      id: input.conversationId,
+      chatbotId: input.chatbotId,
+      organizationId: input.organizationId,
+      userId: input.userId ?? undefined,
+      title: input.title || "New Conversation",
+      metadata: input.metadata,
+    });
+
+    return input.conversationId;
+  }
+
+  // Original logic for finding existing or creating new
   const existing = await db
     .select({ id: chatConversation.id })
     .from(chatConversation)
@@ -215,18 +242,20 @@ export async function persistConversationMessages(input: {
   messages: StoredUIMessage[];
   title?: string;
   metadata?: Record<string, unknown>;
+  conversationId?: string;
 }) {
   const normalizedMessages = normalizeIncomingMessages(input.messages);
   if (normalizedMessages.length === 0) {
     return;
   }
 
-  const conversationId = await getOrCreateConversation({
+  const targetConversationId = await getOrCreateConversation({
     chatbotId: input.chatbotId,
     organizationId: input.organizationId,
     userId: input.userId,
     title: input.title,
     metadata: input.metadata,
+    conversationId: input.conversationId,
   });
 
   const existing = await db
@@ -238,10 +267,9 @@ export async function persistConversationMessages(input: {
     .from(chatMessage)
     .where(
       and(
-        eq(chatMessage.conversationId, conversationId),
+        eq(chatMessage.conversationId, targetConversationId),
         eq(chatMessage.chatbotId, input.chatbotId),
         eq(chatMessage.organizationId, input.organizationId),
-        input.userId ? eq(chatMessage.userId, input.userId) : undefined,
       ),
     );
 
@@ -279,7 +307,7 @@ export async function persistConversationMessages(input: {
     .insert(chatMessage)
     .values(
       toInsert.map((message) => ({
-        conversationId,
+        conversationId: targetConversationId,
         chatbotId: input.chatbotId,
         organizationId: input.organizationId,
         userId: input.userId ?? undefined,
@@ -294,7 +322,7 @@ export async function persistConversationMessages(input: {
   await db
     .update(chatConversation)
     .set({ updatedAt: new Date() })
-    .where(eq(chatConversation.id, conversationId));
+    .where(eq(chatConversation.id, targetConversationId));
 }
 
 export async function clearConversationMessages(input: {
@@ -312,3 +340,152 @@ export async function clearConversationMessages(input: {
       ),
     );
 }
+
+export async function getChatById(input: { id: string }) {
+  try {
+    const [selectedChat] = await db
+      .select()
+      .from(chatConversation)
+      .where(eq(chatConversation.id, input.id))
+      .limit(1);
+    return selectedChat;
+  } catch (error) {
+    console.error("Error fetching chat by ID:", error);
+    return null;
+  }
+}
+
+export async function getMessagesByChatId({ id }: { id: string }) {
+  try {
+    return await db
+      .select()
+      .from(chatMessage)
+      .where(eq(chatMessage.conversationId, id))
+      .orderBy(asc(chatMessage.createdAt));
+  } catch (error) {
+    console.error("Error fetching messages by chat ID:", error);
+    return [];
+  }
+}
+
+export function detectDeviceFromUserAgent(userAgent: string): DeviceInfo {
+  const ua = userAgent.toLowerCase();
+
+  const result: DeviceInfo = {
+    type: "unknown",
+    os: "unknown",
+    browser: "unknown",
+    isIOS: false,
+    isAndroid: false,
+    isMac: false,
+    isWindows: false,
+    isLinux: false,
+    isSafari: false,
+    isChrome: false,
+    isFirefox: false,
+    isEdge: false,
+  };
+
+  // Device type detection
+  if (
+    /(ipad|tablet|(android(?!.*mobile))|(windows(?!.*phone)(.*touch))|kindle|playbook|silk|tablet|(puffin(?!.*(IP|AP|WP))))/.test(
+      ua,
+    )
+  ) {
+    result.type = "tablet";
+  } else if (
+    /(mobi|ipod|phone|blackberry|opera mini|fennec|minimo|symbian|psp|nintendo ds|archos|skyfire|puffin|blazer|bolt|gobrowser|iris|maemo|semc|teashark|uzard)/.test(
+      ua,
+    )
+  ) {
+    result.type = "mobile";
+  } else {
+    result.type = "desktop";
+  }
+
+  // OS detection
+  if (/iphone|ipad|ipod/.test(ua)) {
+    result.os = "iOS";
+    result.isIOS = true;
+  } else if (/android/.test(ua)) {
+    result.os = "Android";
+    result.isAndroid = true;
+  } else if (/macintosh|mac os x/.test(ua)) {
+    result.os = "macOS";
+    result.isMac = true;
+  } else if (/windows|win32|win64|wow64/.test(ua)) {
+    result.os = "Windows";
+    result.isWindows = true;
+  } else if (/linux/.test(ua) && !result.isAndroid) {
+    result.os = "Linux";
+    result.isLinux = true;
+  }
+
+  // Browser detection
+  if (/edg/.test(ua)) {
+    result.browser = "Edge";
+    result.isEdge = true;
+  } else if (/chrome/.test(ua) && !/chromium|edg/.test(ua)) {
+    result.browser = "Chrome";
+    result.isChrome = true;
+  } else if (/firefox/.test(ua)) {
+    result.browser = "Firefox";
+    result.isFirefox = true;
+  } else if (/safari/.test(ua) && !/chrome|chromium|edg/.test(ua)) {
+    result.browser = "Safari";
+    result.isSafari = true;
+  } else if (/msie|trident/.test(ua)) {
+    result.browser = "Internet Explorer";
+  } else if (/opera/.test(ua)) {
+    result.browser = "Opera";
+  }
+
+  // Try to detect models for common devices
+  if (result.isIOS) {
+    const matches =
+      ua.match(/iphone\s+os\s+(\d+)_(\d+)/i) || ua.match(/ipad;\s+cpu\s+os\s+(\d+)_(\d+)/i);
+    if (matches) {
+      const model = ua.includes("ipad") ? "iPad" : "iPhone";
+      result.model = `${model} (iOS ${matches[1]}.${matches[2]})`;
+    }
+  } else if (result.isAndroid) {
+    const matches = ua.match(/android\s+(\d+)(\.(\d+))?/i);
+    if (matches) {
+      result.model = `Android ${matches[1]}${matches[3] ? `.${matches[3]}` : ""}`;
+    }
+  }
+
+  return result;
+}
+
+export const getUserMetadataFromRequest = (c: any) => {
+  const userAgent = c.req.header("user-agent") || "";
+  const country = c.req.header("cf-ipcountry") || "GH";
+  const timeZone = c.req.header("x-timezone") || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const city = c.req.header("cf-ipcity") || "Accra";
+  const deviceInfo = detectDeviceFromUserAgent(userAgent);
+
+  return {
+    userAgent,
+    country,
+    timeZone,
+    city,
+    deviceInfo,
+  };
+};
+
+export type DeviceInfo = {
+  type: "desktop" | "mobile" | "tablet" | "bot" | "unknown";
+  os: string;
+  browser: string;
+  model?: string;
+  isIOS: boolean;
+  isAndroid: boolean;
+  isMac: boolean;
+  isWindows: boolean;
+  isLinux: boolean;
+  isSafari: boolean;
+  isChrome: boolean;
+  isFirefox: boolean;
+  isEdge: boolean;
+};

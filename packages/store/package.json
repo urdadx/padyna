@@ -1,0 +1,45 @@
+{
+  "name": "@padyna/store",
+  "version": "0.1.0",
+  "description": "High-performance chat state management for Padyna",
+  "keywords": [
+    "ai",
+    "ai-sdk",
+    "chat",
+    "react",
+    "state-management",
+    "zustand"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ai": "^6.0.116"
+  },
+  "devDependencies": {
+    "@ai-sdk/react": "^3.0.118",
+    "@types/node": "^22.19.13",
+    "@types/react": "^19.2.2",
+    "@types/uuid": "^11.0.0",
+    "react": "^19.2.0",
+    "tsdown": "^0.21.4",
+    "typescript": "catalog:",
+    "zustand": "^5.0.8"
+  },
+  "peerDependencies": {
+    "@ai-sdk/react": "^3.0.118",
+    "react": ">=18.0.0",
+    "zustand": ">=5.0.0"
+  }
+}

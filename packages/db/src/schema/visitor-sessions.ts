@@ -8,7 +8,6 @@ import {
   integer,
   boolean,
   jsonb,
-  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { chatbot } from "./chatbot";
 
@@ -59,7 +58,5 @@ export const visitorSessions = pgTable(
     index("visitor_sessions_device_type_idx").on(table.deviceType),
     index("visitor_sessions_platform_idx").on(table.platform),
     index("visitor_sessions_ended_at_idx").on(table.endedAt),
-
-    uniqueIndex("visitor_sessions_chatbot_visitor_idx").on(table.chatbotId, table.visitorId),
   ],
 );

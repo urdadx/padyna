@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Area, Bar, CartesianGrid, ComposedChart, XAxis, YAxis } from "recharts";
 
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,21 +9,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import NumberFlow from "@number-flow/react";
-
-const DUMMY_CHART_DATA = [
-  { date: "2024-03-01", visitors: 450, chats: 120 },
-  { date: "2024-03-02", visitors: 520, chats: 150 },
-  { date: "2024-03-03", visitors: 380, chats: 90 },
-  { date: "2024-03-04", visitors: 610, chats: 210 },
-  { date: "2024-03-05", visitors: 590, chats: 180 },
-  { date: "2024-03-06", visitors: 720, chats: 250 },
-  { date: "2024-03-07", visitors: 810, chats: 310 },
-];
-
-const DUMMY_REALTIME = {
-  totalVisits: 4082,
-  totalChats: 1310,
-};
+import { trpc } from "@/utils/trpc";
 
 const chartConfig = {
   visitors: {
@@ -36,6 +23,29 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function AnalyticsOverview() {
+  const overviewQuery = useSuspenseQuery(
+    trpc.analytics.getOverview.queryOptions({ timeRange: "7d" }),
+  );
+
+  const chartQuery = useSuspenseQuery(
+    trpc.analytics.getChartData.queryOptions({ timeRange: "7d" }),
+  );
+
+  const overview = overviewQuery.data;
+  const chartData = chartQuery.data ?? [];
+
+  const today = new Date();
+  const weekAgo = new Date(today);
+  weekAgo.setDate(today.getDate() - 7);
+
+  const dateRangeText = `${weekAgo.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })} - ${today.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })}`;
+
   return (
     <div className="px-1 py-5 w-full h-87.5 rounded-xl border bg-white flex flex-col">
       <CardHeader className=" flex flex-row flex-wrap justify-between items-center shrink-0">
@@ -48,7 +58,7 @@ export function AnalyticsOverview() {
               </div>
             </CardTitle>
             <CardDescription className="text-xl md:text-xl font-semibold text-black">
-              <NumberFlow value={DUMMY_REALTIME.totalVisits} />
+              <NumberFlow value={overview?.totalVisits ?? 0} />
             </CardDescription>
           </div>
 
@@ -60,19 +70,19 @@ export function AnalyticsOverview() {
               </div>
             </CardTitle>
             <CardDescription className="text-xl md:text-xl font-semibold text-black">
-              <NumberFlow value={DUMMY_REALTIME.totalChats} />
+              <NumberFlow value={overview?.totalChats ?? 0} />
             </CardDescription>
           </div>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-xs text-muted-foreground text-right">Mar 21 - Mar 28</span>
+          <span className="text-xs text-muted-foreground text-right">{dateRangeText}</span>
           <h2 className="hidden sm:flex text-xl font-medium">Last 7 days</h2>
         </div>
       </CardHeader>
 
       <CardContent className=" pt-4 sm:pt-6 flex-1 min-h-0">
         <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
-          <ComposedChart data={DUMMY_CHART_DATA}>
+          <ComposedChart data={chartData}>
             <defs>
               <linearGradient id="fillChats" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.8} />

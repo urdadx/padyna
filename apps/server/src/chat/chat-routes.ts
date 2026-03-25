@@ -6,7 +6,7 @@ import {
   clearConversationMessages,
   loadConversationMessages,
   persistConversationMessages,
-} from "./chat-persistence";
+} from "./chat-utils";
 import { db } from "@padyna/db";
 import { chatbot } from "@padyna/db/schema/index";
 import { eq, and } from "drizzle-orm";
@@ -48,7 +48,7 @@ chatRoutes.post("/", async (c) => {
 
   const chatbotName = chatbotData.name || "AI Assistant";
   const chatbotUseCase = chatbotData.usecase || "support";
-  const { body } = await c.req.json();
+  const body = await c.req.json();
   const uiMessages = body.messages;
 
   if (!Array.isArray(uiMessages)) {

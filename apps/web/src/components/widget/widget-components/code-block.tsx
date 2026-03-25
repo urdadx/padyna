@@ -174,7 +174,9 @@ export function WidgetCodeBlock({ code, language }: { code: string; language: st
               className="float-left min-w-full"
             />
           ) : (
-            <code className="float-left min-w-full text-neutral-700 whitespace-pre">{trimmedCode}</code>
+            <code className="float-left min-w-full text-neutral-700 whitespace-pre">
+              {trimmedCode}
+            </code>
           )}
         </pre>
       </div>

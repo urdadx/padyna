@@ -58,8 +58,6 @@ const calcPercentChange = (curr: number, prev: number) => {
 const calcBounceRate = (bounces: number, total: number) =>
   total > 0 ? Math.round((bounces / total) * 100 * 10) / 10 : 0;
 
-// ─── TREND BUILDER ───────────────────────────────────────────────────────────
-
 interface TrendRow {
   totalSessions: unknown;
   uniqueVisitors: unknown;
@@ -121,8 +119,6 @@ function buildTrendResult(current: TrendRow | undefined, previous: TrendRow | un
     },
   };
 }
-
-// ─── ROUTER ──────────────────────────────────────────────────────────────────
 
 export const analyticsRouter = router({
   getOverview: protectedProcedure
@@ -541,8 +537,8 @@ export const analyticsRouter = router({
   trackEvent: publicProcedure
     .input(
       z.object({
-        chatbotId: z.string().uuid(),
-        sessionId: z.string().uuid(),
+        chatbotId: z.uuid(),
+        sessionId: z.uuid(),
         visitorId: z.string(),
         event: z.enum([
           "session_start",
@@ -552,14 +548,9 @@ export const analyticsRouter = router({
           "chat_message",
           "widget_open",
           "widget_close",
-          "cta_click",
-          "form_submit",
-          "file_download",
-          "error",
-          "custom",
         ]),
         durationMs: z.number().optional(),
-        conversationId: z.string().uuid().optional(),
+        conversationId: z.uuid().optional(),
         extra: z.record(z.string(), z.unknown()).optional(),
       }),
     )
@@ -568,39 +559,44 @@ export const analyticsRouter = router({
         .insert(visitorEvents)
         .values({ ...input, timestamp: new Date() })
         .returning();
+
       return event;
     }),
 
   createSession: publicProcedure
     .input(
       z.object({
-        chatbotId: z.string().uuid(),
+        chatbotId: z.uuid(),
         visitorId: z.string(),
         userAgent: z.string().optional(),
         deviceType: z.enum(["desktop", "mobile", "tablet", "bot", "unknown"]).default("unknown"),
         platform: z.string().optional(),
-        city: z.string().optional(),
-        region: z.string().optional(),
-        country: z.string().optional(),
-        countryCode: z.string().optional(),
-        continent: z.string().optional(),
-        ip: z.string().optional(),
-        referrer: z.string().optional(),
-        extra: z.record(z.string(), z.unknown()).optional(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const headers = ctx.request?.headers;
       const [session] = await db
         .insert(visitorSessions)
-        .values({ ...input, startedAt: new Date() })
+        .values({
+          ...input,
+          userAgent: input.userAgent || headers?.userAgent,
+          city: headers?.city,
+          region: headers?.region,
+          country: headers?.country,
+          countryCode: headers?.countryCode,
+          continent: headers?.continent,
+          referrer: headers?.referer,
+          startedAt: new Date(),
+        })
         .returning();
+
       return session;
     }),
 
   endSession: publicProcedure
     .input(
       z.object({
-        sessionId: z.string().uuid(),
+        sessionId: z.uuid(),
         durationMs: z.number().optional(),
         pageViews: z.number().optional(),
         isBounce: z.boolean().optional(),
@@ -613,6 +609,7 @@ export const analyticsRouter = router({
         .set({ ...rest, endedAt: new Date() })
         .where(eq(visitorSessions.id, sessionId))
         .returning();
+
       return session;
     }),
 });

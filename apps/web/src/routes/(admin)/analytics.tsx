@@ -2,7 +2,7 @@ import { AgentAnalytics } from "@/components/analytics/agent-analytics";
 import { TopCountries } from "@/components/analytics/top-countries";
 import { TopSources } from "@/components/analytics/top-sources";
 import { TopPlatforms } from "@/components/analytics/top-platforms";
-import { TopTopics } from "@/components/analytics/top-topics";
+import { TopWorkflows } from "@/components/analytics/top-workflows";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
@@ -28,7 +28,7 @@ function RouteComponent() {
 						<TopCountries visitorData={[]} />
 						<TopSources />
 						<TopPlatforms />
-						<TopTopics />
+						<TopWorkflows />
 					</div>
 				</div>
 			</div>

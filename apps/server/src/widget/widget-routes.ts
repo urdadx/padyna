@@ -1,10 +1,10 @@
 import { createAgentUIStreamResponse } from "ai";
 import { db } from "@padyna/db";
-import { chatbot } from "@padyna/db/schema/index";
-import { eq } from "drizzle-orm";
+import { chatbot, chatMessage } from "@padyna/db/schema/index";
+import { eq, asc } from "drizzle-orm";
 import { Hono } from "hono";
 import { createSupportChatAgent } from "../chat";
-import { persistConversationMessages } from "../chat/chat-persistence";
+import { getUserMetadataFromRequest, persistConversationMessages } from "../chat/chat-utils";
 
 type PublicWidgetChatbot = {
   id: string;
@@ -78,6 +78,14 @@ function isDomainAllowed(chatbotRecord: PublicWidgetChatbot, requestOrigin: stri
   return allowed.includes(requestOrigin);
 }
 
+function convertDbMessagesToUiMessages(rows: any[]) {
+  return rows.map((row) => ({
+    id: row.messageId,
+    role: row.role,
+    parts: Array.isArray(row.parts) ? row.parts : [{ type: "text", text: row.contentText || "" }],
+  }));
+}
+
 async function getWidgetChatbot(widgetId: string) {
   const rows = await db
     .select({
@@ -129,6 +137,52 @@ widgetRoutes.get("/:widgetId/config", async (c) => {
   });
 });
 
+widgetRoutes.post("/:widgetId/init", async (c) => {
+  const widgetId = c.req.param("widgetId");
+  const chatbotRecord = await getWidgetChatbot(widgetId);
+
+  if (!chatbotRecord) {
+    return c.json({ message: "Widget not found" }, 404);
+  }
+
+  const requestOrigin = getRequestOrigin(c);
+  if (!isDomainAllowed(chatbotRecord, requestOrigin)) {
+    return c.json({ message: "Domain not allowed" }, 403);
+  }
+
+  const { conversationId } = await c.req.json();
+
+  let messages: any[] = [];
+  if (conversationId) {
+    const rows = await db
+      .select({
+        messageId: chatMessage.messageId,
+        role: chatMessage.role,
+        contentText: chatMessage.contentText,
+        parts: chatMessage.parts,
+      })
+      .from(chatMessage)
+      .where(eq(chatMessage.conversationId, conversationId))
+      .orderBy(asc(chatMessage.createdAt));
+
+    messages = convertDbMessagesToUiMessages(rows);
+  }
+
+  return c.json({
+    config: {
+      id: chatbotRecord.id,
+      name: chatbotRecord.name,
+      image: chatbotRecord.image,
+      primaryColor: chatbotRecord.primaryColor,
+      hidePoweredBy: chatbotRecord.hidePoweredBy,
+      suggestedMessages: chatbotRecord.suggestedMessages ?? [],
+      initialMessage: chatbotRecord.initialMessage,
+      isEnabled: chatbotRecord.isEnabled,
+    },
+    messages,
+  });
+});
+
 widgetRoutes.post("/:widgetId/chat", async (c) => {
   const widgetId = c.req.param("widgetId");
   const chatbotRecord = await getWidgetChatbot(widgetId);
@@ -146,14 +200,21 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
     return c.json({ message: "Domain not allowed" }, 403);
   }
 
-  const body = await c.req.json();
-  const uiMessages = body.messages;
+  const { id: conversationId, messages } = await c.req.json();
+  const uiMessages = messages;
 
   if (!Array.isArray(uiMessages)) {
     return c.json({ message: "messages must be an array" }, 400);
   }
 
-  const visitorMetadata = requestOrigin ? { origin: requestOrigin } : undefined;
+  const visitorMetadata = requestOrigin ? getUserMetadataFromRequest(c) : undefined;
+
+  const firstUserMessage = uiMessages.find((m: any) => m.role === "user");
+  let title: string | undefined;
+  if (firstUserMessage?.parts) {
+    const textPart = firstUserMessage.parts.find((p: any) => p?.type === "text");
+    title = textPart?.text;
+  }
 
   await persistConversationMessages({
     chatbotId: chatbotRecord.id,
@@ -161,6 +222,8 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
     userId: undefined,
     messages: uiMessages,
     metadata: visitorMetadata,
+    title,
+    conversationId,
   });
 
   const agent = createSupportChatAgent({
@@ -174,13 +237,14 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
     agent,
     uiMessages,
     originalMessages: uiMessages,
-    onFinish: async ({ messages }) => {
+    onFinish: async ({ messages: completedMessages }) => {
       await persistConversationMessages({
         chatbotId: chatbotRecord.id,
         organizationId: chatbotRecord.organizationId,
         userId: undefined,
-        messages,
+        messages: completedMessages as any,
         metadata: visitorMetadata,
+        conversationId,
       });
     },
   });

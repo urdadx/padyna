@@ -88,11 +88,14 @@ export const SwitchTeamsDialog = ({ open, onOpenChange }: SwitchTeamsDialogProps
 												alt={org.name}
 												className="object-cover"
 											/>
-											<AvatarFallback className="rounded-full font-bold bg-primary/10 text-primary">
-												{org.name
-													.charAt(0)
-													.toUpperCase()}
-											</AvatarFallback>
+
+											{!org.logo && (
+												<AvatarFallback className="rounded-full font-bold bg-primary/10 text-primary">
+													{org.name
+														.charAt(0)
+														.toUpperCase()}
+												</AvatarFallback>
+											)}
 										</Avatar>
 
 										<div className="flex flex-col truncate">

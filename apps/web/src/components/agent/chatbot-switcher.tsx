@@ -64,20 +64,24 @@ export function ChatbotSwitcher() {
                 size="lg"
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground rounded-md w-full"
               >
-                {isLoading ? (
-                  <Skeleton className="h-8 w-8 rounded-lg" />
-                ) : (
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage
-                      className="w-full h-full rounded-md"
-                      src={activeChatbot?.image ?? ""}
-                      alt={activeChatbot?.name ?? ""}
-                    />
-                    <AvatarFallback className="rounded-md h-full w-full bg-primary text-white font-semibold">
-                      {activeChatbot?.name?.charAt(0) || "P"}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg">
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                  ) : (
+                    <Avatar className="h-8 w-8 rounded-lg">
+                      <AvatarImage
+                        className="w-full h-full rounded-md"
+                        src={activeChatbot?.image ?? ""}
+                        alt={activeChatbot?.name ?? ""}
+                      />
+                      {!activeChatbot?.image && (
+                        <AvatarFallback className="rounded-md h-full w-full bg-primary text-white font-semibold">
+                          {activeChatbot?.name?.charAt(0) || "P"}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                  )}
+                </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   {isLoading ? (
                     <Skeleton className="h-4 w-24" />

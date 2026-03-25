@@ -126,9 +126,11 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 								src={form.image}
 								className="object-cover w-full h-full rounded-md"
 							/>
-							<AvatarFallback className="rounded-md">
-								{form.name.charAt(0) || "P"}
-							</AvatarFallback>
+							{!form.image && (
+								<AvatarFallback className="rounded-md">
+									{form.name.charAt(0) || "P"}
+								</AvatarFallback>
+							)}
 						</Avatar>
 
 						<Popover>

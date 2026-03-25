@@ -7,16 +7,27 @@ import { Suggestion, Suggestions } from "../ai-elements/suggestion";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { PlaneBold } from "@/assets/icons/plane-icon";
-import { useMemo, useState } from "react";
+import { Provider, useChat } from "@padyna/store";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import {
+	createSession,
+	endSession,
+	trackEvent,
+	getStoredSessionId,
+	setStoredSession,
+	clearStoredSession,
+	updateSessionActivity,
+} from "@/lib/analytics/track";
+import { getOrCreateVisitorId } from "@/lib/analytics/visitor";
 import { AlertCircleIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { WidgetHeader } from "./widget-header";
 import { WidgetMessages } from "./widget-messages";
 import { WidgetMessage } from "./widget-components/message";
 import "streamdown/styles.css";
 import Spinner from "../ui/spinner";
+import api from "@/lib/api";
 
 export type WidgetConfig = {
 	id: string;
@@ -37,15 +48,12 @@ type WidgetPreviewProps = {
 	resetChatId?: () => void;
 };
 
-export function WidgetPreview({
-	widgetId,
-	serverUrl,
-	hostOrigin,
-	chatId,
-	resetChatId,
-}: WidgetPreviewProps) {
-	const [input, setInput] = useState("");
+type InitResponse = {
+	config: WidgetConfig;
+	messages: any[];
+};
 
+function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: WidgetPreviewProps) {
 	const hostOriginQuery = useMemo(() => {
 		if (!hostOrigin) {
 			return "";
@@ -54,35 +62,151 @@ export function WidgetPreview({
 		return `?hostOrigin=${encodeURIComponent(hostOrigin)}`;
 	}, [hostOrigin]);
 
-	const { data: widgetConfig, isLoading } = useQuery({
-		queryKey: ["widget-config", widgetId, serverUrl, hostOrigin],
+	const transport = useMemo(
+		() =>
+			new DefaultChatTransport({
+				api: `${import.meta.env.VITE_SERVER_URL}/api/widget/${widgetId}/chat${hostOriginQuery}`,
+			}),
+		[widgetId, hostOriginQuery],
+	);
+
+	const [input, setInput] = useState("");
+
+	const { data: initData, isLoading } = useQuery({
+		queryKey: ["widget-init", widgetId, chatId, hostOrigin],
 		queryFn: async () => {
-			const response = await fetch(
-				`${serverUrl}/api/widget/${widgetId}/config${hostOriginQuery}`,
+			const response = await api.post(
+				`/api/widget/${widgetId}/init`,
+				{ conversationId: chatId },
+				{ params: hostOrigin ? { hostOrigin } : undefined },
 			);
-			if (!response.ok) {
-				throw new Error("Failed to load widget configuration");
-			}
-			return (await response.json()) as WidgetConfig;
+			return response.data as InitResponse;
 		},
 		enabled: Boolean(widgetId),
 	});
 
-	const transport = useMemo(
-		() =>
-			new DefaultChatTransport({
-				api: `${serverUrl}/api/widget/${widgetId}/chat${hostOriginQuery}`,
-			}),
-		[serverUrl, widgetId, hostOriginQuery],
-	);
+	const widgetConfig = initData?.config;
+	const chatbotId = widgetConfig?.id;
+
+	const sessionIdRef = useRef<string | null>(null);
+	const visitorIdRef = useRef<string>("");
+	const chatStartedRef = useRef<boolean>(false);
+	const sessionStartTimeRef = useRef<number>(0);
+	const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const isSessionEndedRef = useRef<boolean>(false);
+
+	const [lastInitializedId, setLastInitializedId] = useState<string | undefined>(undefined);
 
 	const { messages, setMessages, sendMessage, status } = useChat({ id: chatId, transport });
 
+	useEffect(() => {
+		if (initData?.messages && chatId !== lastInitializedId) {
+			setMessages(initData.messages);
+			setLastInitializedId(chatId);
+		}
+	}, [initData, chatId, lastInitializedId, setMessages]);
+
+	const endCurrentSession = useCallback(async () => {
+		if (!sessionIdRef.current || !chatbotId || isSessionEndedRef.current) {
+			return;
+		}
+
+		isSessionEndedRef.current = true;
+
+		if (inactivityTimeoutRef.current) {
+			clearTimeout(inactivityTimeoutRef.current);
+			inactivityTimeoutRef.current = null;
+		}
+
+		const durationMs = Date.now() - sessionStartTimeRef.current;
+		const isBounce = !chatStartedRef.current;
+
+		try {
+			await Promise.all([
+				trackEvent({
+					chatbotId,
+					sessionId: sessionIdRef.current,
+					visitorId: visitorIdRef.current,
+					event: "widget_close",
+				}),
+				endSession({
+					sessionId: sessionIdRef.current,
+					durationMs,
+					isBounce,
+				}),
+			]);
+		} catch (error) {
+			console.error("Failed to end session:", error);
+		}
+
+		clearStoredSession(chatbotId);
+		sessionIdRef.current = null;
+	}, [chatbotId]);
+
+	useEffect(() => {
+		if (chatId && chatId !== lastInitializedId) {
+			chatStartedRef.current = false;
+		}
+	}, [chatId, lastInitializedId]);
+
+	useEffect(() => {
+		if (!chatbotId || !widgetConfig?.isEnabled) return;
+
+		const initTracking = async () => {
+			visitorIdRef.current = getOrCreateVisitorId();
+
+			const existingSessionId = getStoredSessionId(chatbotId);
+
+			if (existingSessionId) {
+				sessionIdRef.current = existingSessionId;
+				sessionStartTimeRef.current = Date.now();
+				updateSessionActivity(chatbotId);
+			} else {
+				try {
+					const session = await createSession({
+						chatbotId,
+						visitorId: visitorIdRef.current,
+					});
+					sessionIdRef.current = session.id;
+					sessionStartTimeRef.current = Date.now();
+					setStoredSession(chatbotId, session.id);
+				} catch (error) {
+					console.error("Failed to create session:", error);
+				}
+			}
+
+			if (sessionIdRef.current) {
+				try {
+					await trackEvent({
+						chatbotId,
+						sessionId: sessionIdRef.current,
+						visitorId: visitorIdRef.current,
+						event: "widget_open",
+					});
+				} catch (error) {
+					console.error("Failed to track widget_open:", error);
+				}
+			}
+		};
+
+		initTracking();
+
+		return () => {
+			void endCurrentSession();
+		};
+	}, [chatbotId, widgetConfig?.isEnabled, endCurrentSession]);
+
 	const isStreaming = status === "streaming";
 	const isError = status === "error";
-	const isReady = status === "ready";
+
+	const showVoteBlock =
+		messages.length > 0 &&
+		messages[messages.length - 1].role === "assistant" &&
+		!!chatId &&
+		!!widgetConfig?.id;
 
 	const resetConversation = () => {
+		chatStartedRef.current = false;
 		resetChatId?.();
 		setInput("");
 		setMessages([]);
@@ -94,6 +218,35 @@ export function WidgetPreview({
 			return;
 		}
 		setInput("");
+
+		if (!chatStartedRef.current && sessionIdRef.current && chatbotId) {
+			chatStartedRef.current = true;
+			try {
+				await trackEvent({
+					chatbotId,
+					sessionId: sessionIdRef.current,
+					visitorId: visitorIdRef.current,
+					event: "chat_started",
+					conversationId: chatId,
+				});
+			} catch (error) {
+				console.error("Failed to track chat_started:", error);
+			}
+		}
+
+		if (sessionIdRef.current && chatbotId) {
+			try {
+				await trackEvent({
+					chatbotId,
+					sessionId: sessionIdRef.current,
+					visitorId: visitorIdRef.current,
+					event: "chat_message",
+					conversationId: chatId,
+				});
+			} catch (error) {
+				console.error("Failed to track chat_message:", error);
+			}
+		}
 		await sendMessage({ text: next });
 	};
 
@@ -134,11 +287,11 @@ export function WidgetPreview({
 						) : (
 							<WidgetMessages
 								messages={messages}
-								isReady={isReady}
 								isStreaming={isStreaming}
 								primaryColor={primaryColor}
 								chatId={chatId}
 								chatbotId={widgetConfig?.id}
+								showVoteBlock={showVoteBlock}
 							/>
 						)}
 
@@ -219,5 +372,13 @@ export function WidgetPreview({
 				</div>
 			</div>
 		</div>
+	);
+}
+
+export function WidgetPreview(props: WidgetPreviewProps) {
+	return (
+		<Provider>
+			<WidgetPreviewContent {...props} />
+		</Provider>
 	);
 }

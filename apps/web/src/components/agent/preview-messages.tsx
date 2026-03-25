@@ -139,13 +139,12 @@ export const PreviewMessages = ({
 					primaryColor={primaryColor}>
 					{!hasVisibleContent && !statusLabel ? null : messageContent}
 				</SupportMessage>
-				{isLastMessage &&
-					message.role === "assistant" &&
+				{message.role === "assistant" &&
 					!isCurrentlyStreaming &&
 					isReady &&
 					(bottomComponent === "source-citations" ? (
 						<SourceCitations sources={sources} />
-					) : showVoteBlock && chatbotId ? (
+					) : isLastMessage && showVoteBlock && chatbotId ? (
 						<VoteBlock
 							messageId={message.id}
 							chatId={chatId}
