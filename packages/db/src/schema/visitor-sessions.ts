@@ -26,6 +26,7 @@ export const visitorSessions = pgTable(
     })
       .notNull()
       .default("unknown"),
+    os: text("os"),
     platform: text("platform"),
 
     city: text("city"),
@@ -57,6 +58,7 @@ export const visitorSessions = pgTable(
     index("visitor_sessions_country_code_idx").on(table.countryCode),
     index("visitor_sessions_device_type_idx").on(table.deviceType),
     index("visitor_sessions_platform_idx").on(table.platform),
+    index("visitor_sessions_os_idx").on(table.platform),
     index("visitor_sessions_ended_at_idx").on(table.endedAt),
   ],
 );

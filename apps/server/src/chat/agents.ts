@@ -1,10 +1,11 @@
-import { anthropic } from "@ai-sdk/anthropic";
+// import { anthropic } from "@ai-sdk/anthropic";
 import { ToolLoopAgent, stepCountIs } from "ai";
 import { KnowledgeBaseTool } from "./knowledge-base-tool";
 import { type AgentUseCase, getAgentPrompt } from "./prompt";
 import { createCached } from "@ai-sdk-tools/cache";
+import { openai } from "@ai-sdk/openai";
 
-const CHAT_MODEL = "claude-haiku-4-5-20251001";
+const CHAT_MODEL = "gpt-5.4-mini";
 
 const cached = createCached();
 
@@ -17,7 +18,7 @@ interface CreateSupportChatAgentInput {
 
 export function createSupportChatAgent(input: CreateSupportChatAgentInput) {
   return new ToolLoopAgent({
-    model: anthropic(CHAT_MODEL),
+    model: openai(CHAT_MODEL),
     stopWhen: stepCountIs(5),
     instructions: getAgentPrompt(input.chatbotUseCase ?? "support", input.chatbotName),
     tools: {

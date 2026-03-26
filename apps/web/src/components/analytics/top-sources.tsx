@@ -8,14 +8,22 @@ import { FileLinear } from "@/assets/icons/file-icon";
 import { ChatLinear } from "@/assets/icons/chat-icon";
 import { TextLinear } from "@/assets/icons/text-icon";
 import { GlobeLinear } from "@/assets/icons/globe-icon";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { trpc } from "@/utils/trpc";
+import { TopSkeleton } from "./top-skeleton";
+import { useSearch } from "@tanstack/react-router";
+import type { TimeRange } from "./top-countries";
 
 export function TopSources() {
 	const [sourcesDialogOpen, setSourcesDialogOpen] = useState(false);
+	const { timeRange } = useSearch({ from: "/(admin)/analytics" });
+	const selectedTimeRange: TimeRange = (timeRange as TimeRange) || "24h";
 
-	const { data: sourcesData } = useSuspenseQuery(
-		trpc.datasource.getMostReferenced.queryOptions(),
+	const { data: sourcesData, isPending } = useQuery(
+		trpc.datasource.getMostReferenced.queryOptions({
+			timeRange: selectedTimeRange,
+			limit: 10,
+		}),
 	);
 
 	const mapSources = useMemo(() => {
@@ -45,6 +53,10 @@ export function TopSources() {
 	const topSources = mapSources.slice(0, 5);
 	const maxSourceCount = Math.max(...mapSources.map((s) => s.value), 0);
 
+	if (isPending) {
+		return <TopSkeleton />;
+	}
+
 	return (
 		<div className="h-87.5 w-full z-0 rounded-xl border bg-white flex flex-col overflow-hidden">
 			<Tabs defaultValue="sources" className="flex flex-col h-full">
@@ -53,7 +65,7 @@ export function TopSources() {
 						<TabsTrigger
 							value="sources"
 							className="relative text-muted-foreground after:absolute after:inset-x-0 after:bottom-0 after:-mb-1 after:h-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent">
-							Top data sources
+							Data sources
 						</TabsTrigger>
 					</TabsList>
 				</div>
@@ -80,6 +92,7 @@ export function TopSources() {
 											onClick={() =>
 												setSourcesDialogOpen(true)
 											}
+											size="sm"
 											className="text-muted-foreground">
 											<ExpandIcon className="h-4 w-4 mr-1" />
 											View all

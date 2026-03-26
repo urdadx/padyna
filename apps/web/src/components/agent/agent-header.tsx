@@ -2,6 +2,7 @@ import { RestartLinear } from "@/assets/icons/restart-icon";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Skeleton } from "../ui/skeleton";
+import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 
 interface Chatbot {
 	name: string | null;
@@ -52,14 +53,19 @@ export const AgentHeader = ({ chatbot, isLoading, onReset }: AgentHeaderProps) =
 					)}
 				</div>
 			</div>
-			<Button
-				variant="ghost"
-				size="icon-sm"
-				type="button"
-				onClick={onReset}
-				aria-label="Reset conversation">
-				<RestartLinear color="black" className="size-5" />
-			</Button>
+			<Tooltip>
+				<TooltipTrigger>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="rounded-full"
+						onClick={onReset}
+						disabled={isLoading}>
+						<RestartLinear color="black" className="size-5" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent>Restart conversation</TooltipContent>
+			</Tooltip>
 		</div>
 	);
 };

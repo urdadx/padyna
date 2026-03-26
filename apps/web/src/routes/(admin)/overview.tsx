@@ -15,7 +15,9 @@ function RouteComponent() {
   const { data: recentConversations } = useSuspenseQuery(
     trpc.conversations.getRecent.queryOptions({ limit: 5 }),
   );
-  const { data: sourcesData } = useSuspenseQuery(trpc.datasource.getMostReferenced.queryOptions());
+  const { data: sourcesData } = useSuspenseQuery(
+    trpc.datasource.getMostReferenced.queryOptions({ timeRange: "24h", limit: 10 }),
+  );
 
   return (
     <div className="relative p-4 md:p-6 w-full max-w-7xl mx-auto space-y-6 overflow-x-hidden">

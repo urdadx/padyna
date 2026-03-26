@@ -82,6 +82,7 @@ export function TopWorkflows() {
 									<div className="flex items-center justify-center">
 										<Button
 											variant="outline"
+											size="sm"
 											onClick={() =>
 												setWorkflowsDialogOpen(true)
 											}

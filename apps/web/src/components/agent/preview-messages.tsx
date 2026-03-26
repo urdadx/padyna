@@ -9,6 +9,7 @@ import { mermaid } from "@streamdown/mermaid";
 import { MarkdownCodeBlock } from "./agent-components/code-block";
 import { VoteBlock } from "./vote-block";
 import { Fragment } from "react";
+import { FeedbackBar } from "./feedback-bar";
 
 const streamdownPlugins = { cjk, code, math, mermaid };
 
@@ -145,7 +146,7 @@ export const PreviewMessages = ({
 					(bottomComponent === "source-citations" ? (
 						<SourceCitations sources={sources} />
 					) : isLastMessage && showVoteBlock && chatbotId ? (
-						<VoteBlock
+						<FeedbackBar
 							messageId={message.id}
 							chatId={chatId}
 							chatbotId={chatbotId}

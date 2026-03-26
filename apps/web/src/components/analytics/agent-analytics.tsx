@@ -20,6 +20,7 @@ import NumberFlow from "@number-flow/react";
 import { Checkbox } from "../ui/checkbox";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { trpc } from "@/utils/trpc";
+import { AnalyticsSkeleton } from "./analytics-skeleton";
 
 const TIME_RANGE_ITEMS = [
 	{ label: "Last 24 hours", value: "24h" },
@@ -65,6 +66,12 @@ export function AgentAnalytics() {
 
 	const overview = overviewQuery.data;
 	const chartData = chartQuery.data ?? [];
+	const isPending = overviewQuery.isPending || chartQuery.isPending;
+
+	if (isPending) {
+		return <AnalyticsSkeleton />;
+	}
+
 	return (
 		<div className="mt-4 flex flex-col space-y-4 w-full">
 			<div className="flex items-center justify-between">

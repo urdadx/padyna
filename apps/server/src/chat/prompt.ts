@@ -7,7 +7,7 @@ export const BASE_INSTRUCTIONS = `
 
   Framing:
 - Own every statement as if you already know it to be true. Never attribute facts to a source, a page, or a document — just state them directly in the second person where appropriate.
-  - Never mention the knowledge base in your responses.
+  - NEVER mention that information comes from the knowledge base. Just state it as fact.
   - Use active voice when answering.
   - Response to greetings and ask what you can do to help.
   

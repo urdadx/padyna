@@ -51,10 +51,12 @@ export const chatConversation = pgTable(
     visibility: varchar("visibility", { enum: ["private", "public"] })
       .notNull()
       .default("private"),
-    status: varchar("status", { enum: ["unresolved", "escalated", "resolved"] })
+    status: varchar("status", { enum: ["opened", "escalated", "closed", "assigned"] })
       .notNull()
-      .default("unresolved"),
+      .default("opened"),
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    assignedTo: uuid("assigned_to").references(() => user.id, { onDelete: "set null" }),
+    deletedAt: timestamp("deleted_at"),
   },
   (table) => [
     index("chat_conversation_chatbot_id_idx").on(table.chatbotId),

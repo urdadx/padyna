@@ -4,6 +4,13 @@ import { db } from "@padyna/db";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { datasources, datasourceChunks } from "@padyna/db/schema/index";
 
+const timeRangeSchema = z.enum(["24h", "7d", "30d", "90d"]).default("24h");
+
+const paginatedInput = z.object({
+	timeRange: timeRangeSchema,
+	limit: z.number().min(1).max(100).default(10),
+});
+
 export const datasourceRouter = router({
   getSourceCounts: protectedProcedure.query(async ({ ctx }) => {
     const organizationId = ctx.session.session.activeOrganization;
@@ -28,9 +35,10 @@ export const datasourceRouter = router({
     };
   }),
 
-  getMostReferenced: protectedProcedure.query(async ({ ctx }) => {
+  getMostReferenced: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
     const organizationId = ctx.session.session.activeOrganization;
     const chatbotId = ctx.session.session.activeChatbot;
+
     if (!organizationId || !chatbotId) {
       return [];
     }
@@ -42,7 +50,7 @@ export const datasourceRouter = router({
         and(eq(datasources.chatbotId, chatbotId), eq(datasources.organizationId, organizationId)),
       )
       .orderBy(desc(datasources.timesReferenced))
-      .limit(10);
+      .limit(input.limit);
 
     return result;
   }),

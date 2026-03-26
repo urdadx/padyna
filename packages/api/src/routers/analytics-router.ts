@@ -11,9 +11,111 @@ import {
 } from "@padyna/db/schema/index";
 import { TRPCError } from "@trpc/server";
 
+type DeviceInfo = {
+  type: "desktop" | "mobile" | "tablet" | "bot" | "unknown";
+  os: string;
+  browser: string;
+  model?: string;
+  isIOS: boolean;
+  isAndroid: boolean;
+  isMac: boolean;
+  isWindows: boolean;
+  isLinux: boolean;
+  isSafari: boolean;
+  isChrome: boolean;
+  isFirefox: boolean;
+  isEdge: boolean;
+};
+
+function detectDeviceFromUserAgent(userAgent: string): DeviceInfo {
+  const ua = userAgent.toLowerCase();
+
+  const result: DeviceInfo = {
+    type: "unknown",
+    os: "unknown",
+    browser: "unknown",
+    isIOS: false,
+    isAndroid: false,
+    isMac: false,
+    isWindows: false,
+    isLinux: false,
+    isSafari: false,
+    isChrome: false,
+    isFirefox: false,
+    isEdge: false,
+  };
+
+  if (
+    /(ipad|tablet|(android(?!.*mobile))|(windows(?!.*phone)(.*touch))|kindle|playbook|silk|tablet|(puffin(?!.*(IP|AP|WP))))/.test(
+      ua,
+    )
+  ) {
+    result.type = "tablet";
+  } else if (
+    /(mobi|ipod|phone|blackberry|opera mini|fennec|minimo|symbian|psp|nintendo ds|archos|skyfire|puffin|blazer|bolt|gobrowser|iris|maemo|semc|teashark|uzard)/.test(
+      ua,
+    )
+  ) {
+    result.type = "mobile";
+  } else {
+    result.type = "desktop";
+  }
+
+  if (/iphone|ipad|ipod/.test(ua)) {
+    result.os = "iOS";
+    result.isIOS = true;
+  } else if (/android/.test(ua)) {
+    result.os = "Android";
+    result.isAndroid = true;
+  } else if (/macintosh|mac os x/.test(ua)) {
+    result.os = "macOS";
+    result.isMac = true;
+  } else if (/windows|win32|win64|wow64/.test(ua)) {
+    result.os = "Windows";
+    result.isWindows = true;
+  } else if (/linux/.test(ua) && !result.isAndroid) {
+    result.os = "Linux";
+    result.isLinux = true;
+  }
+
+  if (/edg/.test(ua)) {
+    result.browser = "Edge";
+    result.isEdge = true;
+  } else if (/chrome/.test(ua) && !/chromium|edg/.test(ua)) {
+    result.browser = "Chrome";
+    result.isChrome = true;
+  } else if (/firefox/.test(ua)) {
+    result.browser = "Firefox";
+    result.isFirefox = true;
+  } else if (/safari/.test(ua) && !/chrome|chromium|edg/.test(ua)) {
+    result.browser = "Safari";
+    result.isSafari = true;
+  } else if (/msie|trident/.test(ua)) {
+    result.browser = "Internet Explorer";
+  } else if (/opera/.test(ua)) {
+    result.browser = "Opera";
+  }
+
+  if (result.isIOS) {
+    const matches =
+      ua.match(/iphone\s+os\s+(\d+)_(\d+)/i) || ua.match(/ipad;\s+cpu\s+os\s+(\d+)_(\d+)/i);
+    if (matches) {
+      const model = ua.includes("ipad") ? "iPad" : "iPhone";
+      result.model = `${model} (iOS ${matches[1]}.${matches[2]})`;
+    }
+  } else if (result.isAndroid) {
+    const matches = ua.match(/android\s+(\d+)(\.(\d+))?/i);
+    if (matches) {
+      result.model = `Android ${matches[1]}${matches[3] ? `.${matches[3]}` : ""}`;
+    }
+  }
+
+  return result;
+}
+
 const timeRangeSchema = z.enum(["24h", "7d", "30d", "90d"]).default("24h");
 
-const paginatedInput = z.object({
+export const paginatedInput = z.object({
   timeRange: timeRangeSchema,
   limit: z.number().min(1).max(100).default(10),
 });
@@ -26,7 +128,7 @@ function getActiveChatbot(ctx: { session: { session: { activeChatbot?: string | 
   return chatbotId;
 }
 
-function getDateRange(timeRange: z.infer<typeof timeRangeSchema>) {
+export function getDateRange(timeRange: z.infer<typeof timeRangeSchema>) {
   const now = new Date();
   const start = new Date(now);
 
@@ -302,7 +404,7 @@ export const analyticsRouter = router({
       }));
     }),
 
-  getTopPlatforms: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
+  getTopDevices: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
     const chatbotId = getActiveChatbot(ctx);
     const { start, end } = getDateRange(input.timeRange);
 
@@ -324,8 +426,35 @@ export const analyticsRouter = router({
       .limit(input.limit);
 
     return result.map((r) => ({
-      platform: r.deviceType ?? "unknown",
-      value: n(r.count),
+      deviceType: r.deviceType ?? "unknown",
+      count: n(r.count),
+    }));
+  }),
+
+  getTopOS: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
+    const chatbotId = getActiveChatbot(ctx);
+    const { start, end } = getDateRange(input.timeRange);
+
+    const result = await db
+      .select({
+        os: visitorSessions.os,
+        count: count().as("count"),
+      })
+      .from(visitorSessions)
+      .where(
+        and(
+          eq(visitorSessions.chatbotId, chatbotId),
+          gte(visitorSessions.startedAt, start),
+          lte(visitorSessions.startedAt, end),
+        ),
+      )
+      .groupBy(visitorSessions.os)
+      .orderBy(desc(count()))
+      .limit(input.limit);
+
+    return result.map((r) => ({
+      os: r.os ?? "unknown",
+      count: n(r.count),
     }));
   }),
 
@@ -569,17 +698,21 @@ export const analyticsRouter = router({
         chatbotId: z.uuid(),
         visitorId: z.string(),
         userAgent: z.string().optional(),
-        deviceType: z.enum(["desktop", "mobile", "tablet", "bot", "unknown"]).default("unknown"),
         platform: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const headers = ctx.request?.headers;
+      const userAgent = input.userAgent || headers?.userAgent || "";
+      const deviceType = detectDeviceFromUserAgent(userAgent).type;
+
       const [session] = await db
         .insert(visitorSessions)
         .values({
           ...input,
-          userAgent: input.userAgent || headers?.userAgent,
+          userAgent,
+          deviceType,
+          os: detectDeviceFromUserAgent(userAgent).os,
           city: headers?.city,
           region: headers?.region,
           country: headers?.country,

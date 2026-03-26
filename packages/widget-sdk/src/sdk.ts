@@ -8,8 +8,8 @@ const IFRAME_ID = "padyna-widget-iframe";
 const LOADER_ID = "padyna-widget-loader";
 const MIN_LOADER_VISIBLE_MS = 10;
 
+const WIDGET_CLOSED_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="#FFFFFF" fill-rule="evenodd" d="M22 12c0 5.523-4.477 10-10 10c-1.6 0-3.112-.376-4.452-1.044a1.63 1.63 0 0 0-1.149-.133l-2.226.596a1.3 1.3 0 0 1-1.591-1.592l.595-2.226a1.63 1.63 0 0 0-.134-1.148A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10M12 7.25a.75.75 0 0 1 .75.75v8a.75.75 0 0 1-1.5 0V8a.75.75 0 0 1 .75-.75M8.75 10a.75.75 0 0 0-1.5 0v4a.75.75 0 0 0 1.5 0zM16 9.25a.75.75 0 0 1 .75.75v4a.75.75 0 0 1-1.5 0v-4a.75.75 0 0 1 .75-.75" clip-rule="evenodd"/></svg>`;
 const WIDGET_OPEN_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6L6 18M6 6l12 12"/></svg>`;
-const WIDGET_CLOSE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="#FFFFFF" fill-rule="evenodd" d="M22 12c0 5.523-4.477 10-10 10c-1.6 0-3.112-.376-4.452-1.044a1.63 1.63 0 0 0-1.149-.133l-2.226.596a1.3 1.3 0 0 1-1.591-1.592l.595-2.226a1.63 1.63 0 0 0-.134-1.148A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10M12 7.25a.75.75 0 0 1 .75.75v8a.75.75 0 0 1-1.5 0V8a.75.75 0 0 1 .75-.75M8.75 10a.75.75 0 0 0-1.5 0v4a.75.75 0 0 0 1.5 0zM16 9.25a.75.75 0 0 1 .75.75v4a.75.75 0 0 1-1.5 0v-4a.75.75 0 0 1 .75-.75" clip-rule="evenodd"/></svg>`;
 const WIDGET_SPINNER_ICON = `<div style="width:22px;height:22px;border-radius:50%;border:2.5px solid #e5e7eb;border-top-color:#6b7280;animation:padyna-spin 0.75s linear infinite"></div>`;
 
 type PadynaDom = {
@@ -71,10 +71,7 @@ function normalizeApiUrl(options: PadynaInitOptions, fallback: string) {
   return normalizeServerUrl(options.serverUrl, fallback);
 }
 
-function buildWidgetUrl(
-  options: PadynaInitOptions,
-  defaultServerUrl: string,
-) {
+function buildWidgetUrl(options: PadynaInitOptions, defaultServerUrl: string) {
   const serverUrl = normalizeServerUrl(options.serverUrl, defaultServerUrl);
   if (!serverUrl) {
     return "";
@@ -95,7 +92,7 @@ function applyOpenState(dom: PadynaDom, isOpen: boolean) {
   dom.panel.style.pointerEvents = isOpen ? "auto" : "none";
   dom.button.setAttribute("aria-expanded", String(isOpen));
   dom.button.setAttribute("aria-label", isOpen ? "Close chat" : "Open chat");
-  dom.button.innerHTML = isOpen ? WIDGET_OPEN_ICON : WIDGET_CLOSE_ICON;
+  dom.button.innerHTML = isOpen ? WIDGET_OPEN_ICON : WIDGET_CLOSED_ICON;
 }
 
 function setLoadingVisual(dom: PadynaDom, isLoading: boolean) {
@@ -163,7 +160,7 @@ async function applyWidgetBranding(
   }
 }
 
-function createDom(defaultServerUrl: string): PadynaDom {
+function createDom(_defaultServerUrl: string): PadynaDom {
   const existingRoot = document.getElementById(ROOT_ID) as HTMLDivElement | null;
   const existingButton = document.getElementById(BUTTON_ID) as HTMLButtonElement | null;
   const existingPanel = document.getElementById(PANEL_ID) as HTMLDivElement | null;
@@ -206,6 +203,7 @@ function createDom(defaultServerUrl: string): PadynaDom {
   root.style.zIndex = "2147483000";
   root.style.fontFamily =
     "'Inter', 'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif";
+
   const panel = document.createElement("div");
   panel.id = PANEL_ID;
   panel.style.width = "min(400px, calc(100vw - 24px))";
@@ -226,12 +224,11 @@ function createDom(defaultServerUrl: string): PadynaDom {
   iframe.id = IFRAME_ID;
   iframe.title = "Padyna chat widget";
   iframe.referrerPolicy = "strict-origin-when-cross-origin";
-  iframe.loading = "lazy";
+
   iframe.style.width = "100%";
   iframe.style.height = "100%";
   iframe.style.border = "0";
   iframe.style.display = "block";
-  iframe.src = defaultServerUrl ? `${defaultServerUrl}/widget` : "about:blank";
 
   const loader = document.createElement("div");
   loader.id = LOADER_ID;
@@ -247,7 +244,7 @@ function createDom(defaultServerUrl: string): PadynaDom {
   const button = document.createElement("button");
   button.id = BUTTON_ID;
   button.type = "button";
-  button.innerHTML = WIDGET_CLOSE_ICON;
+  button.innerHTML = WIDGET_CLOSED_ICON;
   button.style.width = "56px";
   button.style.height = "56px";
   button.style.padding = "0";
@@ -298,6 +295,18 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
     state.isIframeLoaded = false;
     state.isIframeBootstrapped = false;
 
+    const widgetUrl = buildWidgetUrl(options, state.defaultServerUrl);
+    if (widgetUrl) {
+      state.isIframeBootstrapped = true;
+      dom.iframe.onload = () => {
+        state.isIframeLoaded = true;
+        if (state.dom && state.isOpen) {
+          scheduleHideLoader(state.dom);
+        }
+      };
+      dom.iframe.src = widgetUrl;
+    }
+
     try {
       const preloadedColor = await fetchWidgetPrimaryColor(options, state.defaultServerUrl);
       if (preloadedColor) {
@@ -345,18 +354,8 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
       setLoadingVisual(state.dom, true);
     }
 
-    if (!state.isIframeBootstrapped && state.initOptions) {
-      state.isIframeBootstrapped = true;
-      state.dom.iframe.onload = () => {
-        state.isIframeLoaded = true;
-        if (state.dom) {
-          scheduleHideLoader(state.dom);
-        }
-      };
-      state.dom.iframe.src =
-        buildWidgetUrl(state.initOptions, state.defaultServerUrl) ||
-        "about:blank";
-    }
+    // Notify the iframe that the widget has been opened
+    state.dom.iframe.contentWindow?.postMessage({ type: "padyna:widget_open" }, "*");
 
     return;
   }
@@ -365,6 +364,10 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
     if (!state.dom) {
       return;
     }
+
+    // Notify the iframe that the widget is closing so it can fire widget_close analytics
+    state.dom.iframe.contentWindow?.postMessage({ type: "padyna:widget_close" }, "*");
+
     state.isOpen = false;
 
     if (state.hideLoaderTimer) {

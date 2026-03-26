@@ -13,10 +13,8 @@ import {
 	createSession,
 	endSession,
 	trackEvent,
-	getStoredSessionId,
 	setStoredSession,
 	clearStoredSession,
-	updateSessionActivity,
 } from "@/lib/analytics/track";
 import { getOrCreateVisitorId } from "@/lib/analytics/visitor";
 import { AlertCircleIcon } from "lucide-react";
@@ -152,30 +150,61 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 	useEffect(() => {
 		if (!chatbotId || !widgetConfig?.isEnabled) return;
 
-		const initTracking = async () => {
-			visitorIdRef.current = getOrCreateVisitorId();
+		isSessionEndedRef.current = false;
 
-			const existingSessionId = getStoredSessionId(chatbotId);
+		visitorIdRef.current = getOrCreateVisitorId();
 
-			if (existingSessionId) {
-				sessionIdRef.current = existingSessionId;
-				sessionStartTimeRef.current = Date.now();
-				updateSessionActivity(chatbotId);
-			} else {
-				try {
-					const session = await createSession({
-						chatbotId,
-						visitorId: visitorIdRef.current,
-					});
-					sessionIdRef.current = session.id;
-					sessionStartTimeRef.current = Date.now();
-					setStoredSession(chatbotId, session.id);
-				} catch (error) {
-					console.error("Failed to create session:", error);
+		const handleBeforeUnload = () => {
+			if (!sessionIdRef.current || !chatbotId || isSessionEndedRef.current) return;
+			isSessionEndedRef.current = true;
+			const durationMs = Date.now() - sessionStartTimeRef.current;
+			const isBounce = !chatStartedRef.current;
+			navigator.sendBeacon(
+				`${import.meta.env.VITE_SERVER_URL}/api/analytics/session-end`,
+				JSON.stringify({
+					sessionId: sessionIdRef.current,
+					durationMs,
+					isBounce,
+					chatbotId,
+					visitorId: visitorIdRef.current,
+					event: "widget_close",
+				}),
+			);
+		};
+
+		window.addEventListener("beforeunload", handleBeforeUnload);
+
+		return () => {
+			window.removeEventListener("beforeunload", handleBeforeUnload);
+		};
+	}, [chatbotId, widgetConfig?.isEnabled]);
+
+	useEffect(() => {
+		if (!chatbotId || !widgetConfig?.isEnabled) return;
+
+		const handleMessage = async (event: MessageEvent) => {
+			const type = (event.data as { type?: string })?.type;
+
+			if (type === "padyna:widget_open") {
+				isSessionEndedRef.current = false;
+
+				if (!sessionIdRef.current) {
+					try {
+						const session = await createSession({
+							chatbotId,
+							visitorId: visitorIdRef.current,
+						});
+						sessionIdRef.current = session.id;
+						sessionStartTimeRef.current = Date.now();
+						setStoredSession(chatbotId, session.id);
+					} catch (error) {
+						console.error(
+							"Failed to create session on widget_open:",
+							error,
+						);
+						return;
+					}
 				}
-			}
-
-			if (sessionIdRef.current) {
 				try {
 					await trackEvent({
 						chatbotId,
@@ -186,13 +215,18 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 				} catch (error) {
 					console.error("Failed to track widget_open:", error);
 				}
+				return;
+			}
+
+			if (type === "padyna:widget_close") {
+				await endCurrentSession();
 			}
 		};
 
-		initTracking();
+		window.addEventListener("message", handleMessage);
 
 		return () => {
-			void endCurrentSession();
+			window.removeEventListener("message", handleMessage);
 		};
 	}, [chatbotId, widgetConfig?.isEnabled, endCurrentSession]);
 

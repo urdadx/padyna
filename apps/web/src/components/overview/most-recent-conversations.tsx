@@ -1,8 +1,6 @@
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 import {
 	Table,
@@ -20,20 +18,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { trpc, trpcClient } from "@/utils/trpc";
-import Spinner from "@/components/ui/spinner";
-
-// ---- Types ----
+import { DeleteChat } from "../chat-logs/delete-chat";
 
 export type DBConversation = {
 	id: string;
@@ -56,8 +41,6 @@ type Conversation = {
 	status: "Escalated" | "Unresolved" | "Resolved";
 	channel: string;
 };
-
-// ---- Helpers ----
 
 const CHANNEL_MAP: Record<string, string> = {
 	widget: "Widget",
@@ -96,72 +79,6 @@ function mapConversation(dbConv: DBConversation): Conversation {
 					: "Unresolved",
 		channel: CHANNEL_MAP[dbConv.channel] ?? dbConv.channel,
 	};
-}
-
-// ---- Delete Dialog ----
-
-function DeleteConversationDialog({
-	id,
-	open,
-	onOpenChange,
-	onDeleted,
-}: {
-	id: string;
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	onDeleted?: () => void;
-}) {
-	const queryClient = useQueryClient();
-
-	const { mutate, isPending } = useMutation({
-		mutationFn: () => trpcClient.conversations.delete.mutate({ id }),
-		onSuccess: () => {
-			toast.success("Conversation deleted");
-			onOpenChange(false);
-			queryClient.invalidateQueries({
-				queryKey: trpc.conversations.getRecent.queryOptions({ limit: 5 }).queryKey,
-			});
-			onDeleted?.();
-		},
-		onError: () => {
-			toast.error("Failed to delete conversation. Please try again.");
-		},
-	});
-
-	return (
-		<AlertDialog open={open} onOpenChange={onOpenChange}>
-			<AlertDialogContent className="p-5">
-				<AlertDialogHeader>
-					<AlertDialogTitle className="text-lg font-semibold">
-						Are you absolutely sure?
-					</AlertDialogTitle>
-					<AlertDialogDescription>
-						This action cannot be undone. This will permanently delete the
-						conversation and remove the data from our servers.
-					</AlertDialogDescription>
-				</AlertDialogHeader>
-				<AlertDialogFooter>
-					<AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={(e) => {
-							e.preventDefault();
-							mutate();
-						}}
-						disabled={isPending}
-						className="bg-red-600 hover:bg-red-700 text-white">
-						{isPending ? (
-							<>
-								<Spinner color="white" />
-								Deleting...
-							</>
-						) : (
-							"Yes, delete"
-						)}
-					</AlertDialogAction>
-				</AlertDialogFooter>
-			</AlertDialogContent>
-		</AlertDialog>
-	);
 }
 
 function ConversationsTable({
@@ -207,7 +124,9 @@ function ConversationsTable({
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">
 						<DropdownMenuItem>
-							<Link to="/chat-logs">View details</Link>
+							<Link to={`/chat-logs?chatId=${row.original.id}`}>
+								View details
+							</Link>
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							variant="destructive"
@@ -309,7 +228,7 @@ export function MostRecentConversations({
 
 			<ConversationsTable conversations={mapped} onDelete={setDeleteId} />
 
-			<DeleteConversationDialog
+			<DeleteChat
 				id={deleteId ?? ""}
 				open={!!deleteId}
 				onOpenChange={(open) => !open && setDeleteId(null)}

@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { InfoIcon, MoreHorizontal, Plus } from "lucide-react";
 
 import { ColorPickerDialog } from "../color-picker-dialog";
 import { Input } from "../ui/input";
@@ -17,6 +17,7 @@ import { UploadLinear } from "@/assets/icons/upload-icon";
 import { useSession } from "@/lib/auth-client";
 import { queryClient, trpc } from "@/utils/trpc";
 import { AgentLoadingSkeleton } from "./agent-loading-skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export const AGENT_USECASES = [
 	{ label: "Customer Support", value: "support" },
@@ -290,6 +291,15 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 				<div className="flex flex-col gap-3 w-full">
 					<Label className="text-muted-foreground font-medium">
 						Allowed domains
+						<Tooltip>
+							<TooltipTrigger>
+								<InfoIcon className="size-4" />
+							</TooltipTrigger>
+							<TooltipContent>
+								If specified, the chat widget will only be shown on
+								these domains.
+							</TooltipContent>
+						</Tooltip>
 					</Label>
 					{form.allowedDomains.map((domain: string, idx: number) => (
 						<div key={idx} className="flex items-center gap-1">
