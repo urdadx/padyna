@@ -15,6 +15,8 @@ import {
 	trackEvent,
 	setStoredSession,
 	clearStoredSession,
+	setWidgetActive,
+	setWidgetInactive,
 } from "@/lib/analytics/track";
 import { getOrCreateVisitorId } from "@/lib/analytics/visitor";
 import { AlertCircleIcon } from "lucide-react";
@@ -120,7 +122,8 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 		const isBounce = !chatStartedRef.current;
 
 		try {
-			await Promise.all([
+				await Promise.all([
+				setWidgetInactive(sessionIdRef.current, chatbotId),
 				trackEvent({
 					chatbotId,
 					sessionId: sessionIdRef.current,
@@ -129,6 +132,7 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 				}),
 				endSession({
 					sessionId: sessionIdRef.current,
+					chatbotId,
 					durationMs,
 					isBounce,
 				}),
@@ -151,8 +155,6 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 		if (!chatbotId || !widgetConfig?.isEnabled) return;
 
 		isSessionEndedRef.current = false;
-
-		visitorIdRef.current = getOrCreateVisitorId();
 
 		const handleBeforeUnload = () => {
 			if (!sessionIdRef.current || !chatbotId || isSessionEndedRef.current) return;
@@ -188,6 +190,10 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 			if (type === "padyna:widget_open") {
 				isSessionEndedRef.current = false;
 
+				if (!visitorIdRef.current) {
+					visitorIdRef.current = getOrCreateVisitorId();
+				}
+
 				if (!sessionIdRef.current) {
 					try {
 						const session = await createSession({
@@ -197,12 +203,19 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 						sessionIdRef.current = session.id;
 						sessionStartTimeRef.current = Date.now();
 						setStoredSession(chatbotId, session.id);
+						await setWidgetActive(session.id, chatbotId);
 					} catch (error) {
 						console.error(
 							"Failed to create session on widget_open:",
 							error,
 						);
 						return;
+					}
+				} else {
+					try {
+						await setWidgetActive(sessionIdRef.current, chatbotId);
+					} catch (error) {
+						console.error("Failed to set widget active:", error);
 					}
 				}
 				try {

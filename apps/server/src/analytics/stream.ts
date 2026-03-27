@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { db } from "@padyna/db";
-import { eq, and, gte, lte, count, countDistinct, avg } from "drizzle-orm";
+import { eq, and, gte, lte, count, countDistinct, avg, sql } from "drizzle-orm";
 import { visitorSessions, visitorEvents } from "@padyna/db/schema/index";
 import { authMiddleware } from "@/middlewares/authMiddleware";
+import { analyticsEvents } from "@padyna/api/lib/events";
 
 const n = (val: unknown) => Number(val ?? 0);
 
@@ -33,7 +34,6 @@ function getDateRange(timeRange: string) {
 
 async function fetchOverview(chatbotId: string, timeRange: string) {
   const { start, end } = getDateRange(timeRange);
-  const activeThreshold = new Date(Date.now() - 5 * 60 * 1000);
 
   const [sessionsResult, eventsResult, activeVisitorsResult] = await Promise.all([
     db
@@ -63,14 +63,11 @@ async function fetchOverview(chatbotId: string, timeRange: string) {
       ),
     db
       .select({
-        count: countDistinct(visitorSessions.visitorId).as("active_visitors"),
+        count: sql<number>`count(${visitorSessions.id})::int`.as("active_visitors"),
       })
       .from(visitorSessions)
       .where(
-        and(
-          eq(visitorSessions.chatbotId, chatbotId),
-          gte(visitorSessions.startedAt, activeThreshold),
-        ),
+        and(eq(visitorSessions.chatbotId, chatbotId), eq(visitorSessions.isWidgetActive, true)),
       ),
   ]);
 
@@ -101,20 +98,58 @@ analyticsStreamRoutes.get("/overview", async (c) => {
   }
 
   const timeRange = c.req.query("timeRange") || "24h";
+  const abortSignal = c.req.raw.signal;
 
   return streamSSE(c, async (stream) => {
     let id = 0;
 
-    while (true) {
+    const sendData = async () => {
       const data = await fetchOverview(chatbotId, timeRange);
-
       await stream.writeSSE({
         data: JSON.stringify(data),
         event: "overview",
         id: String(id++),
       });
+    };
 
-      await stream.sleep(5000);
+    const waitForChange = () =>
+      new Promise<"changed" | "aborted">((resolve) => {
+        const onAbort = () => {
+          analyticsEvents.off("analytics-update", onUpdate);
+          resolve("aborted");
+        };
+
+        const onUpdate = (payload: { chatbotId: string }) => {
+          if (payload.chatbotId !== chatbotId) return;
+          analyticsEvents.off("analytics-update", onUpdate);
+          abortSignal.removeEventListener("abort", onAbort);
+          resolve("changed");
+        };
+
+        abortSignal.addEventListener("abort", onAbort, { once: true });
+        analyticsEvents.on("analytics-update", onUpdate);
+      });
+
+    try {
+      await sendData();
+
+      while (!abortSignal.aborted) {
+        const result = await waitForChange();
+        if (result === "aborted") break;
+
+        await sendData();
+      }
+    } catch (err) {
+      console.error("[analytics/overview] stream error:", err);
+      try {
+        await stream.writeSSE({
+          data: JSON.stringify({ error: "fetch_failed" }),
+          event: "error",
+          id: String(id++),
+        });
+      } catch {
+        // Stream already closed, ignore
+      }
     }
   });
 });

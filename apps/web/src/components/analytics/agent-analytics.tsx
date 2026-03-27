@@ -21,6 +21,7 @@ import { Checkbox } from "../ui/checkbox";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { trpc } from "@/utils/trpc";
 import { AnalyticsSkeleton } from "./analytics-skeleton";
+import { useOverviewStream } from "./use-overview-stream";
 
 const TIME_RANGE_ITEMS = [
 	{ label: "Last 24 hours", value: "24h" },
@@ -56,19 +57,17 @@ export function AgentAnalytics() {
 	const { timeRange } = useSearch({ from: "/(admin)/analytics" });
 	const selectedTimeRange: TimeRange = (timeRange as TimeRange) || "24h";
 
-	const overviewQuery = useQuery(
-		trpc.analytics.getOverview.queryOptions({ timeRange: selectedTimeRange }),
-	);
-
 	const chartQuery = useQuery(
 		trpc.analytics.getChartData.queryOptions({ timeRange: selectedTimeRange }),
 	);
 
-	const overview = overviewQuery.data;
-	const chartData = chartQuery.data ?? [];
-	const isPending = overviewQuery.isPending || chartQuery.isPending;
+	const streamData = useOverviewStream({ timeRange: selectedTimeRange });
 
-	if (isPending) {
+	const chartData = chartQuery.data ?? [];
+	const isPending = chartQuery.isPending;
+	const overview = streamData.data ?? undefined;
+
+	if (isPending && !streamData.data) {
 		return <AnalyticsSkeleton />;
 	}
 

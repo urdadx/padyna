@@ -46,6 +46,8 @@ export const visitorSessions = pgTable(
 
     isBounce: boolean("is_bounce").notNull().default(false), // Single page view, < 10s
 
+    isWidgetActive: boolean("is_widget_active").notNull().default(false),
+
     extra: jsonb("extra"),
 
     deletedAt: timestamp("deleted_at"),

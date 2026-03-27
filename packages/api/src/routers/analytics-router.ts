@@ -10,6 +10,7 @@ import {
   analyticsMonthly,
 } from "@padyna/db/schema/index";
 import { TRPCError } from "@trpc/server";
+import { analyticsEvents } from "../lib/events";
 
 type DeviceInfo = {
   type: "desktop" | "mobile" | "tablet" | "bot" | "unknown";
@@ -228,7 +229,6 @@ export const analyticsRouter = router({
     .query(async ({ ctx, input }) => {
       const chatbotId = getActiveChatbot(ctx);
       const { start, end } = getDateRange(input.timeRange);
-      const activeThreshold = new Date(Date.now() - 5 * 60 * 1000);
 
       const [sessionsResult, eventsResult, activeVisitorsResult] = await Promise.all([
         db
@@ -258,13 +258,13 @@ export const analyticsRouter = router({
           ),
         db
           .select({
-            count: countDistinct(visitorSessions.visitorId).as("active_visitors"),
+            count: sql<number>`count(${visitorSessions.id})::int`.as("active_visitors"),
           })
           .from(visitorSessions)
           .where(
             and(
               eq(visitorSessions.chatbotId, chatbotId),
-              gte(visitorSessions.startedAt, activeThreshold),
+              eq(visitorSessions.isWidgetActive, true),
             ),
           ),
       ]);
@@ -723,6 +723,11 @@ export const analyticsRouter = router({
         })
         .returning();
 
+      analyticsEvents.emit("analytics-update", {
+        chatbotId: input.chatbotId,
+        action: "session-create",
+      });
+
       return session;
     }),
 
@@ -730,18 +735,58 @@ export const analyticsRouter = router({
     .input(
       z.object({
         sessionId: z.uuid(),
+        chatbotId: z.uuid(),
         durationMs: z.number().optional(),
         pageViews: z.number().optional(),
         isBounce: z.boolean().optional(),
       }),
     )
     .mutation(async ({ input }) => {
-      const { sessionId, ...rest } = input;
+      const { sessionId, chatbotId, ...rest } = input;
       const [session] = await db
         .update(visitorSessions)
-        .set({ ...rest, endedAt: new Date() })
+        .set({ ...rest, endedAt: new Date(), isWidgetActive: false })
         .where(eq(visitorSessions.id, sessionId))
         .returning();
+
+      analyticsEvents.emit("analytics-update", {
+        chatbotId,
+        action: "session-end",
+      });
+
+      return session;
+    }),
+
+  setWidgetActive: publicProcedure
+    .input(z.object({ sessionId: z.uuid(), chatbotId: z.uuid() }))
+    .mutation(async ({ input }) => {
+      const [session] = await db
+        .update(visitorSessions)
+        .set({ isWidgetActive: true })
+        .where(eq(visitorSessions.id, input.sessionId))
+        .returning();
+
+      analyticsEvents.emit("analytics-update", {
+        chatbotId: input.chatbotId,
+        action: "widget-open",
+      });
+
+      return session;
+    }),
+
+  setWidgetInactive: publicProcedure
+    .input(z.object({ sessionId: z.uuid(), chatbotId: z.uuid() }))
+    .mutation(async ({ input }) => {
+      const [session] = await db
+        .update(visitorSessions)
+        .set({ isWidgetActive: false })
+        .where(eq(visitorSessions.id, input.sessionId))
+        .returning();
+
+      analyticsEvents.emit("analytics-update", {
+        chatbotId: input.chatbotId,
+        action: "widget-close",
+      });
 
       return session;
     }),

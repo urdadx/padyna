@@ -73,6 +73,7 @@ export async function createSession(input: {
 
 export async function endSession(input: {
   sessionId: string;
+  chatbotId: string;
   durationMs?: number;
   pageViews?: number;
   isBounce?: boolean;
@@ -90,4 +91,12 @@ export async function trackEvent(input: {
   extra?: Record<string, unknown>;
 }) {
   return trpcClient.analytics.trackEvent.mutate(input);
+}
+
+export async function setWidgetActive(sessionId: string, chatbotId: string) {
+  return trpcClient.analytics.setWidgetActive.mutate({ sessionId, chatbotId });
+}
+
+export async function setWidgetInactive(sessionId: string, chatbotId: string) {
+  return trpcClient.analytics.setWidgetInactive.mutate({ sessionId, chatbotId });
 }
