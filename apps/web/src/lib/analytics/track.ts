@@ -1,6 +1,6 @@
 import { trpcClient } from "@/utils/trpc";
 
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
 function getSessionStorageKey(chatbotId: string): string {
   return `padyna_session_${chatbotId}`;
@@ -20,14 +20,13 @@ function getSessionData(chatbotId: string): { sessionId: string; startedAt: numb
 export function getStoredSessionId(chatbotId: string): string | null {
   const sessionData = getSessionData(chatbotId);
   if (!sessionData) return null;
-  
-  // Check if session is still valid (not expired)
+
   const now = Date.now();
   if (now - sessionData.startedAt > SESSION_TIMEOUT_MS) {
     clearStoredSession(chatbotId);
     return null;
   }
-  
+
   return sessionData.sessionId;
 }
 

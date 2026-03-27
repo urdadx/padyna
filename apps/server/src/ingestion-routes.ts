@@ -9,7 +9,7 @@ import {
 } from "./ingestion/crawl";
 import { ingestQa, updateQa } from "./ingestion/qa";
 import { ingestText, updateText } from "./ingestion/text";
-import { authMiddleware } from "./middlewares/authMiddleware";
+import { authMiddleware } from "./middlewares/auth-middleware";
 
 type Variables = {
   user: any;
@@ -150,6 +150,15 @@ ingestionRoutes.get("/crawl/:id", async (c) => {
   const session = c.get("session");
   const activeChatbot = session.activeChatbot;
   const activeOrganization = session.activeOrganization;
+
+  if (!activeChatbot || !activeOrganization) {
+    return c.json(
+      {
+        message: "No active chatbot or organization.",
+      },
+      400,
+    );
+  }
 
   const crawlId = c.req.param("id");
 

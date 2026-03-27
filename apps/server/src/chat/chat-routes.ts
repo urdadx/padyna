@@ -1,6 +1,6 @@
 import { createAgentUIStreamResponse } from "ai";
 import { Hono } from "hono";
-import { authMiddleware } from "../middlewares/authMiddleware";
+import { authMiddleware } from "../middlewares/auth-middleware";
 import { createSupportChatAgent } from "./agents";
 import {
   clearConversationMessages,

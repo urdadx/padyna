@@ -295,6 +295,12 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
     state.isIframeLoaded = false;
     state.isIframeBootstrapped = false;
 
+    window.addEventListener("beforeunload", () => {
+      if (state.dom?.iframe.contentWindow) {
+        state.dom.iframe.contentWindow.postMessage({ type: "parent-page-unload" }, "*");
+      }
+    });
+
     const widgetUrl = buildWidgetUrl(options, state.defaultServerUrl);
     if (widgetUrl) {
       state.isIframeBootstrapped = true;

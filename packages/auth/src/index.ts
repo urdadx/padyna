@@ -8,8 +8,10 @@ import { v4 as uuidv4 } from "uuid";
 import { nanoid } from "nanoid";
 import { getActiveOrganization } from "@padyna/db/get-active-organization";
 import { getActiveChatbot } from "@padyna/db/get-active-chatbot";
-import { setActiveSessionContext } from "@padyna/db/set-active-session-context";
-import { chatbot } from "@padyna/db/schema/index";
+import { chatbot, session, user } from "@padyna/db/schema/index";
+import { polarClient } from "./lib/payments";
+import { eq } from "drizzle-orm";
+import { polar, portal } from "@polar-sh/better-auth";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -60,27 +62,27 @@ export const auth = betterAuth({
   databaseHooks: {
     session: {
       create: {
-        before: async (session) => {
+        before: async (sessionData) => {
           try {
-            const activeOrganization = await getActiveOrganization(session.userId);
-            const activeChatbot = await getActiveChatbot(session.userId, activeOrganization);
+            const activeOrganization = await getActiveOrganization(sessionData.userId);
+            const activeChatbot = await getActiveChatbot(sessionData.userId, activeOrganization);
 
             return {
               data: {
-                ...session,
+                ...sessionData,
                 activeOrganization,
                 activeChatbot,
               },
             };
           } catch (error) {
             console.error("Failed to resolve active organization/chatbot for user:", {
-              userId: session.userId,
+              userId: sessionData.userId,
               error,
             });
           }
           return {
             data: {
-              ...session,
+              ...sessionData,
               activeOrganization: null,
               activeChatbot: null,
             },
@@ -93,25 +95,63 @@ export const auth = betterAuth({
     organization({
       organizationHooks: {
         afterCreateOrganization: async ({ organization, user }) => {
-          const embedToken = `pd_${nanoid(12)}`;
+          try {
+            const embedToken = `pd_${nanoid(16)}`;
 
-          const [createdChatbot] = await db
-            .insert(chatbot)
-            .values({
+            const [createdChatbot] = await db
+              .insert(chatbot)
+              .values({
+                organizationId: organization.id,
+                name: `${organization.name} AI Agent`,
+                image: organization.logo,
+                embedToken,
+              })
+              .returning();
+
+            const activeChatbotId = createdChatbot?.id || null;
+
+            await db
+              .update(session)
+              .set({
+                activeChatbot: activeChatbotId,
+                activeOrganization: organization.id,
+                updatedAt: new Date(),
+              })
+              .where(eq(session.userId, user.id));
+          } catch (error) {
+            console.error("Failed to create default chatbot for organization:", {
               organizationId: organization.id,
-              name: organization.name,
-              image: organization.logo,
-              embedToken,
-            })
-            .returning({ id: chatbot.id });
-
-          if (user.id && createdChatbot?.id) {
-            await setActiveSessionContext(user.id, {
-              activeOrganization: organization.id,
-              activeChatbot: createdChatbot.id,
+              error,
             });
           }
         },
+      },
+    }),
+    polar({
+      client: polarClient,
+      createCustomerOnSignUp: true,
+      use: [portal()],
+      getCustomerCreateParams: async ({ user: newUser }) => {
+        try {
+          const { result: existingCustomers } = await polarClient.customers.list({
+            email: newUser.email,
+          });
+
+          const existingCustomer = existingCustomers.items[0];
+
+          const userId = newUser.id;
+          if (existingCustomer?.externalId && userId && existingCustomer.externalId !== userId) {
+            await db
+              .update(user)
+              .set({ id: existingCustomer.externalId })
+              .where(eq(user.id, userId));
+          }
+
+          return {};
+        } catch (error) {
+          console.error("Error in getCustomerCreateParams:", error);
+          return {};
+        }
       },
     }),
   ],

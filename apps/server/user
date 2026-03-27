@@ -1,0 +1,80 @@
+[m]133;A\[22;1;32m➜  [36mpadyna-v2[22;39m [22;1;34mgit:([31mmain[34m) [33m✗[22;39m pnpm dev:server
+[m]133;C\
+[m> padyna@ dev:server /home/shinobi/projects/padyna-v2
+[m> pnpm --filter server dev
+
+
+[m> server@ dev /home/shinobi/projects/padyna-v2/apps/server
+[m> bun run --hot src/index.ts
+
+[mStarted development server: http://localhost:3000
+[m<-- OPTIONS /api/widget/pd_fZtwHhKTb4QX/init?hostOrigin=http:%2F%2Flocalhost:3001
+[m--> OPTIONS /api/widget/pd_fZtwHhKTb4QX/init?hostOrigin=http:%2F%2Flocalhost:3001 [32m204[39m 1ms
+[m<-- POST /api/widget/pd_fZtwHhKTb4QX/init?hostOrigin=http:%2F%2Flocalhost:3001
+[m--> POST /api/widget/pd_fZtwHhKTb4QX/init?hostOrigin=http:%2F%2Flocalhost:3001 [33m404[39m 72ms
+[m<-- POST /api/widget/pd_fZtwHhKTb4QX/init?hostOrigin=http:%2F%2Flocalhost:3001
+[m--> POST /api/widget/pd_fZtwHhKTb4QX/init?hostOrigin=http:%2F%2Flocalhost:3001 [33m404[39m 3ms
+[m<-- GET /api/checkout?products=60d0f6e4-f0f3-44a6-8683-38d57aa53077&metadata=%7B%22referenceId%22%3A%22f1577a1a-f21b-4c5f
+[m-9c82-d64620c77fa6%22%7D&customerExternalId=e66298c6-b9b9-40c9-9bb0-efdaba6b919e&customerEmail=polar%40gmail.com&customer
+[mName=Polar
+[m--> GET /api/checkout?products=60d0f6e4-f0f3-44a6-8683-38d57aa53077&metadata=%7B%22referenceId%22%3A%22f1577a1a-f21b-4c5f
+[m-9c82-d64620c77fa6%22%7D&customerExternalId=e66298c6-b9b9-40c9-9bb0-efdaba6b919e&customerEmail=polar%40gmail.com&customer
+[mName=Polar [36m302[39m 2s
+[m<-- POST /api/webhook/polar
+[mIgnoring non-subscription webhook: checkout.created
+[m--> POST /api/webhook/polar [32m200[39m 26ms
+[m<-- POST /api/webhook/polar
+[mIgnoring non-subscription webhook: checkout.updated
+[m--> POST /api/webhook/polar [32m200[39m 7ms
+[m<-- POST /api/webhook/polar
+[mIgnoring non-subscription webhook: customer.updated
+[m--> POST /api/webhook/polar [32m200[39m 3ms
+[m<-- POST /api/webhook/polar
+[mIgnoring non-subscription webhook: customer.state_changed
+[m--> POST /api/webhook/polar [32m200[39m 15ms
+[m<-- GET /api/widget/pd_fZtwHhKTb4QX/config?hostOrigin=http%3A%2F%2Flocalhost%3A3001
+[m--> GET /api/widget/pd_fZtwHhKTb4QX/config?hostOrigin=http%3A%2F%2Flocalhost%3A3001 [33m404[39m 35ms
+[m<-- POST /api/webhook/polar
+[mProcessing subscription webhook: subscription.created
+[mUser e66298c6-b9b9-40c9-9bb0-efdaba6b919e subscription updated: trialing
+[m--> POST /api/webhook/polar [32m200[39m 92ms
+[m<-- GET /api/widget/pd_fZtwHhKTb4QX/config?hostOrigin=http%3A%2F%2Flocalhost%3A3001
+[m--> GET /api/widget/pd_fZtwHhKTb4QX/config?hostOrigin=http%3A%2F%2Flocalhost%3A3001 [33m404[39m 20ms
+[m<-- POST /api/webhook/polar
+[mProcessing subscription webhook: subscription.active
+[m[mUser e66298c6-b9b9-40c9-9bb0-efdaba6b919e subscription updated: trialing
+[m--> POST /api/webhook/polar [32m200[39m 65ms
+[m<-- POST /api/webhook/polar
+[mProcessing subscription webhook: subscription.updated
+[mUser e66298c6-b9b9-40c9-9bb0-efdaba6b919e subscription updated: trialing
+[m--> POST /api/webhook/polar [32m200[39m 48ms
+[m<-- POST /api/webhook/polar
+[mIgnoring non-subscription webhook: order.created
+[m--> POST /api/webhook/polar [32m200[39m 12ms
+[m<-- POST /api/webhook/polar
+[mIgnoring non-subscription webhook: order.updated
+[m--> POST /api/webhook/polar [32m200[39m 6ms
+[m<-- POST /api/webhook/polar
+[mIgnoring non-subscription webhook: order.paid
+[m--> POST /api/webhook/polar [32m200[39m 5ms
+[m<-- POST /api/webhook/polar
+[mIgnoring non-subscription webhook: checkout.updated
+[m--> POST /api/webhook/polar [32m200[39m 8ms
+[m<-- OPTIONS /api/widget/pd_fZtwHhKTb4QX/init?hostOrigin=http:%2F%2Flocalhost:3001
+[m--> OPTIONS /api/widget/pd_fZtwHhKTb4QX/init?hostOrigin=http:%2F%2Flocalhost:3001 [32m204[39m 0ms
+[m<-- POST /api/widget/pd_fZtwHhKTb4QX/init?hostOrigin=http:%2F%2Flocalhost:3001
+[m--> POST /api/widget/pd_fZtwHhKTb4QX/init?hostOrigin=http:%2F%2Flocalhost:3001 [33m404[39m 8ms
+[m<-- POST /api/webhook/polar
+[mIgnoring non-subscription webhook: order.updated
+[m--> POST /api/webhook/polar [32m200[39m 3ms
+[m<-- POST /api/widget/pd_fZtwHhKTb4QX/init?hostOrigin=http:%2F%2Flocalhost:3001
+[m--> POST /api/widget/pd_fZtwHhKTb4QX/init?hostOrigin=http:%2F%2Flocalhost:3001 [33m404[39m 2ms
+[m<-- POST /api/webhook/polar
+[mIgnoring non-subscription webhook: benefit_grant.created
+[m--> POST /api/webhook/polar [32m200[39m 13ms
+[m<-- POST /api/webhook/polar
+[mIgnoring non-subscription webhook: customer.state_changed
+[m--> POST /api/webhook/polar [32m200[39m 3ms
+[m^Fsubscription updated
+[m/User
+

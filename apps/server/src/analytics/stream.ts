@@ -3,7 +3,7 @@ import { streamSSE } from "hono/streaming";
 import { db } from "@padyna/db";
 import { eq, and, gte, lte, count, countDistinct, avg, sql } from "drizzle-orm";
 import { visitorSessions, visitorEvents } from "@padyna/db/schema/index";
-import { authMiddleware } from "@/middlewares/authMiddleware";
+import { authMiddleware } from "@/middlewares/auth-middleware";
 import { analyticsEvents } from "@padyna/api/lib/events";
 
 const n = (val: unknown) => Number(val ?? 0);
@@ -147,9 +147,7 @@ analyticsStreamRoutes.get("/overview", async (c) => {
           event: "error",
           id: String(id++),
         });
-      } catch {
-        // Stream already closed, ignore
-      }
+      } catch {}
     }
   });
 });

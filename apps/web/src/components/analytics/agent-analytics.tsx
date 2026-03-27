@@ -127,7 +127,7 @@ export function AgentAnalytics() {
 						<CardTitle className="flex items-center gap-3 text-muted-foreground text-xs">
 							<div className="flex items-center gap-1">
 								<div className="inset-0 size-2 rounded-full bg-purple-500" />
-								<span>Total chats</span>
+								<span>Chats started</span>
 							</div>
 							<Checkbox
 								checked={showChats}

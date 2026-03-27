@@ -262,10 +262,7 @@ export const analyticsRouter = router({
           })
           .from(visitorSessions)
           .where(
-            and(
-              eq(visitorSessions.chatbotId, chatbotId),
-              eq(visitorSessions.isWidgetActive, true),
-            ),
+            and(eq(visitorSessions.chatbotId, chatbotId), eq(visitorSessions.isWidgetActive, true)),
           ),
       ]);
 

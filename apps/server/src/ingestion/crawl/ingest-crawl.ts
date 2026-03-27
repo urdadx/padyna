@@ -10,6 +10,7 @@ import {
   markDatasourceFailed,
   markDatasourceSynced,
 } from "@padyna/db/ingestion-files";
+import { startCrawl } from "./run-crawl";
 
 function normalizeMimeType(url: string) {
   if (url.endsWith(".pdf")) return "application/pdf";
@@ -41,7 +42,6 @@ async function startCrawlWithOptions(options: {
   includePaths?: string[];
   crawlEntireDomain?: boolean;
 }) {
-  const { startCrawl } = await import("./run-crawl");
   return startCrawl(options);
 }
 

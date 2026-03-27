@@ -49,7 +49,7 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 				<ChatContainerContent className="px-4">
 					<div className="flex w-full min-w-0 flex-col gap-4 mb-10 my-3 overflow-x-hidden">
 						{isLoading ? (
-							<div className="flex-1 flex min-h-screen items-center justify-center">
+							<div className="flex flex-1 min-h-100 items-center justify-center gap-2">
 								<Spinner size={30} />
 							</div>
 						) : messages && messages.length > 0 ? (

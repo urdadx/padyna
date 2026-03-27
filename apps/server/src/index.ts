@@ -11,6 +11,9 @@ import { ingestionRoutes } from "./ingestion-routes";
 import { chatRoutes } from "./chat";
 import { widgetRoutes } from "./widget";
 import { analyticsStreamRoutes } from "./analytics/stream";
+import { endSessionRoute } from "./analytics/end-session";
+import { polarWebhook } from "./payments/webhook";
+import { checkout } from "./payments/checkout";
 
 const app = new Hono();
 
@@ -31,6 +34,9 @@ app.route("/api/ingestion", ingestionRoutes);
 app.route("/api/chat", chatRoutes);
 app.route("/api/widget", widgetRoutes);
 app.route("/api/analytics/stream", analyticsStreamRoutes);
+app.route("/api/analytics/session-end", endSessionRoute);
+app.route("/api/", polarWebhook);
+app.route("/api/", checkout);
 
 app.use("/api/trpc/*", async (c, next) => {
   const accept = c.req.header("trpc-accept");

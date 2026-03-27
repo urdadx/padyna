@@ -61,11 +61,7 @@ export function DeleteDataSource({ item, open, onOpenChange }: DeleteDataSourceP
 						className="bg-red-600 hover:bg-red-700 text-white">
 						{deleteDataSource.isPending ? (
 							<>
-								<Spinner
-									className="text-white"
-									className="mr-2"
-									size={16}
-								/>
+								<Spinner className="text-white mr-1" />
 								Deleting...
 							</>
 						) : (

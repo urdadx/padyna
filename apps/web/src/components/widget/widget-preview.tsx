@@ -94,6 +94,7 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 	const sessionStartTimeRef = useRef<number>(0);
 	const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const isSessionEndedRef = useRef<boolean>(false);
+	const visibilityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const [lastInitializedId, setLastInitializedId] = useState<string | undefined>(undefined);
 
@@ -122,7 +123,7 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 		const isBounce = !chatStartedRef.current;
 
 		try {
-				await Promise.all([
+			await Promise.all([
 				setWidgetInactive(sessionIdRef.current, chatbotId),
 				trackEvent({
 					chatbotId,
@@ -154,32 +155,28 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 	useEffect(() => {
 		if (!chatbotId || !widgetConfig?.isEnabled) return;
 
-		isSessionEndedRef.current = false;
-
-		const handleBeforeUnload = () => {
-			if (!sessionIdRef.current || !chatbotId || isSessionEndedRef.current) return;
-			isSessionEndedRef.current = true;
-			const durationMs = Date.now() - sessionStartTimeRef.current;
-			const isBounce = !chatStartedRef.current;
-			navigator.sendBeacon(
-				`${import.meta.env.VITE_SERVER_URL}/api/analytics/session-end`,
-				JSON.stringify({
-					sessionId: sessionIdRef.current,
-					durationMs,
-					isBounce,
-					chatbotId,
-					visitorId: visitorIdRef.current,
-					event: "widget_close",
-				}),
-			);
+		const handleVisibilityChange = async () => {
+			if (document.visibilityState === "hidden") {
+				visibilityTimeoutRef.current = setTimeout(async () => {
+					await endCurrentSession();
+				}, 1000);
+			} else {
+				if (visibilityTimeoutRef.current) {
+					clearTimeout(visibilityTimeoutRef.current);
+					visibilityTimeoutRef.current = null;
+				}
+			}
 		};
 
-		window.addEventListener("beforeunload", handleBeforeUnload);
+		document.addEventListener("visibilitychange", handleVisibilityChange);
 
 		return () => {
-			window.removeEventListener("beforeunload", handleBeforeUnload);
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+			if (visibilityTimeoutRef.current) {
+				clearTimeout(visibilityTimeoutRef.current);
+			}
 		};
-	}, [chatbotId, widgetConfig?.isEnabled]);
+	}, [chatbotId, widgetConfig?.isEnabled, endCurrentSession]);
 
 	useEffect(() => {
 		if (!chatbotId || !widgetConfig?.isEnabled) return;
@@ -231,7 +228,7 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 				return;
 			}
 
-			if (type === "padyna:widget_close") {
+			if (type === "padyna:widget_close" || type === "parent-page-unload") {
 				await endCurrentSession();
 			}
 		};
