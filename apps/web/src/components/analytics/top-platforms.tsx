@@ -105,10 +105,13 @@ export function TopPlatforms() {
 	];
 
 	const topPlatforms = mapPlatforms.slice(0, 5);
-	const maxPlatformCount = Math.max(...mapPlatforms.map((p) => p.value));
+	const maxPlatformCount = Math.max(...mapPlatforms.map((p) => p.value), 0);
 
 	const topReferrers = mapReferrers.slice(0, 5);
 	const maxReferrerCount = Math.max(...mapReferrers.map((r) => r.value), 1);
+
+	const hasPlatforms = mapPlatforms.length > 0;
+	const hasReferrers = mapReferrers.length > 0;
 
 	if (isPending) {
 		return <TopSkeleton />;
@@ -135,18 +138,28 @@ export function TopPlatforms() {
 				<div className="flex-1 min-h-0 overflow-hidden">
 					<TabsContent value="platforms" className="h-full m-0 p-0">
 						<div className="h-full flex flex-col">
-							<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
-								<BarList
-									tab="Platforms"
-									unit="messages"
-									data={topPlatforms}
-									barBackground="bg-orange-200"
-									hoverBackground="hover:bg-orange-50"
-									maxValue={maxPlatformCount}
-									limit={5}
-								/>
-							</div>
-							{mapPlatforms.length > 5 && (
+							{!hasPlatforms ? (
+								<div className="flex flex-col items-center justify-center h-full min-h-48 text-center">
+									<p className="text-muted-foreground text-sm">
+										No data yet
+									</p>
+								</div>
+							) : (
+								<>
+									<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
+										<BarList
+											tab="Platforms"
+											unit="messages"
+											data={topPlatforms}
+											barBackground="bg-orange-200"
+											hoverBackground="hover:bg-orange-50"
+											maxValue={maxPlatformCount}
+											limit={5}
+										/>
+									</div>
+								</>
+							)}
+							{hasPlatforms && mapPlatforms.length > 5 && (
 								<div className="shrink-0 px-4 py-3 ">
 									<div className="flex items-center justify-center">
 										<Button
@@ -175,18 +188,28 @@ export function TopPlatforms() {
 
 					<TabsContent value="referrers" className="h-full m-0 p-0">
 						<div className="h-full flex flex-col">
-							<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
-								<BarList
-									tab="Referrers"
-									unit="visits"
-									data={topReferrers}
-									barBackground="bg-orange-200"
-									hoverBackground="hover:bg-orange-50"
-									maxValue={maxReferrerCount}
-									limit={5}
-								/>
-							</div>
-							{mapReferrers.length > 5 && (
+							{!hasReferrers ? (
+								<div className="flex flex-col items-center justify-center h-full min-h-48 text-center">
+									<p className="text-muted-foreground text-sm">
+										No data available yet
+									</p>
+								</div>
+							) : (
+								<>
+									<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
+										<BarList
+											tab="Referrers"
+											unit="visits"
+											data={topReferrers}
+											barBackground="bg-orange-200"
+											hoverBackground="hover:bg-orange-50"
+											maxValue={maxReferrerCount}
+											limit={5}
+										/>
+									</div>
+								</>
+							)}
+							{hasReferrers && mapReferrers.length > 5 && (
 								<div className="shrink-0 px-4 py-3 ">
 									<div className="flex items-center justify-center">
 										<Button

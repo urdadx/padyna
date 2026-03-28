@@ -98,7 +98,7 @@ export const StepOne = ({ onContinue }: { onContinue: () => void }) => {
 		onSubmit: async ({ value }) => {
 			try {
 				const websiteDomain = getWebsiteDomain(value.websiteUrl);
-				const slug = `${value.name}_${nanoid(6)}`;
+				const slug = `${value.name.toLocaleLowerCase()}_${nanoid(16)}`;
 				const logo = websiteDomain
 					? `${GOOGLE_FAVICON_URL}${websiteDomain}`
 					: undefined;

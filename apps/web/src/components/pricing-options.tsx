@@ -193,6 +193,7 @@ export function PricingOptions() {
 		try {
 			const metadata = JSON.stringify({
 				referenceId: session.session.activeOrganization,
+				planName: plan.name,
 			});
 
 			const params = new URLSearchParams();

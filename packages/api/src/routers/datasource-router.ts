@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../index";
 import { db } from "@padyna/db";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray, sum } from "drizzle-orm";
 import { datasources, datasourceChunks } from "@padyna/db/schema/index";
 
 const timeRangeSchema = z.enum(["24h", "7d", "30d", "90d"]).default("24h");
@@ -12,6 +12,22 @@ const paginatedInput = z.object({
 });
 
 export const datasourceRouter = router({
+  getTotalSize: protectedProcedure.query(async ({ ctx }) => {
+    const organizationId = ctx.session.session.activeOrganization;
+    if (!organizationId) {
+      return 0;
+    }
+
+    const result = await db
+      .select({
+        totalSize: sum(datasources.sizeBytes),
+      })
+      .from(datasources)
+      .where(eq(datasources.organizationId, organizationId));
+
+    return Number(result[0]?.totalSize ?? 0);
+  }),
+
   getSourceCounts: protectedProcedure.query(async ({ ctx }) => {
     const organizationId = ctx.session.session.activeOrganization;
     const chatbotId = ctx.session.session.activeChatbot;

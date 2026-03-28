@@ -251,7 +251,7 @@ export function FileUploadDialog({ open, onOpenChange, onUpload }: FileUploadDia
 							disabled={files.length === 0 || isPending}>
 							{isPending ? (
 								<>
-									<Spinner color="white" />
+									<Spinner className="text-white" />
 									Uploading...
 								</>
 							) : (

@@ -11,21 +11,27 @@ import { Card, CardContent } from "../ui/card";
 import { DialogContent, DialogTitle } from "../ui/dialog";
 import { DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "../ui/drawer";
 import Spinner from "../ui/spinner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { Tooltip, TooltipTrigger } from "../ui/tooltip";
 import { BoltIcon } from "@/assets/icons/bolt-duotone";
+import { useSession } from "@/lib/auth-client";
+import { useNavigate } from "@tanstack/react-router";
+import { env } from "@padyna/env/web";
+import { ADDON_PRODUCT_IDS } from "@/lib/plan-slugs";
 
 export const AddOnsDialog = ({
 	defaultValue,
 	isMobile = false,
-	onOpenChange,
 }: {
-	defaultValue: string;
+	defaultValue: keyof typeof ADDON_PRODUCT_IDS;
 	isMobile?: boolean;
 	onOpenChange?: (value: boolean) => void;
 }) => {
-	const [selectedAddon, setSelectedAddon] = useState<string | null>(defaultValue);
+	const [selectedAddon, setSelectedAddon] = useState<keyof typeof ADDON_PRODUCT_IDS | null>(
+		defaultValue,
+	);
 	const [isCheckingOut, setIsCheckingOut] = useState(false);
-	const isAdmin = true;
+	const { data: session } = useSession();
+	const navigate = useNavigate();
 
 	const handleCheckout = async () => {
 		if (!selectedAddon) {
@@ -33,26 +39,50 @@ export const AddOnsDialog = ({
 			return;
 		}
 
+		if (!session || !session.session.activeOrganization) {
+			navigate({ to: "/login" });
+			return;
+		}
+
+		const productId = ADDON_PRODUCT_IDS[selectedAddon];
+		if (!productId) {
+			toast.error("Invalid addon selected");
+			return;
+		}
+
 		setIsCheckingOut(true);
 
 		try {
-			console.log("Mocking checkout for:", selectedAddon);
-			await new Promise((resolve) => setTimeout(resolve, 1500));
-			toast.success("Redirecting to checkout...");
+			const metadata = JSON.stringify({
+				referenceId: session.session.activeOrganization,
+				addonType: selectedAddon,
+			});
+
+			const params = new URLSearchParams();
+			params.append("products", productId);
+			params.append("metadata", metadata);
+			params.append("customerExternalId", session.user.id);
+			params.append("customerEmail", session.user.email ?? "");
+			params.append("customerName", session.user.name ?? "");
+
+			const checkoutUrl = `${env.VITE_SERVER_URL}/api/checkout?${params.toString()}`;
+			window.location.href = checkoutUrl;
 		} catch (error) {
-			console.log("Checkout error:", error);
+			console.error("Checkout error:", error);
 			toast.error("An error occurred. Please try again.");
-		} finally {
 			setIsCheckingOut(false);
-			if (onOpenChange) onOpenChange(false);
 		}
 	};
 
-	const selectAddon = (addonId: string) => {
-		setSelectedAddon((prev) => (prev === addonId ? null : addonId));
+	const selectAddon = (addonId: keyof typeof ADDON_PRODUCT_IDS) => {
+		if (selectedAddon === addonId) {
+			setSelectedAddon(null);
+			return;
+		}
+		setSelectedAddon(addonId);
 	};
 
-	const isSelected = (addonId: string) => selectedAddon === addonId;
+	const isSelected = (addonId: keyof typeof ADDON_PRODUCT_IDS) => selectedAddon === addonId;
 
 	const checkoutButton = (
 		<Tooltip>
@@ -64,10 +94,10 @@ export const AddOnsDialog = ({
 					<Button
 						className="w-full"
 						onClick={handleCheckout}
-						disabled={!selectedAddon || !isAdmin || isCheckingOut}>
+						disabled={!selectedAddon || isCheckingOut}>
 						{isCheckingOut ? (
 							<>
-								<Spinner className="w-4 h-4 text-white" />
+								<Spinner className="text-white" />
 								Processing...
 							</>
 						) : (
@@ -79,13 +109,6 @@ export const AddOnsDialog = ({
 					</Button>
 				</motion.div>
 			</TooltipTrigger>
-			{!isAdmin && (
-				<TooltipContent className="bg-white shadow-sm p-3" sideOffset={8}>
-					<p className="text-black text-sm">
-						Only admins can purchase add-ons. Please contact your admin
-					</p>
-				</TooltipContent>
-			)}
 		</Tooltip>
 	);
 

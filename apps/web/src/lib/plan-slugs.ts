@@ -20,4 +20,4 @@ export const ADDON_PRODUCT_IDS = {
   branding: env.VITE_REMOVE_BRANDING_ADDON,
   chatbot: env.VITE_EXTRA_CHATBOT_ADDON,
   member: env.VITE_EXTRA_TEAM_MEMBER_ADDON,
-};
+} as const;

@@ -4,6 +4,7 @@ import { analyticsRouter } from "./analytics-router";
 import { conversationsRouter } from "./conversations-router";
 import { datasourceRouter } from "./datasource-router";
 import { metricsRouter } from "./metrics-router";
+import { subscriptionRouter } from "./subscription-router";
 import { voteRouter } from "./vote-router";
 
 export const appRouter = router({
@@ -21,6 +22,7 @@ export const appRouter = router({
   conversations: conversationsRouter,
   datasource: datasourceRouter,
   metrics: metricsRouter,
+  subscription: subscriptionRouter,
   vote: voteRouter,
 });
 export type AppRouter = typeof appRouter;

@@ -53,6 +53,8 @@ export function TopSources() {
 	const topSources = mapSources.slice(0, 5);
 	const maxSourceCount = Math.max(...mapSources.map((s) => s.value), 0);
 
+	const hasData = mapSources.length > 0;
+
 	if (isPending) {
 		return <TopSkeleton />;
 	}
@@ -73,18 +75,31 @@ export function TopSources() {
 				<div className="flex-1 min-h-0 overflow-hidden">
 					<TabsContent value="sources" className="h-full m-0 p-0">
 						<div className="h-full flex flex-col">
-							<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
-								<BarList
-									tab="Data Sources"
-									unit="usages"
-									data={topSources}
-									barBackground="bg-rose-200"
-									hoverBackground="hover:bg-rose-50"
-									maxValue={maxSourceCount}
-									limit={5}
-								/>
-							</div>
-							{mapSources.length > 5 && (
+							{!hasData ? (
+								<div className="flex flex-col items-center justify-center h-full min-h-48 text-center">
+									<p className="text-muted-foreground text-sm">
+										No data available yet
+									</p>
+									<p className="text-muted-foreground text-xs mt-1">
+										Add data sources to see usage stats.
+									</p>
+								</div>
+							) : (
+								<>
+									<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
+										<BarList
+											tab="Data Sources"
+											unit="usages"
+											data={topSources}
+											barBackground="bg-rose-200"
+											hoverBackground="hover:bg-rose-50"
+											maxValue={maxSourceCount}
+											limit={5}
+										/>
+									</div>
+								</>
+							)}
+							{hasData && mapSources.length > 5 && (
 								<div className="shrink-0 px-4 py-3 ">
 									<div className="flex items-center justify-center">
 										<Button

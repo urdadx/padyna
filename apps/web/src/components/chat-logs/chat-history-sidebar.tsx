@@ -68,11 +68,27 @@ export const ChatHistorySidebar = ({
 								value={filter}
 								onValueChange={(v) => setFilter(v as FilterOption)}>
 								{FILTER_OPTIONS.map((option) => (
-									<DropdownMenuRadioItem
-										key={option.value}
-										value={option.value}>
-										{option.label}
-									</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem
+                    key={option.value}
+                    value={option.value}>
+                    <div
+                      className={cn(
+                        "rounded-full w-2 h-2",
+                        option.value === "all"
+                          ? "bg-black"
+                          : option.value === "opened"
+                          ? "bg-green-500"
+                          : option.value === "escalated"
+                          ? "bg-blue-500"
+                          : option.value === "closed"
+                          ? "bg-red-500"
+                          : option.value === "assigned"
+                          ? "bg-yellow-500"
+                          : "bg-gray-500",
+                      )}
+                    />
+                    {option.label}
+                  </DropdownMenuRadioItem>
 								))}
 							</DropdownMenuRadioGroup>
 						</DropdownMenuContent>

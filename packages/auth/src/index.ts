@@ -96,7 +96,7 @@ export const auth = betterAuth({
       organizationHooks: {
         afterCreateOrganization: async ({ organization, user }) => {
           try {
-            const embedToken = `pd_${nanoid(16)}`;
+            const embedToken = `padyna_${nanoid(16)}`;
 
             const [createdChatbot] = await db
               .insert(chatbot)
@@ -109,6 +109,24 @@ export const auth = betterAuth({
               .returning();
 
             const activeChatbotId = createdChatbot?.id || null;
+
+            try {
+              const customer = await polarClient.customers.getExternal({
+                externalId: user.id,
+              });
+
+              if (customer) {
+                await db
+                  .update(schema.organization)
+                  .set({ externalCustomerId: user.id })
+                  .where(eq(schema.organization.id, organization.id));
+              }
+            } catch (error) {
+              console.error("Failed to get Polar customer:", {
+                userId: user.id,
+                error,
+              });
+            }
 
             await db
               .update(session)

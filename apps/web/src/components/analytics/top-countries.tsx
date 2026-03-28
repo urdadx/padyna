@@ -103,9 +103,11 @@ export function TopCountries() {
 	const topDevices = mapDevices.slice(0, 5);
 	const topOS = mapOS.slice(0, 5);
 
-	const maxCountryCount = Math.max(...mapCountries.map((c) => c.value));
-	const maxDeviceCount = Math.max(...mapDevices.map((d) => d.value));
-	const maxOSCount = Math.max(...mapOS.map((o) => o.value));
+	const maxCountryCount = Math.max(...mapCountries.map((c) => c.value), 0);
+	const maxDeviceCount = Math.max(...mapDevices.map((d) => d.value), 0);
+	const maxOSCount = Math.max(...mapOS.map((o) => o.value), 0);
+
+	const hasData = mapCountries.length > 0 || mapDevices.length > 0 || mapOS.length > 0;
 
 	if (isPending) {
 		return <TopSkeleton />;
@@ -137,17 +139,27 @@ export function TopCountries() {
 				<div className="flex-1 min-h-0 overflow-hidden">
 					<TabsContent value="countries" className="h-full m-0 p-0">
 						<div className="h-full flex flex-col">
-							<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
-								<BarList
-									tab="Countries"
-									unit="visits"
-									data={topCountries}
-									barBackground="bg-green-200"
-									hoverBackground="hover:bg-green-50"
-									maxValue={maxCountryCount}
-									limit={5}
-								/>
-							</div>
+							{!hasData ? (
+								<div className="flex flex-col items-center justify-center h-full min-h-48 text-center">
+									<p className="text-muted-foreground text-sm">
+										No data available yet
+									</p>
+								</div>
+							) : (
+								<>
+									<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
+										<BarList
+											tab="Countries"
+											unit="visits"
+											data={topCountries}
+											barBackground="bg-green-200"
+											hoverBackground="hover:bg-green-50"
+											maxValue={maxCountryCount}
+											limit={5}
+										/>
+									</div>
+								</>
+							)}
 							{mapCountries.length > 5 && (
 								<div className="shrink-0 px-4 py-3 ">
 									<div className="flex items-center justify-center">
@@ -177,18 +189,28 @@ export function TopCountries() {
 
 					<TabsContent value="devices" className="h-full m-0 p-0">
 						<div className="h-full flex flex-col">
-							<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
-								<BarList
-									tab="Devices"
-									unit="visits"
-									data={topDevices}
-									barBackground="bg-green-200"
-									hoverBackground="hover:bg-green-50"
-									maxValue={maxDeviceCount}
-									limit={5}
-								/>
-							</div>
-							{mapDevices.length > 5 && (
+							{!hasData ? (
+								<div className="flex flex-col items-center justify-center h-full min-h-48 text-center">
+									<p className="text-muted-foreground text-sm">
+										No data available yet
+									</p>
+								</div>
+							) : (
+								<>
+									<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
+										<BarList
+											tab="Devices"
+											unit="visits"
+											data={topDevices}
+											barBackground="bg-green-200"
+											hoverBackground="hover:bg-green-50"
+											maxValue={maxDeviceCount}
+											limit={5}
+										/>
+									</div>
+								</>
+							)}
+							{hasData && mapDevices.length > 5 && (
 								<div className="shrink-0 px-4 py-3 ">
 									<div className="flex items-center justify-center">
 										<Button
@@ -217,18 +239,28 @@ export function TopCountries() {
 
 					<TabsContent value="os" className="h-full m-0 p-0">
 						<div className="h-full flex flex-col">
-							<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
-								<BarList
-									tab="OS"
-									unit="visits"
-									data={topOS}
-									barBackground="bg-green-200"
-									hoverBackground="hover:bg-green-50"
-									maxValue={maxOSCount}
-									limit={5}
-								/>
-							</div>
-							{mapOS.length > 5 && (
+							{!hasData ? (
+								<div className="flex flex-col items-center justify-center h-full min-h-48 text-center">
+									<p className="text-muted-foreground text-sm">
+										No data available yet
+									</p>
+								</div>
+							) : (
+								<>
+									<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
+										<BarList
+											tab="OS"
+											unit="visits"
+											data={topOS}
+											barBackground="bg-green-200"
+											hoverBackground="hover:bg-green-50"
+											maxValue={maxOSCount}
+											limit={5}
+										/>
+									</div>
+								</>
+							)}
+							{hasData && mapOS.length > 5 && (
 								<div className="shrink-0 px-4 py-3 ">
 									<div className="flex items-center justify-center">
 										<Button

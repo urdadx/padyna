@@ -9,6 +9,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
+import { organization } from "./organization";
 
 export const subscription = pgTable(
   "subscription",
@@ -17,6 +18,7 @@ export const subscription = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id").references(() => organization.id, { onDelete: "cascade" }),
 
     polarSubscriptionId: text("polar_subscription_id").notNull().unique(),
     customerId: text("customer_id").notNull(),
@@ -57,6 +59,7 @@ export const subscription = pgTable(
   },
   (table) => [
     index("subscription_user_id_idx").on(table.userId),
+    index("subscription_organization_id_idx").on(table.organizationId),
     index("subscription_customer_id_idx").on(table.customerId),
     index("subscription_status_idx").on(table.status),
   ],

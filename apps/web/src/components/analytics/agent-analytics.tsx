@@ -66,6 +66,10 @@ export function AgentAnalytics() {
 	const chartData = chartQuery.data ?? [];
 	const isPending = chartQuery.isPending;
 	const overview = streamData.data ?? undefined;
+	const hasData =
+		(overview?.totalVisits ?? 0) > 0 ||
+		(overview?.totalChats ?? 0) > 0 ||
+		chartData.length > 0;
 
 	if (isPending && !streamData.data) {
 		return <AnalyticsSkeleton />;
@@ -149,7 +153,7 @@ export function AgentAnalytics() {
 							</div>
 						</CardTitle>
 						<CardDescription className="text-xl md:text-2xl font-semibold text-black">
-							{overview
+							{overview && overview.totalVisits > 0
 								? `${Math.round(
 										((overview.totalVisits -
 											overview.totalChats) /
@@ -186,98 +190,112 @@ export function AgentAnalytics() {
 				</CardHeader>
 
 				<CardContent className="pt-4 sm:pt-6">
-					<ChartContainer
-						config={chartConfig}
-						className="aspect-auto h-75 w-full">
-						<ComposedChart data={chartData}>
-							<defs>
-								<linearGradient
-									id="fillChats"
-									x1="0"
-									y1="0"
-									x2="0"
-									y2="1">
-									<stop
-										offset="5%"
-										stopColor="var(--chart-1)"
-										stopOpacity={0.8}
-									/>
-									<stop
-										offset="95%"
-										stopColor="var(--chart-1)"
-										stopOpacity={0.1}
-									/>
-								</linearGradient>
-								<linearGradient
-									id="fillVisitors"
-									x1="0"
-									y1="0"
-									x2="0"
-									y2="1">
-									<stop
-										offset="5%"
-										stopColor="var(--chart-4)"
-										stopOpacity={0.8}
-									/>
-									<stop
-										offset="95%"
-										stopColor="var(--chart-4)"
-										stopOpacity={0.1}
-									/>
-								</linearGradient>
-							</defs>
-							<CartesianGrid vertical={false} />
-							<XAxis
-								dataKey="date"
-								tickLine={false}
-								axisLine={false}
-								tickMargin={8}
-								minTickGap={32}
-								tickFormatter={(value) => {
-									const date = new Date(value);
-									return date.toLocaleDateString("en-US", {
-										month: "short",
-										day: "numeric",
-									});
-								}}
-							/>
-							<YAxis tickLine={false} axisLine={false} />
-							<ChartTooltip
-								cursor={false}
-								content={
-									<ChartTooltipContent
-										labelFormatter={(value) =>
-											new Date(
-												value,
-											).toLocaleDateString("en-US", {
+					{!hasData ? (
+						<div className="flex flex-col items-center justify-center h-75 text-center">
+							<p className="font-semibold font-display text-xl">
+								No data available yet
+							</p>
+						</div>
+					) : (
+						<ChartContainer
+							config={chartConfig}
+							className="aspect-auto h-75 w-full">
+							<ComposedChart data={chartData}>
+								<defs>
+									<linearGradient
+										id="fillChats"
+										x1="0"
+										y1="0"
+										x2="0"
+										y2="1">
+										<stop
+											offset="5%"
+											stopColor="var(--chart-1)"
+											stopOpacity={0.8}
+										/>
+										<stop
+											offset="95%"
+											stopColor="var(--chart-1)"
+											stopOpacity={0.1}
+										/>
+									</linearGradient>
+									<linearGradient
+										id="fillVisitors"
+										x1="0"
+										y1="0"
+										x2="0"
+										y2="1">
+										<stop
+											offset="5%"
+											stopColor="var(--chart-4)"
+											stopOpacity={0.8}
+										/>
+										<stop
+											offset="95%"
+											stopColor="var(--chart-4)"
+											stopOpacity={0.1}
+										/>
+									</linearGradient>
+								</defs>
+								<CartesianGrid vertical={false} />
+								<XAxis
+									dataKey="date"
+									tickLine={false}
+									axisLine={false}
+									tickMargin={8}
+									minTickGap={32}
+									tickFormatter={(value) => {
+										const date = new Date(value);
+										return date.toLocaleDateString(
+											"en-US",
+											{
 												month: "short",
 												day: "numeric",
-											})
-										}
-										indicator="dot"
+											},
+										);
+									}}
+								/>
+								<YAxis tickLine={false} axisLine={false} />
+								<ChartTooltip
+									cursor={false}
+									content={
+										<ChartTooltipContent
+											labelFormatter={(value) =>
+												new Date(
+													value,
+												).toLocaleDateString(
+													"en-US",
+													{
+														month: "short",
+														day: "numeric",
+													},
+												)
+											}
+											indicator="dot"
+										/>
+									}
+								/>
+								{showVisitors && (
+									<Area
+										dataKey="visitors"
+										type="natural"
+										fill="url(#fillVisitors)"
+										stroke="var(--chart-4)"
+										fillOpacity={0.3}
 									/>
-								}
-							/>
-							{showVisitors && (
-								<Area
-									dataKey="visitors"
-									type="natural"
-									fill="url(#fillVisitors)"
-									stroke="var(--chart-4)"
-									fillOpacity={0.3}
-								/>
-							)}
-							{showChats && (
-								<Bar
-									dataKey="chats"
-									fill="var(--chart-1)"
-									radius={[8, 8, 0, 0]}
-									barSize={24}
-									fillOpacity={0.8}
-								/>
-							)}
-						</ComposedChart>
-					</ChartContainer>
+								)}
+								{showChats && (
+									<Bar
+										dataKey="chats"
+										fill="var(--chart-1)"
+										radius={[8, 8, 0, 0]}
+										barSize={24}
+										fillOpacity={0.8}
+									/>
+								)}
+							</ComposedChart>
+						</ChartContainer>
+					)}
 				</CardContent>
 			</div>
 		</div>

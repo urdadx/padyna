@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../index";
 import { db } from "@padyna/db";
-import { eq, and, desc } from "drizzle-orm";
-import { chatbot } from "@padyna/db/schema/index";
+import { eq, and, desc, count } from "drizzle-orm";
+import { chatbot, organization } from "@padyna/db/schema/index";
 import { setActiveSessionContext } from "@padyna/db/set-active-session-context";
 import { nanoid } from "nanoid";
 
@@ -68,7 +68,24 @@ export const agentsettingsRouter = router({
         throw new Error("No active organization");
       }
 
-      const embedToken = `pd_${nanoid(12)}`;
+      const [org] = await db.select().from(organization).where(eq(organization.id, organizationId));
+
+      if (!org) {
+        throw new Error("Organization not found");
+      }
+
+      const [chatbotCountResult] = await db
+        .select({ chatbotCount: count() })
+        .from(chatbot)
+        .where(eq(chatbot.organizationId, organizationId));
+
+      const chatbotCount = chatbotCountResult?.chatbotCount ?? 0;
+
+      if (chatbotCount >= org.maxChatbots) {
+        throw new Error(`Your plan includes ${org.maxChatbots} chatbots. Upgrade to create more.`);
+      }
+
+      const embedToken = `padyna_${nanoid(16)}`;
 
       const [created] = await db
         .insert(chatbot)
@@ -200,4 +217,17 @@ export const agentsettingsRouter = router({
 
       return { success: true };
     }),
+  getChatbotsCount: protectedProcedure.query(async ({ ctx }) => {
+    const organizationId = ctx.session.session.activeOrganization;
+    if (!organizationId) {
+      throw new Error("No active organization");
+    }
+
+    const [result] = await db
+      .select({ chatbotCount: count() })
+      .from(chatbot)
+      .where(eq(chatbot.organizationId, organizationId));
+
+    return result?.chatbotCount ?? 0;
+  }),
 });

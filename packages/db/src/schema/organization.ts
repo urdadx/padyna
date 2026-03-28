@@ -9,7 +9,11 @@ export const organization = pgTable("organization", {
   createdAt: timestamp("created_at").notNull(),
   metadata: text("metadata"),
   externalCustomerId: uuid("external_customer_id").unique(),
-  chatbotCount: integer("chatbot_count").default(1).notNull(),
+  maxChatbots: integer("max_chatbots").default(1).notNull(),
+  maxMembers: integer("max_members").default(1).notNull(),
+  maxDataSourceSize: integer("max_data_source_size")
+    .default(50 * 1024 * 1024)
+    .notNull(),
 });
 
 export const member = pgTable(

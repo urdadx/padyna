@@ -20,6 +20,7 @@
     "@padyna/env": "workspace:*",
     "@padyna/store": "workspace:*",
     "@polar-sh/better-auth": "catalog:",
+    "@polar-sh/sdk": "^0.42.5",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@remixicon/react": "^4.9.0",

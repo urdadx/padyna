@@ -15,6 +15,7 @@ export const env = createEnv({
     VITE_EXTRA_MESSAGE_CREDITS_ADDON: z.string().optional(),
     VITE_REMOVE_BRANDING_ADDON: z.string().optional(),
     VITE_EXTRA_TEAM_MEMBER_ADDON: z.string().optional(),
+    VITE_POLAR_ACCESS_TOKEN: z.string(),
   },
   runtimeEnv: (import.meta as any).env,
   emptyStringAsUndefined: true,
