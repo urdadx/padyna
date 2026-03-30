@@ -2,39 +2,171 @@ import { Button } from "../ui/button";
 import { CheckMarkIcon } from "@/assets/icons/checkmark-icon";
 import { RoutingLinear } from "@/assets/icons/routing-icon";
 import { SiderbarLinear } from "@/assets/icons/sidebar-icon";
-import { SolarStarLinear } from "@/assets/icons/star-icon";
+import { SolarStarLinear, SolarStarBold } from "@/assets/icons/star-icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { trpc, queryClient } from "@/utils/trpc";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 
-export const ChatHeader = () => {
+interface ChatHeaderProps {
+	conversationId?: string;
+	isHighPriority?: boolean;
+	status?: "opened" | "escalated" | "closed" | "assigned";
+}
+
+export const ChatHeader = ({
+	conversationId,
+	isHighPriority = false,
+	status = "opened",
+}: ChatHeaderProps) => {
+	const isClosed = status === "closed";
+	const newStatus = isClosed ? "opened" : "closed";
+	const isEscalated = status === "escalated";
+
+	const updatePriorityMutation = useMutation({
+		...trpc.conversations.updatePriority.mutationOptions(),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: trpc.conversations.getById.queryOptions({ id: conversationId! })
+					.queryKey,
+			});
+			queryClient.invalidateQueries({
+				queryKey: trpc.conversations.getAll.queryOptions().queryKey,
+			});
+			toast.success(
+				isHighPriority ? "Removed priority from chat" : "Marked as priority",
+			);
+		},
+		onError: () => {
+			toast.error("Failed to update priority. Please try again.");
+		},
+	});
+
+	const toggleStatusMutation = useMutation({
+		...trpc.conversations.updateStatus.mutationOptions(),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: trpc.conversations.getById.queryOptions({ id: conversationId! })
+					.queryKey,
+			});
+			queryClient.invalidateQueries({
+				queryKey: trpc.conversations.getAll.queryOptions().queryKey,
+			});
+			toast.success(isClosed ? "Chat marked as opened" : "Chat marked as closed");
+		},
+		onError: () => {
+			toast.error("Failed to update status. Please try again.");
+		},
+	});
+
+	const escalateMutation = useMutation({
+		...trpc.conversations.updateStatus.mutationOptions(),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: trpc.conversations.getById.queryOptions({ id: conversationId! })
+					.queryKey,
+			});
+			queryClient.invalidateQueries({
+				queryKey: trpc.conversations.getAll.queryOptions().queryKey,
+			});
+			toast.success("Chat escalated to a human agent");
+		},
+		onError: () => {
+			toast.error("Failed to escalate. Please try again.");
+		},
+	});
+
 	return (
-		<div className="px-2 sticky rounded-t-2xl top-0 flex justify-between h-14 shrink-0 items-center bg-background/50 backdrop-blur-lg border-b transition-[width,height] ease-linear z-10 group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+		<div className="px-2 sticky rounded-t-2xl top-0 flex justify-between h-14 shrink-0 items-center bg-background/50 backdrop-blur-lg border-b transition-[width,height] ease-linear z-10 group-has-data/[collapsible=icon]/sidebar-wrapper:h-12">
 			<div></div>
 
 			<div className="flex items-center gap-2">
 				<Tooltip>
-					<TooltipContent>Mark as priority</TooltipContent>
+					<TooltipContent>
+						{isHighPriority ? "Remove priority" : "Mark as priority"}
+					</TooltipContent>
 					<TooltipTrigger>
-						<Button variant="outline" size="icon" className="rounded-full">
-							<SolarStarLinear className="h-4 w-4" />
+						<Button
+							variant="outline"
+							size="icon"
+							className="rounded-full"
+							onClick={() =>
+								conversationId &&
+								updatePriorityMutation.mutate({
+									id: conversationId,
+									isHighPriority: !isHighPriority,
+								})
+							}
+							disabled={
+								!conversationId || updatePriorityMutation.isPending
+							}>
+							{isHighPriority ? (
+								<SolarStarBold
+									color="#fbbf24"
+									className="h-4 w-4"
+								/>
+							) : (
+								<SolarStarLinear className="h-4 w-4" />
+							)}
 						</Button>
 					</TooltipTrigger>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger>
-						<Button variant="outline" size="icon" className="rounded-full">
-							<RoutingLinear className="h-4 w-4" />
+						<Button
+							variant="outline"
+							size="icon"
+							className="rounded-full"
+							onClick={() =>
+								conversationId &&
+								escalateMutation.mutate({
+									id: conversationId,
+									status: isEscalated ? "opened" : "escalated",
+								})
+							}
+							disabled={
+								!conversationId ||
+								escalateMutation.isPending ||
+								isClosed
+							}>
+							<RoutingLinear
+								className={
+									isEscalated ? "h-4 w-4 text-white" : "h-4 w-4"
+								}
+							/>
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Escalate to human agent</TooltipContent>
+					<TooltipContent>
+						{isEscalated ? "De-escalate" : "Escalate to human agent"}
+					</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger>
-						<Button className="rounded-3xl">
-							<CheckMarkIcon color="white" className="h-4 w-4" />
-							Close
+						<Button
+							variant={isClosed ? "outline" : "default"}
+							className="rounded-3xl"
+							onClick={() =>
+								conversationId &&
+								toggleStatusMutation.mutate({
+									id: conversationId,
+									status: newStatus,
+								})
+							}
+							disabled={
+								!conversationId || toggleStatusMutation.isPending
+							}>
+							<>
+								<CheckMarkIcon
+									color={isClosed ? "green" : "white"}
+									className="h-4 w-4"
+								/>
+								{isClosed ? "Open" : "Close"}
+							</>
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Mark chat as closed</TooltipContent>
+					<TooltipContent>
+						{isClosed ? "Mark chat as open" : "Mark chat as closed"}
+					</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger>

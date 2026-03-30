@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { trpc } from "@/utils/trpc";
@@ -12,17 +12,14 @@ const numberFormatter = new Intl.NumberFormat("en-US");
 export function TeamLimits() {
 	const isMobile = useIsMobile();
 
-	const { data: orgLimits } = useSuspenseQuery(
-		trpc.subscription.getOrganizationLimits.queryOptions(),
-	);
-
-	const { data: chatbotsCount = 0 } = useSuspenseQuery(
-		trpc.agentsettings.getChatbotsCount.queryOptions(),
-	);
-
-	const { data: memberCount = 0 } = useSuspenseQuery(
-		trpc.subscription.getMemberCount.queryOptions(),
-	);
+	const [{ data: orgLimits }, { data: chatbotsCount = 0 }, { data: memberCount = 0 }] =
+		useSuspenseQueries({
+			queries: [
+				trpc.subscription.getOrganizationLimits.queryOptions(),
+				trpc.agentsettings.getChatbotsCount.queryOptions(),
+				trpc.subscription.getMemberCount.queryOptions(),
+			],
+		});
 
 	const usageLimits = [
 		{

@@ -52,7 +52,7 @@ function SuccessPage() {
 										whileTap={{ scale: 0.98 }}
 										className="relative w-full">
 										<Button className="w-full text-sm sm:text-base h-10">
-											Go to Dashboard
+											Go to dashboard
 										</Button>
 									</motion.div>
 								</Link>

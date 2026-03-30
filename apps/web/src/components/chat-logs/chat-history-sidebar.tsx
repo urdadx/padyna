@@ -11,11 +11,9 @@ import {
 	DropdownMenuRadioItem,
 	DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import * as React from "react";
 
-type FilterOption = "all" | "escalated" | "opened" | "closed" | "assigned";
-
-type SortOption = "recent" | "oldest" | "priority";
+export type FilterOption = "all" | "escalated" | "opened" | "closed" | "assigned";
+export type SortOption = "recent" | "oldest" | "priority";
 
 const FILTER_OPTIONS: { label: string; value: FilterOption }[] = [
 	{ label: "All", value: "all" },
@@ -36,6 +34,10 @@ interface ChatHistorySidebarProps {
 	onSelect: (id: string) => void;
 	onDeleted?: () => void;
 	className?: string;
+	filter: FilterOption;
+	onFilterChange: (filter: FilterOption) => void;
+	sort: SortOption;
+	onSortChange: (sort: SortOption) => void;
 }
 
 export const ChatHistorySidebar = ({
@@ -43,10 +45,12 @@ export const ChatHistorySidebar = ({
 	onSelect,
 	onDeleted,
 	className,
+	filter,
+	onFilterChange,
+	sort,
+	onSortChange,
 }: ChatHistorySidebarProps) => {
 	const { data: conversations } = useSuspenseQuery(trpc.conversations.getAll.queryOptions());
-	const [filter, setFilter] = React.useState<FilterOption>("all");
-	const [sort, setSort] = React.useState<SortOption>("recent");
 
 	const currentFilter = FILTER_OPTIONS.find((f) => f.value === filter);
 	const currentSort = SORT_OPTIONS.find((s) => s.value === sort);
@@ -66,29 +70,35 @@ export const ChatHistorySidebar = ({
 						<DropdownMenuContent className="w-full max-w-md" align="end">
 							<DropdownMenuRadioGroup
 								value={filter}
-								onValueChange={(v) => setFilter(v as FilterOption)}>
+								onValueChange={(v) =>
+									onFilterChange(v as FilterOption)
+								}>
 								{FILTER_OPTIONS.map((option) => (
-                  <DropdownMenuRadioItem
-                    key={option.value}
-                    value={option.value}>
-                    <div
-                      className={cn(
-                        "rounded-full w-2 h-2",
-                        option.value === "all"
-                          ? "bg-black"
-                          : option.value === "opened"
-                          ? "bg-green-500"
-                          : option.value === "escalated"
-                          ? "bg-blue-500"
-                          : option.value === "closed"
-                          ? "bg-red-500"
-                          : option.value === "assigned"
-                          ? "bg-yellow-500"
-                          : "bg-gray-500",
-                      )}
-                    />
-                    {option.label}
-                  </DropdownMenuRadioItem>
+									<DropdownMenuRadioItem
+										key={option.value}
+										value={option.value}>
+										<div
+											className={cn(
+												"rounded-full w-2 h-2",
+												option.value === "all"
+													? "bg-black"
+													: option.value ===
+														  "opened"
+														? "bg-green-500"
+														: option.value ===
+															  "escalated"
+															? "bg-blue-500"
+															: option.value ===
+																  "closed"
+																? "bg-red-500"
+																: option.value ===
+																	  "assigned"
+																	? "bg-yellow-500"
+																	: "bg-gray-500",
+											)}
+										/>
+										{option.label}
+									</DropdownMenuRadioItem>
 								))}
 							</DropdownMenuRadioGroup>
 						</DropdownMenuContent>
@@ -103,7 +113,9 @@ export const ChatHistorySidebar = ({
 						<DropdownMenuContent className="w-full max-w-md" align="end">
 							<DropdownMenuRadioGroup
 								value={sort}
-								onValueChange={(v) => setSort(v as SortOption)}>
+								onValueChange={(v) =>
+									onSortChange(v as SortOption)
+								}>
 								{SORT_OPTIONS.map((option) => (
 									<DropdownMenuRadioItem
 										key={option.value}

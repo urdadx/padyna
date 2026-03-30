@@ -120,7 +120,6 @@ async function getOrCreateConversation(input: {
   metadata?: Record<string, unknown>;
   conversationId?: string;
 }) {
-  // If conversationId is provided, check if it exists
   if (input.conversationId) {
     const [existing] = await db
       .select({ id: chatConversation.id })
@@ -145,7 +144,6 @@ async function getOrCreateConversation(input: {
     return input.conversationId;
   }
 
-  // Original logic for finding existing or creating new
   const existing = await db
     .select({ id: chatConversation.id })
     .from(chatConversation)

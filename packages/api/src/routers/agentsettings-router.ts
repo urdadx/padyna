@@ -82,7 +82,7 @@ export const agentsettingsRouter = router({
       const chatbotCount = chatbotCountResult?.chatbotCount ?? 0;
 
       if (chatbotCount >= org.maxChatbots) {
-        throw new Error(`Your plan includes ${org.maxChatbots} chatbots. Upgrade to create more.`);
+        throw new Error(`You have reached the maximum number of agents for your plan.`);
       }
 
       const embedToken = `padyna_${nanoid(16)}`;

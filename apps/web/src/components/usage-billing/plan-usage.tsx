@@ -6,40 +6,29 @@ import { Dialog, DialogTrigger } from "../ui/dialog";
 import { Drawer, DrawerTrigger } from "../ui/drawer";
 import { AddOnsDialog } from "./add-ons-dialog";
 import { polarClient } from "@/lib/polar-client";
-import { useSession } from "@/lib/auth-client";
-import { PLAN_PRODUCT_IDS } from "@/lib/plan-slugs";
 import { formatFileSize } from "@/lib/utils";
 import { trpc } from "@/utils/trpc";
+import { planNameMap } from "@/lib/plan-slugs";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 
-const planNameMap: Record<string, string> = {
-	[PLAN_PRODUCT_IDS.starter.monthly ?? ""]: "Starter",
-	[PLAN_PRODUCT_IDS.starter.yearly ?? ""]: "Starter",
-	[PLAN_PRODUCT_IDS.growth.monthly ?? ""]: "Growth",
-	[PLAN_PRODUCT_IDS.growth.yearly ?? ""]: "Growth",
-	[PLAN_PRODUCT_IDS.professional.monthly ?? ""]: "Professional",
-	[PLAN_PRODUCT_IDS.professional.yearly ?? ""]: "Professional",
-};
-
 export function PlanUsage() {
 	const isMobile = useIsMobile();
-	const { data: session } = useSession();
-
-	const { data: customerState } = useSuspenseQuery({
-		queryKey: ["customerState", session?.user.id],
-		queryFn: async () => {
-			if (!session?.user.id) return null;
-			const result = await polarClient.customers.getStateExternal({
-				externalId: session.user.id,
-			});
-			return result;
-		},
-	});
 
 	const { data: orgLimits } = useSuspenseQuery(
 		trpc.subscription.getOrganizationLimits.queryOptions(),
 	);
+
+	const { data: customerState } = useSuspenseQuery({
+		queryKey: ["customerState", orgLimits?.externalCustomerId],
+		queryFn: async () => {
+			if (!orgLimits?.externalCustomerId) return null;
+			const result = await polarClient.customers.getStateExternal({
+				externalId: orgLimits.externalCustomerId,
+			});
+			return result;
+		},
+	});
 
 	const { data: totalDatasourceSize = 0 } = useSuspenseQuery(
 		trpc.datasource.getTotalSize.queryOptions(),
@@ -77,7 +66,7 @@ export function PlanUsage() {
 				<div className="space-y-5">
 					<div className="space-y-2">
 						<h3 className="text-lg font-semibold tracking-tight text-foreground">
-							{planName ? `${planName} Plan usage` : "Plan usage"}
+							{planName ? `${planName} usage` : "Plan usage"}
 						</h3>
 						<p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
 							{planName

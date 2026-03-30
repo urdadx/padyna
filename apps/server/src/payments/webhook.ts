@@ -30,8 +30,7 @@ async function syncOrganizationLimits(organizationId: string) {
       maxDataSourceSize = Math.max(maxDataSourceSize, planLimits.maxDataSourceSize);
     }
 
-    const addonType = (sub.metadata as Record<string, unknown>)?.addonType as string | undefined;
-    const addonLimits = ADDON_LIMITS[addonType ?? ""];
+    const addonLimits = ADDON_LIMITS[sub.productId ?? ""];
     if (addonLimits) {
       if (addonLimits.maxChatbots) maxChatbots += addonLimits.maxChatbots;
       if (addonLimits.maxMembers) maxMembers += addonLimits.maxMembers;
@@ -100,6 +99,8 @@ polarWebhook.post(
                   : undefined,
                 cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? false,
                 canceledAt: data.canceledAt ? new Date(data.canceledAt) : undefined,
+                trialStart: data.trialStart ? new Date(data.trialStart) : undefined,
+                trialEnd: data.trialEnd ? new Date(data.trialEnd) : undefined,
                 endsAt: data.endsAt ? new Date(data.endsAt) : undefined,
                 endedAt: data.endedAt ? new Date(data.endedAt) : undefined,
                 seats: data.seats,

@@ -3,18 +3,25 @@ import { ChatHistorySidebar } from "@/components/chat-logs/chat-history-sidebar"
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 
+type FilterOption = "all" | "escalated" | "opened" | "closed" | "assigned";
+type SortOption = "recent" | "oldest" | "priority";
+
 export const Route = createFileRoute("/(admin)/chat-logs")({
 	component: RouteComponent,
 	validateSearch: (search) =>
 		z
 			.object({
 				chatId: z.string().optional(),
+				filter: z
+					.enum(["all", "escalated", "opened", "closed", "assigned"])
+					.default("all"),
+				sort: z.enum(["recent", "oldest", "priority"]).default("recent"),
 			})
 			.parse(search),
 });
 
 function RouteComponent() {
-	const { chatId } = Route.useSearch();
+	const { chatId, filter, sort } = Route.useSearch();
 	const navigate = useNavigate({ from: Route.fullPath });
 
 	const setSelectedChatId = (id?: string) => {
@@ -22,6 +29,24 @@ function RouteComponent() {
 			search: (prev) => ({
 				...prev,
 				chatId: id,
+			}),
+		});
+	};
+
+	const setFilter = (newFilter: FilterOption) => {
+		navigate({
+			search: (prev) => ({
+				...prev,
+				filter: newFilter,
+			}),
+		});
+	};
+
+	const setSort = (newSort: SortOption) => {
+		navigate({
+			search: (prev) => ({
+				...prev,
+				sort: newSort,
 			}),
 		});
 	};
@@ -34,6 +59,10 @@ function RouteComponent() {
 					selectedId={chatId}
 					onSelect={setSelectedChatId}
 					onDeleted={() => setSelectedChatId(undefined)}
+					filter={filter ?? "all"}
+					onFilterChange={setFilter}
+					sort={sort ?? "recent"}
+					onSortChange={setSort}
 				/>
 				<ChatConversationPanel
 					chatId={chatId}

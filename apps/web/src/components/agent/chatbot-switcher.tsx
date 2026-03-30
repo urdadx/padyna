@@ -43,7 +43,7 @@ export function ChatbotSwitcher() {
 	const handleSwitchChatbot = (chatbotId: string) => {
 		toast.loading("Switching agent...");
 		switchMutation.mutate(
-			{ chatbotId: chatbotId as `Buffer` },
+			{ chatbotId: chatbotId as string },
 			{
 				onSuccess: async () => {
 					window.location.reload();

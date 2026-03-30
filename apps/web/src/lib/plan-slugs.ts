@@ -21,3 +21,16 @@ export const ADDON_PRODUCT_IDS = {
   chatbot: env.VITE_EXTRA_CHATBOT_ADDON,
   member: env.VITE_EXTRA_TEAM_MEMBER_ADDON,
 } as const;
+
+export const planNameMap: Record<string, string> = {
+  [PLAN_PRODUCT_IDS.starter.monthly ?? ""]: "Starter Plan",
+  [PLAN_PRODUCT_IDS.starter.yearly ?? ""]: "Starter Plan",
+  [PLAN_PRODUCT_IDS.growth.monthly ?? ""]: "Growth Plan",
+  [PLAN_PRODUCT_IDS.growth.yearly ?? ""]: "Growth Plan",
+  [PLAN_PRODUCT_IDS.professional.monthly ?? ""]: "Professional Plan",
+  [PLAN_PRODUCT_IDS.professional.yearly ?? ""]: "Professional Plan",
+  [ADDON_PRODUCT_IDS.chatbot ?? ""]: "Chatbot Add-on",
+  [ADDON_PRODUCT_IDS.messages ?? ""]: "Message Credits Add-on",
+  [ADDON_PRODUCT_IDS.branding ?? ""]: "Branding Add-on",
+  [ADDON_PRODUCT_IDS.member ?? ""]: "Team Member Add-on",
+};

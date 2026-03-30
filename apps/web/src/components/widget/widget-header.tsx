@@ -36,7 +36,7 @@ export const WidgetHeader = ({ chatbot, isLoading, onReset }: WidgetHeaderProps)
 								backgroundColor: chatbot?.primaryColor || "#6366f1",
 								color: "white",
 							}}>
-							{chatbot?.name?.charAt(0) || "P"}
+							{chatbot?.name?.charAt(0) || "A"}
 						</AvatarFallback>
 					</Avatar>
 				)}
@@ -45,7 +45,7 @@ export const WidgetHeader = ({ chatbot, isLoading, onReset }: WidgetHeaderProps)
 						<Skeleton className="h-4 w-24" />
 					) : (
 						<p className="text-sm font-medium capitalize tracking-tight">
-							{chatbot?.name || "Padyna"}
+							{chatbot?.name || "AI Support Agent"}
 						</p>
 					)}
 				</div>

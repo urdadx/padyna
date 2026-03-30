@@ -180,7 +180,7 @@ export const AddOnsDialog = ({
 							</div>
 							<div>
 								<h3 className="text-base font-sans text-gray-900">
-									Extra AI chatbot
+									Extra AI agent
 								</h3>
 							</div>
 						</div>

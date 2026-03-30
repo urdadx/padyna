@@ -3,7 +3,7 @@ import { SourcesOverview } from "@/components/analytics/sources-overview";
 import { MostRecentConversations } from "@/components/overview/most-recent-conversations";
 import { Metrics } from "@/components/overview/metrics";
 import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/(admin)/overview")({
@@ -11,13 +11,14 @@ export const Route = createFileRoute("/(admin)/overview")({
 });
 
 function RouteComponent() {
-  const { data: metricsData } = useSuspenseQuery(trpc.metrics.getOverview.queryOptions());
-  const { data: recentConversations } = useSuspenseQuery(
-    trpc.conversations.getRecent.queryOptions({ limit: 5 }),
-  );
-  const { data: sourcesData } = useSuspenseQuery(
-    trpc.datasource.getMostReferenced.queryOptions({ timeRange: "24h", limit: 10 }),
-  );
+  const [{ data: metricsData }, { data: recentConversations }, { data: sourcesData }] =
+    useSuspenseQueries({
+      queries: [
+        trpc.metrics.getOverview.queryOptions(),
+        trpc.conversations.getRecent.queryOptions({ limit: 5 }),
+        trpc.datasource.getMostReferenced.queryOptions({ timeRange: "24h", limit: 10 }),
+      ],
+    });
 
   return (
     <div className="relative p-4 md:p-6 w-full max-w-7xl mx-auto space-y-6 overflow-x-hidden">

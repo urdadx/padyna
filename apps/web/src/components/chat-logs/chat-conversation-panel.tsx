@@ -17,6 +17,7 @@ import {
 	PromptInputActions,
 	PromptInputAction,
 } from "../ai-elements/prompt-input";
+import { useState } from "react";
 
 interface ChatConversationPanelProps {
 	chatId?: string;
@@ -24,10 +25,16 @@ interface ChatConversationPanelProps {
 }
 
 export const ChatConversationPanel = ({ chatId, className }: ChatConversationPanelProps) => {
+	const [inputValue, setInputValue] = useState("");
 	const { data: messages, isLoading } = useQuery({
 		...trpc.conversations.getMessages.queryOptions({ conversationId: chatId! }),
 		enabled: !!chatId,
 		refetchOnMount: true,
+	});
+
+	const { data: conversation } = useQuery({
+		...trpc.conversations.getById.queryOptions({ id: chatId! }),
+		enabled: !!chatId,
 	});
 
 	if (!chatId) {
@@ -44,7 +51,11 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 
 	return (
 		<div className={cn("flex min-w-0 flex-col h-full", className)}>
-			<ChatHeader />
+			<ChatHeader 
+				conversationId={chatId} 
+				isHighPriority={conversation?.isHighPriority ?? false}
+				status={conversation?.status ?? "opened"}
+			/>
 			<ChatContainerRoot optimize className="flex-1 min-w-0 w-full smooth-div">
 				<ChatContainerContent className="px-4">
 					<div className="flex w-full min-w-0 flex-col gap-4 mb-10 my-3 overflow-x-hidden">
@@ -73,7 +84,7 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 					<ChatContainerScrollAnchor />
 				</ChatContainerContent>
 				<div className="bg-background p-1.5 rounded-2xl">
-					<PromptInput value="" className="w-full ">
+					<PromptInput value={inputValue} onValueChange={setInputValue} className="w-full ">
 						<PromptInputTextarea placeholder="Type your message..." />
 						<PromptInputActions className="justify-end pt-2">
 							<PromptInputAction tooltip={"Send message"}>

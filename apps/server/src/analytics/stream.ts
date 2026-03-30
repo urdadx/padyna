@@ -102,6 +102,25 @@ analyticsStreamRoutes.get("/overview", async (c) => {
 
   return streamSSE(c, async (stream) => {
     let id = 0;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const clearStreamTimeout = () => {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+        timeoutId = undefined;
+      }
+    };
+
+    timeoutId = setTimeout(() => {
+      console.log("[analytics/overview] Stream timeout reached, closing stream");
+      clearStreamTimeout();
+      stream.close();
+    }, 120_000);
+
+    stream.onAbort(() => {
+      console.log("[analytics/overview] Client closed connection");
+      clearStreamTimeout();
+    });
 
     const sendData = async () => {
       const data = await fetchOverview(chatbotId, timeRange);

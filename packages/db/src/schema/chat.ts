@@ -57,6 +57,7 @@ export const chatConversation = pgTable(
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
     assignedTo: uuid("assigned_to").references(() => user.id, { onDelete: "set null" }),
     deletedAt: timestamp("deleted_at"),
+    isHighPriority: boolean("is_high_priority").default(false).notNull(),
   },
   (table) => [
     index("chat_conversation_chatbot_id_idx").on(table.chatbotId),

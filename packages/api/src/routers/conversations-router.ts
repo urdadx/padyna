@@ -27,6 +27,31 @@ export const conversationsRouter = router({
     return result;
   }),
 
+  getById: protectedProcedure
+    .input(
+      z.object({
+        id: z.uuid(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const organizationId = ctx.session.session.activeOrganization;
+      if (!organizationId) {
+        throw new Error("No active organization");
+      }
+
+      const [conversation] = await db
+        .select()
+        .from(chatConversation)
+        .where(eq(chatConversation.id, input.id))
+        .limit(1);
+
+      if (!conversation || conversation.organizationId !== organizationId) {
+        throw new Error("Conversation not found");
+      }
+
+      return conversation;
+    }),
+
   getMessages: protectedProcedure
     .input(
       z.object({
@@ -118,6 +143,78 @@ export const conversationsRouter = router({
       await db.delete(chatConversation).where(eq(chatConversation.id, input.id));
 
       return { success: true };
+    }),
+
+  updateStatus: protectedProcedure
+    .input(
+      z.object({
+        id: z.uuid(),
+        status: z.enum(["opened", "escalated", "closed", "assigned"]),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const organizationId = ctx.session.session.activeOrganization;
+      if (!organizationId) {
+        throw new Error("No active organization");
+      }
+
+      const existing = await db
+        .select()
+        .from(chatConversation)
+        .where(eq(chatConversation.id, input.id))
+        .limit(1);
+
+      const record = existing[0];
+      if (!record || record.organizationId !== organizationId) {
+        throw new Error("Conversation not found");
+      }
+
+      const [updated] = await db
+        .update(chatConversation)
+        .set({
+          status: input.status,
+          updatedAt: new Date(),
+        })
+        .where(eq(chatConversation.id, input.id))
+        .returning();
+
+      return updated;
+    }),
+
+  updatePriority: protectedProcedure
+    .input(
+      z.object({
+        id: z.uuid(),
+        isHighPriority: z.boolean(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const organizationId = ctx.session.session.activeOrganization;
+      if (!organizationId) {
+        throw new Error("No active organization");
+      }
+
+      const existing = await db
+        .select()
+        .from(chatConversation)
+        .where(eq(chatConversation.id, input.id))
+        .limit(1);
+
+      const record = existing[0];
+      if (!record || record.organizationId !== organizationId) {
+        throw new Error("Conversation not found");
+      }
+
+      const [updated] = await db
+        .update(chatConversation)
+        .set({
+          isHighPriority: input.isHighPriority,
+          updatedAt: new Date(),
+        })
+        .where(eq(chatConversation.id, input.id))
+        .returning();
+
+      return updated;
     }),
   getConversationCount: protectedProcedure.query(async ({ ctx }) => {
     const organizationId = ctx.session.session.activeOrganization;
