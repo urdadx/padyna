@@ -154,6 +154,7 @@ export function UserSubscriptions() {
 																)
 															}>
 															Cancel
+															subscription
 														</Button>
 													)}
 												</div>

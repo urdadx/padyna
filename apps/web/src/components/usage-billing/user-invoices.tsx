@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import Spinner from "../ui/spinner";
+import { cn } from "@/lib/utils";
 
 function formatCurrency(amount: number, currency: string): string {
 	return new Intl.NumberFormat("en-US", {
@@ -74,14 +75,24 @@ export function UserInvoices() {
 								<div className="col-span-3">
 									{formatDate(order.createdAt)}
 								</div>
-								<div className="col-span-3 font-mono">
-									{order.invoiceNumber}
-								</div>
+
 								<div className="col-span-3 font-medium">
 									{formatCurrency(
 										order.totalAmount,
 										order.currency,
 									)}
+								</div>
+								<div className="flex items-center gap-2 text-sm capitalize text-muted-foreground col-span-3 justify-center">
+									{" "}
+									<div
+										className={cn(
+											"rounded-full w-2 h-2 shrink-0",
+											order.paid === true
+												? "bg-green-500"
+												: "bg-red-800",
+										)}
+									/>
+									<span className="w-16">{order.status}</span>
 								</div>
 								<div className="col-span-3 flex justify-end">
 									<Button
