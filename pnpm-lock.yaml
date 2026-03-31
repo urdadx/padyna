@@ -90,6 +90,9 @@ importers:
       '@padyna/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@padyna/email-templates':
+        specifier: workspace:*
+        version: link:../../packages/email-templates
       '@padyna/env':
         specifier: workspace:*
         version: link:../../packages/env

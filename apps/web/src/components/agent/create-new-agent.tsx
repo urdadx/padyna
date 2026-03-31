@@ -133,10 +133,7 @@ export const CreateNewAgent = ({ open, onOpenChange }: CreateNewAgentProps) => {
 				</DialogContent>
 			</Dialog>
 			<Dialog open={openAddonsDialog} onOpenChange={setOpenAddonsDialog}>
-				<AddOnsDialog
-					defaultValue="chatbot"
-					isMobile={false}
-				/>
+				<AddOnsDialog defaultValue="chatbot" isMobile={false} />
 			</Dialog>
 		</>
 	);

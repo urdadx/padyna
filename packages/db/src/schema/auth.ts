@@ -14,6 +14,7 @@ export const user = pgTable("user", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
   externalId: text("external_id").unique(),
+  role: text("role").default("admin").notNull(),
   isSubscribed: boolean("is_subscribed")
     .notNull()
     .$defaultFn(() => false),

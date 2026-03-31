@@ -1,12 +1,15 @@
 import { tool } from "ai";
 import { db } from "@padyna/db";
-import { chatConversation } from "@padyna/db/schema/chat";
+import { chatConversation, member, user } from "@padyna/db/schema/index";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { resendClient } from "@padyna/api/lib/email";
+import { EscalationEmail } from "@padyna/email-templates";
 
 interface CreateEscalateToHumanToolInput {
   chatbotId: string;
   organizationId: string;
+  chatbotName?: string;
 }
 
 export function EscalateToHumanTool(input: CreateEscalateToHumanToolInput) {
@@ -50,6 +53,30 @@ export function EscalateToHumanTool(input: CreateEscalateToHumanToolInput) {
             },
           })
           .where(eq(chatConversation.id, conversationId));
+
+        const members = await db
+          .select({
+            email: user.email,
+          })
+          .from(member)
+          .innerJoin(user, eq(member.userId, user.id))
+          .where(eq(member.organizationId, input.organizationId));
+
+        if (members.length > 0) {
+          const emailBatch = members.map((m) => ({
+            from: "Padyna <escalation@padyna.com>",
+            to: [m.email],
+            subject: `🚨 Conversation Escalated - ${reason || "Human attention needed"}`,
+            react: EscalationEmail({
+              chatId: conversationId,
+              reason: reason || "other",
+              chatbotName: input.chatbotName || "Your Chatbot",
+              summary,
+            }),
+          }));
+
+          await resendClient.batch.send(emailBatch);
+        }
       }
 
       return {

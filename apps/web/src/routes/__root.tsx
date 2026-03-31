@@ -5,7 +5,6 @@ import type { trpc } from "@/utils/trpc";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import "../index.css";
 import type { inferRouterOutputs } from "@trpc/server";
@@ -56,7 +55,7 @@ function RootComponent() {
 				</div>
 				<Toaster />
 			</ThemeProvider>
-			<TanStackRouterDevtools position="bottom-left" />
+			{/* <TanStackRouterDevtools position="bottom-left" /> */}
 			{/* <ReactQueryDevtools position="bottom" buttonPosition="bottom-left" /> */}
 		</>
 	);

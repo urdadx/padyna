@@ -17,6 +17,7 @@
     "@padyna/api": "workspace:*",
     "@padyna/auth": "workspace:*",
     "@padyna/db": "workspace:*",
+    "@padyna/email-templates": "workspace:*",
     "@padyna/env": "workspace:*",
     "@polar-sh/hono": "^0.5.5",
     "@trpc/server": "catalog:",

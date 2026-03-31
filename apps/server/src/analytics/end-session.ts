@@ -25,7 +25,8 @@ endSessionRoute.post("/api/analytics/session-end", async (c) => {
     sessionId = formData.sessionId as string | undefined;
     chatbotId = formData.chatbotId as string | undefined;
     durationMs = formData.durationMs ? Number(formData.durationMs) : undefined;
-    isBounce = formData.isBounce === "true" ? true : formData.isBounce === "false" ? false : undefined;
+    isBounce =
+      formData.isBounce === "true" ? true : formData.isBounce === "false" ? false : undefined;
   }
 
   if (!sessionId || !chatbotId) {

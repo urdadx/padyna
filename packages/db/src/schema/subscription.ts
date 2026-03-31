@@ -18,7 +18,9 @@ export const subscription = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    organizationId: text("organization_id").references(() => organization.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id").references(() => organization.id, {
+      onDelete: "cascade",
+    }),
 
     polarSubscriptionId: text("polar_subscription_id").notNull().unique(),
     customerId: text("customer_id").notNull(),

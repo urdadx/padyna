@@ -32,6 +32,7 @@ export function createSupportChatAgent(input: CreateSupportChatAgentInput) {
       escalate_to_human: cached(
         EscalateToHumanTool({
           chatbotId: input.chatbotId,
+          chatbotName: input.chatbotName,
           organizationId: input.organizationId,
         }),
       ),

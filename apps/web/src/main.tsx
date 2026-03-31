@@ -6,22 +6,20 @@ import { queryClient, trpc } from "./utils/trpc";
 import { GlobalLoader } from "./components/global-loader";
 
 async function prepare() {
-	return queryClient.fetchQuery(trpc.auth.getSession.queryOptions());
+  return queryClient.fetchQuery(trpc.auth.getSession.queryOptions());
 }
 
 prepare().then((session) => {
-	const router = createRouter({
-		routeTree,
-		defaultPreload: "intent",
-		defaultPendingComponent: GlobalLoader,
-		scrollRestoration: true,
-		context: { trpc, queryClient, session },
-		Wrap: ({ children }) => (
-			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-		),
-	});
+  const router = createRouter({
+    routeTree,
+    defaultPreload: "intent",
+    defaultPendingComponent: GlobalLoader,
+    scrollRestoration: true,
+    context: { trpc, queryClient, session },
+    Wrap: ({ children }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    ),
+  });
 
-	ReactDOM.createRoot(document.getElementById("app")!).render(
-		<RouterProvider router={router} />,
-	);
+  ReactDOM.createRoot(document.getElementById("app")!).render(<RouterProvider router={router} />);
 });

@@ -129,7 +129,7 @@ app.post("/api/accept-invitation/:invitationId", async (c) => {
       if (session?.user) {
         await db
           .update(schema.user)
-          .set({ isSubscribed: true, emailVerified: true })
+          .set({ isSubscribed: true, emailVerified: true, role: "member" })
           .where(eq(schema.user.id, session.user.id));
       }
       if (session?.session) {

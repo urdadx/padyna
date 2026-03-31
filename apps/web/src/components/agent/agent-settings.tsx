@@ -14,7 +14,7 @@ import { Switch } from "../ui/switch";
 
 import { TrashBinLinear } from "@/assets/icons/trash-icon";
 import { UploadLinear } from "@/assets/icons/upload-icon";
-import { useSession } from "@/lib/auth-client";
+import { useRouteContext } from "@tanstack/react-router";
 import { queryClient, trpc } from "@/utils/trpc";
 import { AgentLoadingSkeleton } from "./agent-loading-skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
@@ -28,7 +28,7 @@ export const AGENT_USECASES = [
 type Usecase = (typeof AGENT_USECASES)[number]["value"];
 
 export function AgentSettingsPanel() {
-	const { data: session } = useSession();
+	const { session } = useRouteContext({ from: "/(admin)" });
 	const chatbotId = session?.session.activeChatbot;
 
 	const { data: chatbot, isLoading } = useQuery({

@@ -228,12 +228,8 @@
           "name": "analytics_daily_chatbot_id_chatbot_id_fk",
           "tableFrom": "analytics_daily",
           "tableTo": "chatbot",
-          "columnsFrom": [
-            "chatbot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chatbot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -389,12 +385,8 @@
           "name": "analytics_monthly_chatbot_id_chatbot_id_fk",
           "tableFrom": "analytics_monthly",
           "tableTo": "chatbot",
-          "columnsFrom": [
-            "chatbot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chatbot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -559,12 +551,8 @@
           "name": "analytics_weekly_chatbot_id_chatbot_id_fk",
           "tableFrom": "analytics_weekly",
           "tableTo": "chatbot",
-          "columnsFrom": [
-            "chatbot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chatbot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -682,12 +670,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -787,12 +771,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -800,12 +780,8 @@
           "name": "session_active_chatbot_chatbot_id_fk",
           "tableFrom": "session",
           "tableTo": "chatbot",
-          "columnsFrom": [
-            "active_chatbot"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["active_chatbot"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -815,9 +791,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -894,16 +868,12 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "user_external_id_unique": {
           "name": "user_external_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "external_id"
-          ]
+          "columns": ["external_id"]
         }
       },
       "policies": {},
@@ -1120,12 +1090,8 @@
           "name": "chat_conversation_chatbot_id_chatbot_id_fk",
           "tableFrom": "chat_conversation",
           "tableTo": "chatbot",
-          "columnsFrom": [
-            "chatbot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chatbot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1133,12 +1099,8 @@
           "name": "chat_conversation_organization_id_organization_id_fk",
           "tableFrom": "chat_conversation",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1146,12 +1108,8 @@
           "name": "chat_conversation_user_id_user_id_fk",
           "tableFrom": "chat_conversation",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1159,12 +1117,8 @@
           "name": "chat_conversation_assigned_to_user_id_fk",
           "tableFrom": "chat_conversation",
           "tableTo": "user",
-          "columnsFrom": [
-            "assigned_to"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assigned_to"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1331,12 +1285,8 @@
           "name": "chat_message_conversation_id_chat_conversation_id_fk",
           "tableFrom": "chat_message",
           "tableTo": "chat_conversation",
-          "columnsFrom": [
-            "conversation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["conversation_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1344,12 +1294,8 @@
           "name": "chat_message_chatbot_id_chatbot_id_fk",
           "tableFrom": "chat_message",
           "tableTo": "chatbot",
-          "columnsFrom": [
-            "chatbot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chatbot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1357,12 +1303,8 @@
           "name": "chat_message_organization_id_organization_id_fk",
           "tableFrom": "chat_message",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1370,12 +1312,8 @@
           "name": "chat_message_user_id_user_id_fk",
           "tableFrom": "chat_message",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1421,12 +1359,8 @@
           "name": "vote_chatbot_id_chatbot_id_fk",
           "tableFrom": "vote",
           "tableTo": "chatbot",
-          "columnsFrom": [
-            "chatbot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chatbot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1434,10 +1368,7 @@
       "compositePrimaryKeys": {
         "vote_chat_id_message_id_pk": {
           "name": "vote_chat_id_message_id_pk",
-          "columns": [
-            "chat_id",
-            "message_id"
-          ]
+          "columns": ["chat_id", "message_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1603,12 +1534,8 @@
           "name": "chatbot_organization_id_organization_id_fk",
           "tableFrom": "chatbot",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1618,9 +1545,7 @@
         "chatbot_embed_token_unique": {
           "name": "chatbot_embed_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "embed_token"
-          ]
+          "columns": ["embed_token"]
         }
       },
       "policies": {},
@@ -1825,12 +1750,8 @@
           "name": "datasource_chunks_datasource_id_datasources_id_fk",
           "tableFrom": "datasource_chunks",
           "tableTo": "datasources",
-          "columnsFrom": [
-            "datasource_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["datasource_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1838,12 +1759,8 @@
           "name": "datasource_chunks_chatbot_id_chatbot_id_fk",
           "tableFrom": "datasource_chunks",
           "tableTo": "chatbot",
-          "columnsFrom": [
-            "chatbot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chatbot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1851,12 +1768,8 @@
           "name": "datasource_chunks_organization_id_organization_id_fk",
           "tableFrom": "datasource_chunks",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2182,12 +2095,8 @@
           "name": "datasources_chatbot_id_chatbot_id_fk",
           "tableFrom": "datasources",
           "tableTo": "chatbot",
-          "columnsFrom": [
-            "chatbot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chatbot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2195,12 +2104,8 @@
           "name": "datasources_organization_id_organization_id_fk",
           "tableFrom": "datasources",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2305,12 +2210,8 @@
           "name": "member_organization_id_organization_id_fk",
           "tableFrom": "member",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2318,12 +2219,8 @@
           "name": "member_user_id_user_id_fk",
           "tableFrom": "member",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2409,16 +2306,12 @@
         "organization_slug_unique": {
           "name": "organization_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         },
         "organization_external_customer_id_unique": {
           "name": "organization_external_customer_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "external_customer_id"
-          ]
+          "columns": ["external_customer_id"]
         }
       },
       "policies": {},
@@ -2715,12 +2608,8 @@
           "name": "visitor_sessions_chatbot_id_chatbot_id_fk",
           "tableFrom": "visitor_sessions",
           "tableTo": "chatbot",
-          "columnsFrom": [
-            "chatbot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chatbot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2921,12 +2810,8 @@
           "name": "visitor_events_session_id_visitor_sessions_id_fk",
           "tableFrom": "visitor_events",
           "tableTo": "visitor_sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2934,12 +2819,8 @@
           "name": "visitor_events_chatbot_id_chatbot_id_fk",
           "tableFrom": "visitor_events",
           "tableTo": "chatbot",
-          "columnsFrom": [
-            "chatbot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chatbot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3192,12 +3073,8 @@
           "name": "subscription_user_id_user_id_fk",
           "tableFrom": "subscription",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3205,12 +3082,8 @@
           "name": "subscription_organization_id_organization_id_fk",
           "tableFrom": "subscription",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3220,9 +3093,7 @@
         "subscription_polar_subscription_id_unique": {
           "name": "subscription_polar_subscription_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "polar_subscription_id"
-          ]
+          "columns": ["polar_subscription_id"]
         }
       },
       "policies": {},

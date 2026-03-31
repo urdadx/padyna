@@ -7,8 +7,8 @@ import { datasources, datasourceChunks } from "@padyna/db/schema/index";
 const timeRangeSchema = z.enum(["24h", "7d", "30d", "90d"]).default("24h");
 
 const paginatedInput = z.object({
-	timeRange: timeRangeSchema,
-	limit: z.number().min(1).max(100).default(10),
+  timeRange: timeRangeSchema,
+  limit: z.number().min(1).max(100).default(10),
 });
 
 export const datasourceRouter = router({

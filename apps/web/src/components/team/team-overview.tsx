@@ -4,14 +4,16 @@ import { Label } from "../ui/label";
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { Skeleton } from "../ui/skeleton";
 import { UploadLinear } from "@/assets/icons/upload-icon";
-import { authClient, useSession } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
+import { useRouteContext } from "@tanstack/react-router";
+import { trpc, queryClient } from "@/utils/trpc";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 export function TeamOverview() {
-	const { data: session, isPending } = useSession();
+	const { session } = useRouteContext({ from: "/(admin)" });
 	const activeOrganizationId = session?.session.activeOrganization;
-	const { data: organizations } = authClient.useListOrganizations();
+	const { data: organizations, isPending } = authClient.useListOrganizations();
 
 	const activeOrganization = organizations?.find((org) => org.id === activeOrganizationId);
 
@@ -74,8 +76,10 @@ function TeamForm({ activeOrganization }: { activeOrganization: any }) {
 		if (error) {
 			console.error("Failed to update organization", error);
 			toast.warning("Failed to update team. Please try again.");
+		} else {
+			await queryClient.invalidateQueries(trpc.auth.getSession.queryOptions());
+			toast.success("Changes saved");
 		}
-		toast.success("Changes saved");
 	};
 
 	return (
