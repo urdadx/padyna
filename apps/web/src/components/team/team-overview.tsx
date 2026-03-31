@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { Skeleton } from "../ui/skeleton";
@@ -9,10 +8,19 @@ import { useRouteContext } from "@tanstack/react-router";
 import { trpc, queryClient } from "@/utils/trpc";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { Input } from "../ui/input";
+
+interface TeamFormProps {
+	activeOrganization: any;
+	isAdmin: boolean;
+}
 
 export function TeamOverview() {
 	const { session } = useRouteContext({ from: "/(admin)" });
 	const activeOrganizationId = session?.session.activeOrganization;
+	const isAdmin = session?.user.role === "admin";
+
 	const { data: organizations, isPending } = authClient.useListOrganizations();
 
 	const activeOrganization = organizations?.find((org) => org.id === activeOrganizationId);
@@ -47,10 +55,10 @@ export function TeamOverview() {
 		);
 	}
 
-	return <TeamForm activeOrganization={activeOrganization} />;
+	return <TeamForm activeOrganization={activeOrganization} isAdmin={isAdmin} />;
 }
 
-function TeamForm({ activeOrganization }: { activeOrganization: any }) {
+function TeamForm({ activeOrganization, isAdmin }: TeamFormProps) {
 	const [teamName, setTeamName] = useState(activeOrganization.name || "");
 	const [updatedImage, setUpdatedImage] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -109,32 +117,49 @@ function TeamForm({ activeOrganization }: { activeOrganization: any }) {
 								className="hidden"
 								accept="image/*"
 							/>
-
-							<Button
-								className="font-normal text-gray-800"
-								variant="outline"
-								onClick={() => fileInputRef.current?.click()}
-								size="sm">
-								<UploadLinear className="mr-1 h-4 w-4" />
-								Change avatar
-							</Button>
+							<Tooltip>
+								<TooltipTrigger>
+									<Button
+										disabled={!isAdmin}
+										className="font-normal text-gray-800"
+										variant="outline"
+										onClick={() =>
+											fileInputRef.current?.click()
+										}
+										size="sm">
+										<UploadLinear className="mr-1 h-4 w-4" />
+										Change avatar
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>Only admins can change the team avatar.</p>
+								</TooltipContent>
+							</Tooltip>
 						</div>
 					</div>
 					<div className="flex flex-col gap-2 py-4">
 						<Label className="text-sm text-muted-foreground">
 							Team Name
 						</Label>
-						<Input
-							type="text"
-							className="h-8 w-full bg-white outline-2"
-							value={teamName}
-							onChange={(e) => setTeamName(e.target.value)}
-						/>
+						<Tooltip>
+							<TooltipTrigger>
+								<Input
+									disabled={!isAdmin}
+									type="text"
+									className="h-8 w-full bg-white outline-2"
+									value={teamName}
+									onChange={(e) => setTeamName(e.target.value)}
+								/>
+							</TooltipTrigger>
+							<TooltipContent>
+								<p>Only admins can edit the team name.</p>
+							</TooltipContent>
+						</Tooltip>
 					</div>
 				</div>
 			</div>
 			<div className="border-t border-border bg-gray-50 p-3 px-4 sm:px-6 rounded-b-2xl">
-				<Button onClick={handleSave} size="sm">
+				<Button disabled={!isAdmin} onClick={handleSave} size="sm">
 					Save{" "}
 				</Button>
 			</div>

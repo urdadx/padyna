@@ -42,7 +42,7 @@ export const EditMemberDetails = ({
 	member,
 }: EditMemberDetailsProps) => {
 	const [role, setRole] = useState("");
-	const { session } = useRouteContext({ from: "/(admin)" } as any);
+	const { session } = useRouteContext({ from: "/(admin)" });
 	const queryClient = useQueryClient();
 	const organizationId = session?.session.activeOrganization || undefined;
 
