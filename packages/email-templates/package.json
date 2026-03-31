@@ -1,0 +1,15 @@
+{
+  "name": "@padyna/email-templates",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "check-types": "echo 'skipping typecheck for email-templates'"
+  },
+  "dependencies": {
+    "@react-email/components": "^1.0.10",
+    "hono": "catalog:",
+    "react": "^19.0.0"
+  }
+}

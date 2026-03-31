@@ -16,6 +16,7 @@ export const env = createEnv({
     VITE_REMOVE_BRANDING_ADDON: z.string().optional(),
     VITE_EXTRA_TEAM_MEMBER_ADDON: z.string().optional(),
     VITE_POLAR_ACCESS_TOKEN: z.string(),
+    VITE_FRONTEND_ORIGIN: z.url().default("http://localhost:3001"),
   },
   runtimeEnv: (import.meta as any).env,
   emptyStringAsUndefined: true,

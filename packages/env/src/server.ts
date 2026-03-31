@@ -23,6 +23,7 @@ export const env = createEnv({
     EXTRA_CHATBOT_ADDON: z.string().optional(),
     EXTRA_TEAM_MEMBER_ADDON: z.string().optional(),
     POLAR_API_URL: z.url().default("https://sandbox-api.polar.sh/v1"),
+    RESEND_API_KEY: z.string().min(1).optional(),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

@@ -1,10 +1,18 @@
-import { createAgentUIStreamResponse } from "ai";
+import {
+  createAgentUIStreamResponse,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+} from "ai";
 import { db } from "@padyna/db";
-import { chatbot, chatMessage } from "@padyna/db/schema/index";
+import { chatbot, chatConversation, chatMessage } from "@padyna/db/schema/index";
 import { eq, asc } from "drizzle-orm";
 import { Hono } from "hono";
 import { createSupportChatAgent } from "../chat";
-import { getUserMetadataFromRequest, persistConversationMessages } from "../chat/chat-utils";
+import {
+  getConversationStatus,
+  getUserMetadataFromRequest,
+  persistConversationMessages,
+} from "../chat/chat-utils";
 
 type PublicWidgetChatbot = {
   id: string;
@@ -153,7 +161,17 @@ widgetRoutes.post("/:widgetId/init", async (c) => {
   const { conversationId } = await c.req.json();
 
   let messages: any[] = [];
+  let conversationStatus: string | null = null;
+
   if (conversationId) {
+    const [conversation] = await db
+      .select({ status: chatConversation.status })
+      .from(chatConversation)
+      .where(eq(chatConversation.id, conversationId))
+      .limit(1);
+
+    conversationStatus = conversation?.status ?? null;
+
     const rows = await db
       .select({
         messageId: chatMessage.messageId,
@@ -180,6 +198,7 @@ widgetRoutes.post("/:widgetId/init", async (c) => {
       isEnabled: chatbotRecord.isEnabled,
     },
     messages,
+    conversationStatus,
   });
 });
 
@@ -216,7 +235,7 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
     title = textPart?.text;
   }
 
-  await persistConversationMessages({
+  const targetConversationId = await persistConversationMessages({
     chatbotId: chatbotRecord.id,
     organizationId: chatbotRecord.organizationId,
     userId: undefined,
@@ -225,6 +244,21 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
     title,
     conversationId,
   });
+
+  if (targetConversationId) {
+    const status = await getConversationStatus(targetConversationId);
+    if (status === "escalated" || status === "closed") {
+      const stream = createUIMessageStream({
+        originalMessages: uiMessages,
+        execute: async ({ writer }) => {
+          writer.write({
+            type: "finish",
+          });
+        },
+      });
+      return createUIMessageStreamResponse({ stream });
+    }
+  }
 
   const agent = createSupportChatAgent({
     chatbotId: chatbotRecord.id,

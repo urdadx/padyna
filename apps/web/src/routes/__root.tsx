@@ -5,12 +5,18 @@ import type { trpc } from "@/utils/trpc";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import "../index.css";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "@padyna/api/routers/index";
+
+type RouterOutputs = inferRouterOutputs<AppRouter>;
 
 export interface RouterAppContext {
 	trpc: typeof trpc;
 	queryClient: QueryClient;
+	session: RouterOutputs["auth"]["getSession"];
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
@@ -50,7 +56,7 @@ function RootComponent() {
 				</div>
 				<Toaster />
 			</ThemeProvider>
-			{/* <TanStackRouterDevtools position="bottom-left" /> */}
+			<TanStackRouterDevtools position="bottom-left" />
 			{/* <ReactQueryDevtools position="bottom" buttonPosition="bottom-left" /> */}
 		</>
 	);

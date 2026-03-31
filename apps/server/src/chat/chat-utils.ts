@@ -241,10 +241,10 @@ export async function persistConversationMessages(input: {
   title?: string;
   metadata?: Record<string, unknown>;
   conversationId?: string;
-}) {
+}): Promise<string | undefined> {
   const normalizedMessages = normalizeIncomingMessages(input.messages);
   if (normalizedMessages.length === 0) {
-    return;
+    return undefined;
   }
 
   const targetConversationId = await getOrCreateConversation({
@@ -321,6 +321,8 @@ export async function persistConversationMessages(input: {
     .update(chatConversation)
     .set({ updatedAt: new Date() })
     .where(eq(chatConversation.id, targetConversationId));
+
+  return targetConversationId;
 }
 
 export async function clearConversationMessages(input: {
@@ -454,6 +456,19 @@ export function detectDeviceFromUserAgent(userAgent: string): DeviceInfo {
   }
 
   return result;
+}
+
+export async function getConversationStatus(conversationId: string) {
+  try {
+    const [conversation] = await db
+      .select({ status: chatConversation.status })
+      .from(chatConversation)
+      .where(eq(chatConversation.id, conversationId))
+      .limit(1);
+    return conversation?.status ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export const getUserMetadataFromRequest = (c: any) => {

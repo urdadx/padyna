@@ -4,6 +4,9 @@ import { createContext } from "@padyna/api/context";
 import { appRouter } from "@padyna/api/routers/index";
 import { auth } from "@padyna/auth";
 import { env } from "@padyna/env/server";
+import { db } from "@padyna/db";
+import * as schema from "@padyna/db/schema/index";
+import { eq, and, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -29,6 +32,133 @@ app.use(
 );
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+
+app.get("/api/accept-invitation/:invitationId", async (c) => {
+  const invitationId = c.req.param("invitationId");
+  const cookieHeader = c.req.header("Cookie") || "";
+
+  try {
+    const response = await auth.api.getInvitation({
+      headers: { cookie: cookieHeader },
+      query: { id: invitationId },
+    });
+
+    if (!response) {
+      return c.redirect(`${env.CORS_ORIGIN}/invitation/invalid`);
+    }
+
+    const invitation = response;
+
+    if (invitation.status !== "pending") {
+      if (invitation.status === "accepted") {
+        return c.redirect(`${env.CORS_ORIGIN}/invitation/already-accepted`);
+      }
+      return c.redirect(`${env.CORS_ORIGIN}/invitation/expired`);
+    }
+
+    if (new Date(invitation.expiresAt) < new Date()) {
+      return c.redirect(`${env.CORS_ORIGIN}/invitation/expired`);
+    }
+
+    const sessionCookie = cookieHeader.includes("better-auth.session_token");
+
+    if (sessionCookie) {
+      await auth.api.acceptInvitation({
+        headers: { cookie: cookieHeader },
+        body: { invitationId },
+      });
+      return c.redirect(`${env.CORS_ORIGIN}/playground?invitation=accepted`);
+    }
+
+    return c.redirect(`${env.CORS_ORIGIN}/register?invitationId=${invitationId}`);
+  } catch (error: any) {
+    console.error("Error processing invitation:", error);
+
+    if (error.status === "UNAUTHORIZED" || error.statusCode === 401) {
+      return c.redirect(`${env.CORS_ORIGIN}/register?invitationId=${invitationId}`);
+    }
+
+    return c.redirect(`${env.CORS_ORIGIN}/invitation/error`);
+  }
+});
+
+app.post("/api/accept-invitation/:invitationId", async (c) => {
+  const invitationId = c.req.param("invitationId");
+  const cookieHeader = c.req.header("Cookie") || "";
+
+  try {
+    const invitation = await auth.api.getInvitation({
+      headers: { cookie: cookieHeader },
+      query: { id: invitationId },
+    });
+
+    if (!invitation) {
+      return c.json({ success: false, error: "Invitation not found" }, { status: 404 });
+    }
+
+    const [organizationChatbot] = await db
+      .select()
+      .from(schema.chatbot)
+      .where(eq(schema.chatbot.organizationId, invitation.organizationId))
+      .limit(1);
+
+    const organizationId = invitation.organizationId;
+    const chatbotId = organizationChatbot?.id || null;
+
+    await auth.api.acceptInvitation({
+      headers: { cookie: cookieHeader },
+      body: { invitationId },
+    });
+
+    const orgSubscription = await db
+      .select()
+      .from(schema.subscription)
+      .where(
+        and(
+          eq(schema.subscription.organizationId, organizationId),
+          inArray(schema.subscription.status, ["active", "trialing"]),
+        ),
+      )
+      .limit(1);
+
+    if (orgSubscription.length > 0) {
+      const session = await auth.api.getSession({
+        headers: { cookie: cookieHeader },
+      });
+
+      if (session?.user) {
+        await db
+          .update(schema.user)
+          .set({ isSubscribed: true, emailVerified: true })
+          .where(eq(schema.user.id, session.user.id));
+      }
+      if (session?.session) {
+        await db
+          .update(schema.session)
+          .set({
+            activeOrganization: organizationId,
+            activeChatbot: chatbotId,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.session.userId, session.user.id));
+      }
+    }
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error accepting invitation:", error);
+    const errorCode = error.body?.code || error.code || null;
+    const statusCode = error.statusCode || error.status === "FORBIDDEN" ? 403 : 400;
+    return c.json(
+      {
+        success: false,
+        error: error.body?.message || error.message || "Failed to accept invitation",
+        code: errorCode,
+      },
+      { status: statusCode },
+    );
+  }
+});
 
 app.route("/api/ingestion", ingestionRoutes);
 app.route("/api/chat", chatRoutes);

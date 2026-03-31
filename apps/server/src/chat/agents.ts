@@ -1,6 +1,7 @@
 // import { anthropic } from "@ai-sdk/anthropic";
 import { ToolLoopAgent, stepCountIs } from "ai";
 import { KnowledgeBaseTool } from "./knowledge-base-tool";
+import { EscalateToHumanTool } from "./escalate-tool";
 import { type AgentUseCase, getAgentPrompt } from "./prompt";
 import { createCached } from "@ai-sdk-tools/cache";
 import { openai } from "@ai-sdk/openai";
@@ -24,6 +25,12 @@ export function createSupportChatAgent(input: CreateSupportChatAgentInput) {
     tools: {
       knowledge_base: cached(
         KnowledgeBaseTool({
+          chatbotId: input.chatbotId,
+          organizationId: input.organizationId,
+        }),
+      ),
+      escalate_to_human: cached(
+        EscalateToHumanTool({
           chatbotId: input.chatbotId,
           organizationId: input.organizationId,
         }),

@@ -7,7 +7,6 @@ import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
 import { MarkdownCodeBlock } from "./agent-components/code-block";
-import { VoteBlock } from "./vote-block";
 import { Fragment } from "react";
 import { FeedbackBar } from "./feedback-bar";
 
@@ -79,9 +78,13 @@ export const PreviewMessages = ({
 				(p: any) =>
 					p.type === "tool-knowledge_base" && p.state !== "output-available",
 			);
+			const isEscalating = parts.some(
+				(p: any) =>
+					p.type === "tool-escalate_to_human" && p.state !== "output-available",
+			);
 
 			if (isSearchingDocs) return "Searching...";
-
+			if (isEscalating) return "Escalating to a human...";
 			return "Thinking...";
 		};
 

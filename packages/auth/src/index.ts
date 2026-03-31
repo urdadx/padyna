@@ -12,6 +12,10 @@ import { chatbot, session, user } from "@padyna/db/schema/index";
 import { polarClient } from "./lib/payments";
 import { eq } from "drizzle-orm";
 import { polar, portal } from "@polar-sh/better-auth";
+import { Resend } from "resend";
+import { OrganizationInvitationEmail } from "@padyna/email-templates";
+
+const resend = new Resend(env.RESEND_API_KEY!);
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -26,6 +30,14 @@ export const auth = betterAuth({
         required: false,
         defaultValue: false,
         input: false,
+      },
+    },
+    deleteUser: {
+      enabled: true,
+      afterDelete: async (user) => {
+        await polarClient.customers.deleteExternal({
+          externalId: user.id,
+        });
       },
     },
   },
@@ -143,6 +155,20 @@ export const auth = betterAuth({
             });
           }
         },
+      },
+      async sendInvitationEmail(data) {
+        const inviteLink = `${env.BETTER_AUTH_URL}/api/accept-invitation/${data.id}`;
+        await resend.emails.send({
+          from: "Padyna <invitation@padyna.com>",
+          to: [data.email],
+          subject: `You've been invited to join ${data.organization.name}`,
+          react: OrganizationInvitationEmail({
+            invitedByUsername: data.inviter.user.name,
+            invitedByEmail: data.inviter.user.email,
+            teamName: data.organization.name,
+            inviteLink,
+          }),
+        });
       },
     }),
     polar({

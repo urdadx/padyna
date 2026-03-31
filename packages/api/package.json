@@ -13,12 +13,14 @@
   "dependencies": {
     "@padyna/auth": "workspace:*",
     "@padyna/db": "workspace:*",
+    "@padyna/email-templates": "workspace:*",
     "@padyna/env": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "dotenv": "catalog:",
     "drizzle-orm": "^0.45.1",
     "nanoid": "^5.1.6",
+    "resend": "^6.10.0",
     "zod": "catalog:"
   },
   "devDependencies": {

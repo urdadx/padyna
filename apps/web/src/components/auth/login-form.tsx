@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate, Link, useSearch } from "@tanstack/react-router";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import {
@@ -17,9 +17,15 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { motion } from "motion/react";
 import Spinner from "../ui/spinner";
+import { queryClient, trpc } from "@/utils/trpc";
+import { env } from "@padyna/env/web";
 
 export default function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
 	const navigate = useNavigate();
+
+	const { invitationId } = useSearch({
+		from: "/login",
+	});
 
 	const form = useForm({
 		defaultValues: {
@@ -33,11 +39,45 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
 					password: value.password,
 				},
 				{
-					onSuccess: () => {
-						navigate({
-							to: "/overview",
-						});
-						toast.success("Signed In");
+					onSuccess: async () => {
+						if (invitationId) {
+							try {
+								const response = await fetch(
+									`${env.VITE_SERVER_URL}/api/accept-invitation/${invitationId}`,
+									{
+										method: "POST",
+										credentials: "include",
+									},
+								);
+								if (response.ok) {
+									await queryClient.invalidateQueries(
+										trpc.auth.getSession.queryOptions(),
+									);
+									window.location.href = `${env.VITE_FRONTEND_ORIGIN}/playground?invitation=accepted`;
+								} else {
+									const data = await response.json();
+									if (
+										data.code ===
+										"YOU_ARE_NOT_THE_RECIPIENT_OF_THE_INVITATION"
+									) {
+										toast.error(
+											"The invitation was sent to a different email address. Please use the invited email to sign in.",
+										);
+										return;
+									}
+									toast.error(
+										data.error ||
+											"Failed to accept invitation",
+									);
+									navigate({ to: "/playground" });
+								}
+							} catch {
+								navigate({ to: "/playground" });
+							}
+						} else {
+							navigate({ to: "/playground" });
+							toast.success("Signed In");
+						}
 					},
 					onError: (error) => {
 						toast.error(error.error.message || error.error.statusText);
@@ -78,7 +118,7 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
 								id={field.name}
 								name={field.name}
 								type="email"
-								placeholder="m@example.com"
+								placeholder="brett@example.com"
 								value={field.state.value}
 								onBlur={field.handleBlur}
 								onChange={(e) => field.handleChange(e.target.value)}
@@ -138,7 +178,12 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
 					</Button>
 					<FieldDescription className="px-6 text-center">
 						Don't have an account?{" "}
-						<Link to="/register">Create an account</Link>
+						<Link
+							to="/register"
+							search={{ invitationId }}
+							className="text-primary underline-offset-4 hover:underline">
+							Create an account
+						</Link>
 					</FieldDescription>
 				</Field>
 			</FieldGroup>

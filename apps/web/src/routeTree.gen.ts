@@ -16,7 +16,12 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as adminRouteRouteImport } from './routes/(admin)/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
+import { Route as InvitationIndexRouteImport } from './routes/invitation/index'
 import { Route as OnboardingPricingRouteImport } from './routes/onboarding/pricing'
+import { Route as InvitationInvalidRouteImport } from './routes/invitation/invalid'
+import { Route as InvitationExpiredRouteImport } from './routes/invitation/expired'
+import { Route as InvitationErrorRouteImport } from './routes/invitation/error'
+import { Route as InvitationAlreadyAcceptedRouteImport } from './routes/invitation/already-accepted'
 import { Route as adminWorkflowsRouteImport } from './routes/(admin)/workflows'
 import { Route as adminTextRouteImport } from './routes/(admin)/text'
 import { Route as adminSettingsRouteImport } from './routes/(admin)/settings'
@@ -63,11 +68,37 @@ const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
   path: '/onboarding/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InvitationIndexRoute = InvitationIndexRouteImport.update({
+  id: '/invitation/',
+  path: '/invitation/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingPricingRoute = OnboardingPricingRouteImport.update({
   id: '/onboarding/pricing',
   path: '/onboarding/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InvitationInvalidRoute = InvitationInvalidRouteImport.update({
+  id: '/invitation/invalid',
+  path: '/invitation/invalid',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvitationExpiredRoute = InvitationExpiredRouteImport.update({
+  id: '/invitation/expired',
+  path: '/invitation/expired',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvitationErrorRoute = InvitationErrorRouteImport.update({
+  id: '/invitation/error',
+  path: '/invitation/error',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvitationAlreadyAcceptedRoute =
+  InvitationAlreadyAcceptedRouteImport.update({
+    id: '/invitation/already-accepted',
+    path: '/invitation/already-accepted',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const adminWorkflowsRoute = adminWorkflowsRouteImport.update({
   id: '/workflows',
   path: '/workflows',
@@ -141,7 +172,12 @@ export interface FileRoutesByFullPath {
   '/settings': typeof adminSettingsRoute
   '/text': typeof adminTextRoute
   '/workflows': typeof adminWorkflowsRoute
+  '/invitation/already-accepted': typeof InvitationAlreadyAcceptedRoute
+  '/invitation/error': typeof InvitationErrorRoute
+  '/invitation/expired': typeof InvitationExpiredRoute
+  '/invitation/invalid': typeof InvitationInvalidRoute
   '/onboarding/pricing': typeof OnboardingPricingRoute
+  '/invitation/': typeof InvitationIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
 }
 export interface FileRoutesByTo {
@@ -161,7 +197,12 @@ export interface FileRoutesByTo {
   '/settings': typeof adminSettingsRoute
   '/text': typeof adminTextRoute
   '/workflows': typeof adminWorkflowsRoute
+  '/invitation/already-accepted': typeof InvitationAlreadyAcceptedRoute
+  '/invitation/error': typeof InvitationErrorRoute
+  '/invitation/expired': typeof InvitationExpiredRoute
+  '/invitation/invalid': typeof InvitationInvalidRoute
   '/onboarding/pricing': typeof OnboardingPricingRoute
+  '/invitation': typeof InvitationIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
 }
 export interface FileRoutesById {
@@ -183,7 +224,12 @@ export interface FileRoutesById {
   '/(admin)/settings': typeof adminSettingsRoute
   '/(admin)/text': typeof adminTextRoute
   '/(admin)/workflows': typeof adminWorkflowsRoute
+  '/invitation/already-accepted': typeof InvitationAlreadyAcceptedRoute
+  '/invitation/error': typeof InvitationErrorRoute
+  '/invitation/expired': typeof InvitationExpiredRoute
+  '/invitation/invalid': typeof InvitationInvalidRoute
   '/onboarding/pricing': typeof OnboardingPricingRoute
+  '/invitation/': typeof InvitationIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
 }
 export interface FileRouteTypes {
@@ -205,7 +251,12 @@ export interface FileRouteTypes {
     | '/settings'
     | '/text'
     | '/workflows'
+    | '/invitation/already-accepted'
+    | '/invitation/error'
+    | '/invitation/expired'
+    | '/invitation/invalid'
     | '/onboarding/pricing'
+    | '/invitation/'
     | '/onboarding/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -225,7 +276,12 @@ export interface FileRouteTypes {
     | '/settings'
     | '/text'
     | '/workflows'
+    | '/invitation/already-accepted'
+    | '/invitation/error'
+    | '/invitation/expired'
+    | '/invitation/invalid'
     | '/onboarding/pricing'
+    | '/invitation'
     | '/onboarding'
   id:
     | '__root__'
@@ -246,7 +302,12 @@ export interface FileRouteTypes {
     | '/(admin)/settings'
     | '/(admin)/text'
     | '/(admin)/workflows'
+    | '/invitation/already-accepted'
+    | '/invitation/error'
+    | '/invitation/expired'
+    | '/invitation/invalid'
     | '/onboarding/pricing'
+    | '/invitation/'
     | '/onboarding/'
   fileRoutesById: FileRoutesById
 }
@@ -257,7 +318,12 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   SuccessRoute: typeof SuccessRoute
   WidgetRoute: typeof WidgetRoute
+  InvitationAlreadyAcceptedRoute: typeof InvitationAlreadyAcceptedRoute
+  InvitationErrorRoute: typeof InvitationErrorRoute
+  InvitationExpiredRoute: typeof InvitationExpiredRoute
+  InvitationInvalidRoute: typeof InvitationInvalidRoute
   OnboardingPricingRoute: typeof OnboardingPricingRoute
+  InvitationIndexRoute: typeof InvitationIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
 }
 
@@ -312,11 +378,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/invitation/': {
+      id: '/invitation/'
+      path: '/invitation'
+      fullPath: '/invitation/'
+      preLoaderRoute: typeof InvitationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding/pricing': {
       id: '/onboarding/pricing'
       path: '/onboarding/pricing'
       fullPath: '/onboarding/pricing'
       preLoaderRoute: typeof OnboardingPricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invitation/invalid': {
+      id: '/invitation/invalid'
+      path: '/invitation/invalid'
+      fullPath: '/invitation/invalid'
+      preLoaderRoute: typeof InvitationInvalidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invitation/expired': {
+      id: '/invitation/expired'
+      path: '/invitation/expired'
+      fullPath: '/invitation/expired'
+      preLoaderRoute: typeof InvitationExpiredRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invitation/error': {
+      id: '/invitation/error'
+      path: '/invitation/error'
+      fullPath: '/invitation/error'
+      preLoaderRoute: typeof InvitationErrorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invitation/already-accepted': {
+      id: '/invitation/already-accepted'
+      path: '/invitation/already-accepted'
+      fullPath: '/invitation/already-accepted'
+      preLoaderRoute: typeof InvitationAlreadyAcceptedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(admin)/workflows': {
@@ -438,7 +539,12 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   SuccessRoute: SuccessRoute,
   WidgetRoute: WidgetRoute,
+  InvitationAlreadyAcceptedRoute: InvitationAlreadyAcceptedRoute,
+  InvitationErrorRoute: InvitationErrorRoute,
+  InvitationExpiredRoute: InvitationExpiredRoute,
+  InvitationInvalidRoute: InvitationInvalidRoute,
   OnboardingPricingRoute: OnboardingPricingRoute,
+  InvitationIndexRoute: InvitationIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
 }
 export const routeTree = rootRouteImport

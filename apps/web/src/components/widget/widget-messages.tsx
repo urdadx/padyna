@@ -70,13 +70,18 @@ export const WidgetMessages = ({
 				(p: any) =>
 					p.type === "tool-knowledge_base" && p.state !== "output-available",
 			);
+			const isEscalating = parts.some(
+				(p: any) =>
+					p.type === "tool-escalate_to_human" && p.state !== "output-available",
+			);
 
 			if (isSearchingDocs) return "Searching...";
+			if (isEscalating) return "Escalating to a human...";
 			return "Thinking...";
 		};
 
 		const statusLabel = getStatusLabel();
-		const shouldRenderVoteBlock =
+		const showFeedbackBlock =
 			!isCurrentlyStreaming &&
 			isLastMessage &&
 			message.role === "assistant" &&
@@ -135,7 +140,7 @@ export const WidgetMessages = ({
 					primaryColor={primaryColor}>
 					{!hasVisibleContent && !statusLabel ? null : messageContent}
 				</WidgetMessage>
-				{shouldRenderVoteBlock ? (
+				{showFeedbackBlock ? (
 					<FeedbackBar
 						key={`vote-${message.id}`}
 						messageId={message.id}

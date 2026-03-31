@@ -6,6 +6,7 @@ import { datasourceRouter } from "./datasource-router";
 import { metricsRouter } from "./metrics-router";
 import { subscriptionRouter } from "./subscription-router";
 import { voteRouter } from "./vote-router";
+import { authRouter } from "./auth-router";
 
 export const appRouter = router({
   healthCheck: publicProcedure.query(() => {
@@ -24,5 +25,6 @@ export const appRouter = router({
   metrics: metricsRouter,
   subscription: subscriptionRouter,
   vote: voteRouter,
+  auth: authRouter,
 });
 export type AppRouter = typeof appRouter;

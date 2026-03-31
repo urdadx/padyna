@@ -51,6 +51,7 @@ type WidgetPreviewProps = {
 type InitResponse = {
 	config: WidgetConfig;
 	messages: any[];
+	conversationStatus: string | null;
 };
 
 function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: WidgetPreviewProps) {
@@ -243,6 +244,8 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 	const isStreaming = status === "streaming";
 	const isError = status === "error";
 
+	const isEscalated = initData?.conversationStatus === "escalated";
+
 	const showVoteBlock =
 		messages.length > 0 &&
 		messages[messages.length - 1].role === "assistant" &&
@@ -363,6 +366,21 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 										This widget is currently disabled.
 										Please contact the site administrator
 										for help
+									</h3>
+								</div>
+							</div>
+						)}
+						{isEscalated && (
+							<div className="rounded-md bg-orange-50 p-4">
+								<div className="flex gap-2 items-center">
+									<AlertCircleIcon
+										className="h-5 w-5 shrink-0 text-orange-800"
+										aria-hidden="true"
+									/>
+									<h3 className="text-sm font-sans font-normal text-orange-800">
+										Conversation escalated to a human agent.
+										They will be with you shortly to assist
+										you
 									</h3>
 								</div>
 							</div>

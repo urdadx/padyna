@@ -17,6 +17,7 @@ import { SwitchTeamsDialog } from "./team/switch-teams-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InviteMembers } from "./team/invite-members";
 import { LetterLinear } from "@/assets/icons/letter";
+import { queryClient, trpc } from "@/utils/trpc";
 
 export function NavUser() {
 	const navigate = useNavigate();
@@ -47,7 +48,10 @@ export function NavUser() {
 	const handleLogout = async () => {
 		await authClient.signOut({
 			fetchOptions: {
-				onSuccess: () => {
+				onSuccess: async () => {
+					await queryClient.invalidateQueries(
+						trpc.auth.getSession.queryOptions(),
+					);
 					navigate({
 						to: "/login",
 					});
