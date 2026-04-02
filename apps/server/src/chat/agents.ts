@@ -15,6 +15,8 @@ interface CreateSupportChatAgentInput {
   organizationId: string;
   chatbotName?: string;
   chatbotUseCase?: AgentUseCase;
+  conversationId?: string;
+  userId?: string;
 }
 
 export function createSupportChatAgent(input: CreateSupportChatAgentInput) {
@@ -34,6 +36,8 @@ export function createSupportChatAgent(input: CreateSupportChatAgentInput) {
           chatbotId: input.chatbotId,
           chatbotName: input.chatbotName,
           organizationId: input.organizationId,
+          conversationId: input.conversationId,
+          userId: input.userId,
         }),
       ),
     },

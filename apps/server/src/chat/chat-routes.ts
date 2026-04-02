@@ -11,6 +11,7 @@ import {
   loadConversationMessages,
   persistConversationMessages,
 } from "./chat-utils";
+import { broadcastConversationStatusUpdate } from "./live-chat-service";
 import { db } from "@padyna/db";
 import { chatbot } from "@padyna/db/schema/index";
 import { eq, and } from "drizzle-orm";
@@ -77,7 +78,14 @@ chatRoutes.post("/", async (c) => {
 
   if (targetConversationId) {
     const status = await getConversationStatus(targetConversationId);
-    if (status === "escalated" || status === "closed") {
+    if (status === "escalated" || status === "assigned" || status === "closed") {
+      if (status === "escalated" || status === "assigned") {
+        broadcastConversationStatusUpdate({
+          conversationId: targetConversationId,
+          status,
+        });
+      }
+
       const stream = createUIMessageStream({
         originalMessages: uiMessages,
         execute: async ({ writer }) => {
@@ -95,6 +103,8 @@ chatRoutes.post("/", async (c) => {
     organizationId: activeOrganization,
     chatbotName,
     chatbotUseCase,
+    conversationId: targetConversationId ?? conversationId,
+    userId,
   });
 
   return createAgentUIStreamResponse({

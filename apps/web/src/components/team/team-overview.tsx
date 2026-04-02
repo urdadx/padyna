@@ -117,44 +117,71 @@ function TeamForm({ activeOrganization, isAdmin }: TeamFormProps) {
 								className="hidden"
 								accept="image/*"
 							/>
-							<Tooltip>
-								<TooltipTrigger>
-									<Button
-										disabled={!isAdmin}
-										className="font-normal text-gray-800"
-										variant="outline"
-										onClick={() =>
-											fileInputRef.current?.click()
-										}
-										size="sm">
-										<UploadLinear className="mr-1 h-4 w-4" />
-										Change avatar
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>
-									<p>Only admins can change the team avatar.</p>
-								</TooltipContent>
-							</Tooltip>
+							{!isAdmin ? (
+								<Tooltip>
+									<TooltipTrigger>
+										<Button
+											disabled={!isAdmin}
+											className="font-normal text-gray-800"
+											variant="outline"
+											onClick={() =>
+												fileInputRef.current?.click()
+											}
+											size="sm">
+											<UploadLinear className="mr-1 h-4 w-4" />
+											Change avatar
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>
+										<p>
+											Only admins can change the team
+											avatar.
+										</p>
+									</TooltipContent>
+								</Tooltip>
+							) : (
+								<Button
+									disabled={!isAdmin}
+									className="font-normal text-gray-800"
+									variant="outline"
+									onClick={() => fileInputRef.current?.click()}
+									size="sm">
+									<UploadLinear className="mr-1 h-4 w-4" />
+									Change avatar
+								</Button>
+							)}
 						</div>
 					</div>
 					<div className="flex flex-col gap-2 py-4">
 						<Label className="text-sm text-muted-foreground">
 							Team Name
 						</Label>
-						<Tooltip>
-							<TooltipTrigger>
-								<Input
-									disabled={!isAdmin}
-									type="text"
-									className="h-8 w-full bg-white outline-2"
-									value={teamName}
-									onChange={(e) => setTeamName(e.target.value)}
-								/>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>Only admins can edit the team name.</p>
-							</TooltipContent>
-						</Tooltip>
+						{!isAdmin ? (
+							<Tooltip>
+								<TooltipTrigger>
+									<Input
+										disabled={!isAdmin}
+										type="text"
+										className="h-8 w-full bg-white outline-2"
+										value={teamName}
+										onChange={(e) =>
+											setTeamName(e.target.value)
+										}
+									/>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>Only admins can edit the team name.</p>
+								</TooltipContent>
+							</Tooltip>
+						) : (
+							<Input
+								disabled={!isAdmin}
+								type="text"
+								className="h-8 w-full bg-white outline-2"
+								value={teamName}
+								onChange={(e) => setTeamName(e.target.value)}
+							/>
+						)}
 					</div>
 				</div>
 			</div>

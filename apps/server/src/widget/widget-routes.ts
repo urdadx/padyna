@@ -13,6 +13,22 @@ import {
   getUserMetadataFromRequest,
   persistConversationMessages,
 } from "../chat/chat-utils";
+import { initializeLiveChatConversation } from "../chat/live-chat-service";
+import { broadcastConversationStatusUpdate } from "../chat/live-chat-service";
+
+function getLiveChatToken(metadata: Record<string, unknown> | null | undefined): string | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const token = metadata.liveChatToken;
+  if (typeof token !== "string") {
+    return null;
+  }
+
+  const trimmed = token.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
 
 type PublicWidgetChatbot = {
   id: string;
@@ -162,15 +178,23 @@ widgetRoutes.post("/:widgetId/init", async (c) => {
 
   let messages: any[] = [];
   let conversationStatus: string | null = null;
+  let liveChatToken: string | null = null;
 
   if (conversationId) {
     const [conversation] = await db
-      .select({ status: chatConversation.status })
+      .select({ status: chatConversation.status, metadata: chatConversation.metadata })
       .from(chatConversation)
       .where(eq(chatConversation.id, conversationId))
       .limit(1);
 
     conversationStatus = conversation?.status ?? null;
+
+    if (conversation?.status === "escalated" || conversation?.status === "assigned") {
+      const initialized = await initializeLiveChatConversation({
+        conversationId,
+      });
+      liveChatToken = initialized?.liveChatToken ?? getLiveChatToken(conversation.metadata) ?? null;
+    }
 
     const rows = await db
       .select({
@@ -199,6 +223,7 @@ widgetRoutes.post("/:widgetId/init", async (c) => {
     },
     messages,
     conversationStatus,
+    liveChatToken,
   });
 });
 
@@ -247,7 +272,14 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
 
   if (targetConversationId) {
     const status = await getConversationStatus(targetConversationId);
-    if (status === "escalated" || status === "closed") {
+    if (status === "escalated" || status === "assigned" || status === "closed") {
+      if (status === "escalated" || status === "assigned") {
+        broadcastConversationStatusUpdate({
+          conversationId: targetConversationId,
+          status,
+        });
+      }
+
       const stream = createUIMessageStream({
         originalMessages: uiMessages,
         execute: async ({ writer }) => {
@@ -265,6 +297,7 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
     organizationId: chatbotRecord.organizationId,
     chatbotName: chatbotRecord.name || "AI Assistant",
     chatbotUseCase: chatbotRecord.usecase || "support",
+    conversationId: targetConversationId ?? conversationId,
   });
 
   return createAgentUIStreamResponse({

@@ -79,21 +79,36 @@ export function UserBillingEmail() {
 								notifications.
 							</span>
 						</div>
-						<Tooltip>
-							<TooltipTrigger>
-								<Input
-									disabled={!isAdmin}
-									type="email"
-									className="h-8 w-full bg-gray-200 outline-2"
-									value={email}
-									onChange={(e) => setEmail(e.target.value)}
-									placeholder="billing@example.com"
-								/>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>Only admins can update the billing email.</p>
-							</TooltipContent>
-						</Tooltip>
+						{!isAdmin ? (
+							<Tooltip>
+								<TooltipTrigger>
+									<Input
+										disabled={!isAdmin}
+										type="email"
+										className="h-8 w-full bg-gray-200 outline-2"
+										value={email}
+										onChange={(e) =>
+											setEmail(e.target.value)
+										}
+										placeholder="billing@example.com"
+									/>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>
+										Only admins can update the billing
+										email.
+									</p>
+								</TooltipContent>
+							</Tooltip>
+						) : (
+							<Input
+								type="email"
+								className="h-8 w-full bg-gray-200 outline-2"
+								value={email}
+								onChange={(e) => setEmail(e.target.value)}
+								placeholder="billing@example.com"
+							/>
+						)}
 					</div>
 				</div>
 			</div>

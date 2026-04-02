@@ -75,22 +75,34 @@ export function TeamMembersTable() {
 							<TableCell>
 								<Popover>
 									<PopoverTrigger>
-										<Tooltip>
-											<TooltipTrigger>
-												<Button
-													disabled={!isAdmin}
-													variant="outline"
-													size="sm">
-													<MoreHorizontal className="size-4" />
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>
-												<p>
-													Only admins can edit
-													or remove members.
-												</p>
-											</TooltipContent>
-										</Tooltip>
+										{!isAdmin ? (
+											<Tooltip>
+												<TooltipTrigger>
+													<Button
+														disabled={
+															!isAdmin
+														}
+														variant="outline"
+														size="sm">
+														<MoreHorizontal className="size-4" />
+													</Button>
+												</TooltipTrigger>
+												<TooltipContent>
+													<p>
+														Only admins can
+														edit or remove
+														members.
+													</p>
+												</TooltipContent>
+											</Tooltip>
+										) : (
+											<Button
+												disabled={!isAdmin}
+												variant="outline"
+												size="sm">
+												<MoreHorizontal className="size-4" />
+											</Button>
+										)}
 									</PopoverTrigger>
 									<PopoverContent
 										align="end"
@@ -99,6 +111,7 @@ export function TeamMembersTable() {
 											<Button
 												variant="ghost"
 												size="sm"
+												disabled={!isAdmin}
 												onClick={() =>
 													setEditingMember(
 														member,
@@ -112,6 +125,7 @@ export function TeamMembersTable() {
 											<Button
 												variant="ghost"
 												size="sm"
+												disabled={!isAdmin}
 												onClick={() =>
 													setRemovingMember(
 														member,

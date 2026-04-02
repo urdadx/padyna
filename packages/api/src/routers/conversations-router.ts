@@ -1,31 +1,69 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../index";
 import { db } from "@padyna/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, asc, SQL } from "drizzle-orm";
 import { chatConversation, chatMessage } from "@padyna/db/schema/chat";
+import { randomUUID } from "node:crypto";
+
+function getLiveChatToken(metadata: Record<string, unknown> | undefined): string {
+  const token = metadata?.liveChatToken;
+  if (typeof token === "string" && token.trim().length > 0) {
+    return token.trim();
+  }
+
+  return randomUUID();
+}
 
 export const conversationsRouter = router({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const organizationId = ctx.session.session.activeOrganization;
-    const chatbotId = ctx.session.session.activeChatbot;
+  getAll: protectedProcedure
+    .input(
+      z
+        .object({
+          filter: z.enum(["all", "escalated", "opened", "closed", "assigned"]),
+          sort: z.enum(["recent", "oldest", "priority"]),
+        })
+        .optional(),
+    )
+    .query(async ({ input, ctx }) => {
+      const organizationId = ctx.session.session.activeOrganization;
+      const chatbotId = ctx.session.session.activeChatbot;
+      const userId = ctx.session.user.id;
 
-    if (!organizationId || !chatbotId) {
-      throw new Error("No active organization or chatbot");
-    }
+      const filter = input?.filter ?? "all";
+      const sort = input?.sort ?? "recent";
 
-    const result = await db
-      .select()
-      .from(chatConversation)
-      .where(
-        and(
-          eq(chatConversation.chatbotId, chatbotId),
-          eq(chatConversation.organizationId, organizationId),
-        ),
-      )
-      .orderBy(desc(chatConversation.updatedAt));
+      if (!organizationId || !chatbotId) {
+        throw new Error("No active organization or chatbot");
+      }
 
-    return result;
-  }),
+      const filters: (SQL | undefined)[] = [
+        eq(chatConversation.chatbotId, chatbotId),
+        eq(chatConversation.organizationId, organizationId),
+      ];
+
+      if (filter !== "all") {
+        if (filter === "assigned") {
+          filters.push(eq(chatConversation.assignedTo, userId));
+        } else {
+          filters.push(eq(chatConversation.status, filter));
+        }
+      }
+
+      let orderBy = desc(chatConversation.updatedAt);
+      if (sort === "oldest") {
+        orderBy = asc(chatConversation.updatedAt);
+      } else if (sort === "priority") {
+        orderBy = desc(chatConversation.isHighPriority);
+      }
+
+      const result = await db
+        .select()
+        .from(chatConversation)
+        .where(and(...filters))
+        .orderBy(orderBy);
+
+      return result;
+    }),
 
   getById: protectedProcedure
     .input(
@@ -114,6 +152,13 @@ export const conversationsRouter = router({
         .where(eq(chatConversation.id, input.id))
         .returning();
 
+      if (updated) {
+        ctx.liveChat?.broadcastConversationStatus?.({
+          conversationId: updated.id,
+          status: updated.status,
+        });
+      }
+
       return updated;
     }),
 
@@ -173,6 +218,22 @@ export const conversationsRouter = router({
         .update(chatConversation)
         .set({
           status: input.status,
+          ...(input.status === "escalated"
+            ? {
+                assignedTo: null,
+                metadata: {
+                  ...((record.metadata as Record<string, unknown> | undefined) ?? {}),
+                  escalatedAt: new Date().toISOString(),
+                  liveChatToken: getLiveChatToken(
+                    (record.metadata as Record<string, unknown> | undefined) ?? undefined,
+                  ),
+                  liveChatInitializedAt: new Date().toISOString(),
+                  liveChatPhase: "waiting_for_join",
+                },
+              }
+            : input.status === "opened" || input.status === "closed"
+              ? { assignedTo: null }
+              : {}),
           updatedAt: new Date(),
         })
         .where(eq(chatConversation.id, input.id))

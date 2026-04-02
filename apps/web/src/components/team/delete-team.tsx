@@ -53,20 +53,29 @@ export function DeleteTeam() {
 					</div>
 				</div>
 				<div className="bg-red-50 border-t border-red-300 p-3 px-4 sm:px-6 rounded-b-2xl">
-					<Tooltip>
-						<TooltipTrigger>
-							<Button
-								disabled={!isAdmin}
-								onClick={() => setIsDeleteDialogOpen(true)}
-								className="bg-red-500 text-white hover:bg-red-600"
-								size="sm">
-								Yes, delete
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>
-							<p>Only admins can delete the team.</p>
-						</TooltipContent>
-					</Tooltip>
+					{!isAdmin ? (
+						<Tooltip>
+							<TooltipTrigger>
+								<Button
+									disabled={!isAdmin}
+									onClick={() => setIsDeleteDialogOpen(true)}
+									className="bg-red-500 text-white hover:bg-red-600"
+									size="sm">
+									Yes, delete
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>
+								<p>Only admins can delete the team.</p>
+							</TooltipContent>
+						</Tooltip>
+					) : (
+						<Button
+							onClick={() => setIsDeleteDialogOpen(true)}
+							className="bg-red-500 text-white hover:bg-red-600"
+							size="sm">
+							Yes, delete
+						</Button>
+					)}
 				</div>
 			</div>
 			<AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

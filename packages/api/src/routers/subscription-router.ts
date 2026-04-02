@@ -82,6 +82,26 @@ export const subscriptionRouter = router({
     return result?.count ?? 0;
   }),
 
+  getCustomerState: protectedProcedure.query(async ({ ctx }) => {
+    const organizationId = ctx.session.session.activeOrganization;
+    if (!organizationId) {
+      return null;
+    }
+    const [row] = await db
+      .select({
+        externalCustomerId: organization.externalCustomerId,
+      })
+      .from(organization)
+      .where(eq(organization.id, organizationId))
+      .limit(1);
+
+    const externalCustomerId = row?.externalCustomerId;
+    if (!externalCustomerId) return null;
+    return polarClient.customers.getStateExternal({
+      externalId: externalCustomerId,
+    });
+  }),
+
   // we are usingg the api directly here cos polar ts sdk has wrong types for this functionality
   endTrial: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const response = await fetch(`${env.POLAR_API_URL}/subscriptions/${input.id}`, {

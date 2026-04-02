@@ -11,12 +11,14 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { ingestionRoutes } from "./ingestion-routes";
-import { chatRoutes } from "./chat";
+import { chatRoutes, liveChatRoutes } from "./chat";
 import { widgetRoutes } from "./widget";
 import { analyticsStreamRoutes } from "./analytics/stream";
 import { endSessionRoute } from "./analytics/end-session";
 import { polarWebhook } from "./payments/webhook";
 import { checkout } from "./payments/checkout";
+import { websocket } from "hono/bun";
+import { broadcastConversationStatusUpdate } from "./chat/live-chat-service";
 
 const app = new Hono();
 
@@ -162,6 +164,7 @@ app.post("/api/accept-invitation/:invitationId", async (c) => {
 
 app.route("/api/ingestion", ingestionRoutes);
 app.route("/api/chat", chatRoutes);
+app.route("/api/live-chat", liveChatRoutes);
 app.route("/api/widget", widgetRoutes);
 app.route("/api/analytics/stream", analyticsStreamRoutes);
 app.route("/api/analytics/session-end", endSessionRoute);
@@ -175,7 +178,13 @@ app.use("/api/trpc/*", async (c, next) => {
       endpoint: "/api/trpc",
       req: c.req.raw,
       router: appRouter,
-      createContext: () => createContext({ context: c }),
+      createContext: () =>
+        createContext({
+          context: c,
+          liveChat: {
+            broadcastConversationStatus: broadcastConversationStatusUpdate,
+          },
+        }),
     });
     if (!response.body) {
       return c.text("No response body", { status: 500 });
@@ -197,7 +206,12 @@ app.use(
   trpcServer({
     router: appRouter,
     createContext: (_opts, context) => {
-      return createContext({ context });
+      return createContext({
+        context,
+        liveChat: {
+          broadcastConversationStatus: broadcastConversationStatusUpdate,
+        },
+      });
     },
   }),
 );
@@ -206,4 +220,7 @@ app.get("/", (c) => {
   return c.text("OK");
 });
 
-export default app;
+export default {
+  fetch: app.fetch,
+  websocket,
+};

@@ -19,8 +19,8 @@ import { useQuery } from "@tanstack/react-query";
 import { DefaultChatTransport } from "ai";
 import { useMemo, useState } from "react";
 import { PreviewMessages } from "./preview-messages";
-import { AlertCircleIcon } from "lucide-react";
 import "streamdown/styles.css";
+import { ErrorBanner, ClosedBanner, DisabledBanner, EscalatedBanner } from "../chat-logs/banners";
 
 function AgentPreviewPanelContent() {
 	const transport = useMemo(
@@ -46,7 +46,7 @@ function AgentPreviewPanelContent() {
 	});
 
 	const { data: conversations } = useQuery({
-		...trpc.conversations.getAll.queryOptions(),
+		...trpc.conversations.getAll.queryOptions({ filter: "all", sort: "recent" }),
 		enabled: !!chatbotId,
 	});
 
@@ -69,6 +69,9 @@ function AgentPreviewPanelContent() {
 	const isEscalated = activeConversationId
 		? conversations?.find((c) => c.id === activeConversationId)?.status === "escalated"
 		: false;
+	const isClosed = activeConversationId
+		? conversations?.find((c) => c.id === activeConversationId)?.status === "closed"
+		: false;
 
 	const resetConversation = () => {
 		setInput("");
@@ -84,7 +87,10 @@ function AgentPreviewPanelContent() {
 		setInput("");
 		await sendMessage({ text: next });
 		queryClient.invalidateQueries({
-			queryKey: trpc.conversations.getAll.queryOptions().queryKey,
+			queryKey: trpc.conversations.getAll.queryOptions({
+				filter: "all",
+				sort: "recent",
+			}).queryKey,
 		});
 	};
 
@@ -125,51 +131,14 @@ function AgentPreviewPanelContent() {
 										showVoteBlock={showVoteBlock}
 									/>
 								)}
-								{isError && !isStreaming && (
-									<div className="rounded-md bg-red-50 p-4">
-										<div className="flex gap-2">
-											<AlertCircleIcon
-												className="h-5 w-5 shrink-0 text-red-800"
-												aria-hidden="true"
-											/>
-											<h3 className="text-sm font-sans font-normal text-red-800">
-												Something went wrong. Please
-												try again.
-											</h3>
-										</div>
-									</div>
+								{isError && !isStreaming && <ErrorBanner />}
+								{isClosed && (
+									<ClosedBanner
+										startNewConversation={resetConversation}
+									/>
 								)}
-								{isSuccess && !isEnabled && (
-									<div className="rounded-md bg-blue-50 p-4">
-										<div className="flex gap-2 items-center">
-											<AlertCircleIcon
-												className="h-5 w-5 shrink-0 text-blue-800"
-												aria-hidden="true"
-											/>
-											<h3 className="text-sm font-sans font-normal text-blue-800">
-												This widget is currently
-												disabled. Please contact the
-												site administrator for help
-											</h3>
-										</div>
-									</div>
-								)}
-								{isEscalated && (
-									<div className="rounded-md bg-orange-50 p-4">
-										<div className="flex gap-2 items-center">
-											<AlertCircleIcon
-												className="h-5 w-5 shrink-0 text-orange-800"
-												aria-hidden="true"
-											/>
-											<h3 className="text-sm font-sans font-normal text-orange-800">
-												Conversation escalated to a
-												human agent. They will be
-												with you shortly to assist
-												you
-											</h3>
-										</div>
-									</div>
-								)}
+								{isSuccess && !isEnabled && <DisabledBanner />}
+								{isEscalated && <EscalatedBanner />}
 							</ConversationContent>
 							<ConversationScrollButton />
 						</Conversation>

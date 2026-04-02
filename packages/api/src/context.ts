@@ -2,11 +2,19 @@ import type { Context as HonoContext } from "hono";
 
 import { auth } from "@padyna/auth";
 
+type LiveChatBroadcastStatus = "opened" | "escalated" | "assigned" | "closed";
+
 export type CreateContextOptions = {
   context: HonoContext;
+  liveChat?: {
+    broadcastConversationStatus?: (input: {
+      conversationId: string;
+      status: LiveChatBroadcastStatus;
+    }) => void;
+  };
 };
 
-export async function createContext({ context }: CreateContextOptions) {
+export async function createContext({ context, liveChat }: CreateContextOptions) {
   const session = await auth.api.getSession({
     headers: context.req.raw.headers,
   });
@@ -15,6 +23,7 @@ export async function createContext({ context }: CreateContextOptions) {
 
   return {
     session,
+    liveChat,
     request: {
       headers: {
         countryCode: headers.get("cf-ipcountry") || "GH",

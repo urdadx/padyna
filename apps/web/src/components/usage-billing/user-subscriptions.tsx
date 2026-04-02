@@ -118,27 +118,40 @@ export function UserSubscriptions() {
 										</div>
 										<Popover>
 											<PopoverTrigger>
-												<Tooltip>
-													<TooltipTrigger>
-														<Button
-															variant="outline"
-															size="icon"
-															disabled={
-																!isAdmin
-															}
-															className="rounded-lg shrink-0">
-															<MoreHorizontal className="w-4 h-4" />
-														</Button>
-													</TooltipTrigger>
-													<TooltipContent>
-														<p>
-															Only
-															admins can
-															manage
-															subscriptions.
-														</p>
-													</TooltipContent>
-												</Tooltip>
+												{!isAdmin ? (
+													<Tooltip>
+														<TooltipTrigger>
+															<Button
+																variant="outline"
+																size="icon"
+																disabled={
+																	!isAdmin
+																}
+																className="rounded-lg shrink-0">
+																<MoreHorizontal className="w-4 h-4" />
+															</Button>
+														</TooltipTrigger>
+														<TooltipContent>
+															<p>
+																Only
+																admins
+																can
+																manage
+																subscriptions.
+															</p>
+														</TooltipContent>
+													</Tooltip>
+												) : (
+													<Button
+														variant="outline"
+														size="icon"
+														disabled={
+															!isAdmin
+														}
+														className="rounded-lg shrink-0">
+														<MoreHorizontal className="w-4 h-4" />
+													</Button>
+												)}
 											</PopoverTrigger>
 											<PopoverContent
 												className="w-40 p-1"

@@ -30,7 +30,7 @@ export const ChatHeader = ({
         queryKey: trpc.conversations.getById.queryOptions({ id: conversationId! }).queryKey,
       });
       queryClient.invalidateQueries({
-        queryKey: trpc.conversations.getAll.queryOptions().queryKey,
+        queryKey: trpc.conversations.getAll.queryOptions({ filter: "all", sort: "recent" }).queryKey,
       });
       toast.success(isHighPriority ? "Removed priority from chat" : "Marked as priority");
     },
@@ -46,7 +46,7 @@ export const ChatHeader = ({
         queryKey: trpc.conversations.getById.queryOptions({ id: conversationId! }).queryKey,
       });
       queryClient.invalidateQueries({
-        queryKey: trpc.conversations.getAll.queryOptions().queryKey,
+        queryKey: trpc.conversations.getAll.queryOptions({ filter: "all", sort: "recent" }).queryKey,
       });
       toast.success(isClosed ? "Chat marked as opened" : "Chat marked as closed");
     },
@@ -62,7 +62,7 @@ export const ChatHeader = ({
         queryKey: trpc.conversations.getById.queryOptions({ id: conversationId! }).queryKey,
       });
       queryClient.invalidateQueries({
-        queryKey: trpc.conversations.getAll.queryOptions().queryKey,
+        queryKey: trpc.conversations.getAll.queryOptions({ filter: "all", sort: "recent" }).queryKey,
       });
       toast.success("Chat escalated to a human agent");
     },

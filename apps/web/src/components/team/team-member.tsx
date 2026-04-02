@@ -15,19 +15,25 @@ export function TeamMembers() {
 			<div className="p-3 px-4 sm:px-6">
 				<div className="flex items-center justify-between">
 					<h3 className="text-xl font-semibold text-foreground">Members</h3>
-					<Tooltip>
-						<TooltipTrigger>
-							<Button
-								disabled={!isAdmin}
-								size="sm"
-								onClick={() => setInviteDialogOpen(true)}>
-								Invite members
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>
-							<p>Only admins can invite new members.</p>
-						</TooltipContent>
-					</Tooltip>
+					{!isAdmin ? (
+						<Tooltip>
+							<TooltipTrigger>
+								<Button
+									disabled={!isAdmin}
+									size="sm"
+									onClick={() => setInviteDialogOpen(true)}>
+									Invite members
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>
+								<p>Only admins can invite new members.</p>
+							</TooltipContent>
+						</Tooltip>
+					) : (
+						<Button size="sm" onClick={() => setInviteDialogOpen(true)}>
+							Invite members
+						</Button>
+					)}
 				</div>
 				<div className="space-y-0 my-2 relative">
 					<TeamMembersTable />

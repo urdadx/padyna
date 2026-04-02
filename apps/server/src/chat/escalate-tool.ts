@@ -1,15 +1,22 @@
 import { tool } from "ai";
 import { db } from "@padyna/db";
-import { chatConversation, member, user } from "@padyna/db/schema/index";
-import { eq, and } from "drizzle-orm";
+import { member, user } from "@padyna/db/schema/index";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { resendClient } from "@padyna/api/lib/email";
 import { EscalationEmail } from "@padyna/email-templates";
+import {
+  broadcastConversationStatusUpdate,
+  getConversationByChatbotAndOrganization,
+  initializeLiveChatConversation,
+} from "./live-chat-service";
 
 interface CreateEscalateToHumanToolInput {
   chatbotId: string;
   organizationId: string;
   chatbotName?: string;
+  conversationId?: string;
+  userId?: string;
 }
 
 export function EscalateToHumanTool(input: CreateEscalateToHumanToolInput) {
@@ -27,32 +34,30 @@ export function EscalateToHumanTool(input: CreateEscalateToHumanToolInput) {
         .describe("Brief summary of the conversation so far for the human agent"),
     }),
     execute: async ({ reason, summary }) => {
-      const existing = await db
-        .select({ id: chatConversation.id })
-        .from(chatConversation)
-        .where(
-          and(
-            eq(chatConversation.chatbotId, input.chatbotId),
-            eq(chatConversation.organizationId, input.organizationId),
-          ),
-        )
-        .orderBy(chatConversation.createdAt)
-        .limit(1);
+      let conversationId = input.conversationId;
 
-      const conversationId = existing[0]?.id;
+      if (!conversationId) {
+        const existingConversation = await getConversationByChatbotAndOrganization({
+          chatbotId: input.chatbotId,
+          organizationId: input.organizationId,
+          userId: input.userId,
+        });
+
+        conversationId = existingConversation?.id;
+      }
 
       if (conversationId) {
-        await db
-          .update(chatConversation)
-          .set({
-            status: "escalated",
-            metadata: {
-              escalationReason: reason,
-              escalationSummary: summary,
-              escalatedAt: new Date().toISOString(),
-            },
-          })
-          .where(eq(chatConversation.id, conversationId));
+        await initializeLiveChatConversation({
+          conversationId,
+          status: "escalated",
+          reason,
+          summary,
+        });
+
+        broadcastConversationStatusUpdate({
+          conversationId,
+          status: "escalated",
+        });
 
         const members = await db
           .select({

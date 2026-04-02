@@ -1,4 +1,3 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { Area, Bar, CartesianGrid, ComposedChart, XAxis, YAxis } from "recharts";
 
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +8,23 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import NumberFlow from "@number-flow/react";
-import { trpc } from "@/utils/trpc";
 import { ChartLinear } from "@/assets/icons/chart-icon";
+
+interface AnalyticsOverviewProps {
+  overviewQuery?: {
+    data?: {
+      totalVisits?: number;
+      totalChats?: number;
+    };
+  };
+  chartQuery?: {
+    data?: Array<{
+      date: string;
+      visitors: number;
+      chats: number;
+    }>;
+  };
+}
 
 const chartConfig = {
   visitors: {
@@ -23,17 +37,9 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function AnalyticsOverview() {
-  const overviewQuery = useSuspenseQuery(
-    trpc.analytics.getOverview.queryOptions({ timeRange: "7d" }),
-  );
-
-  const chartQuery = useSuspenseQuery(
-    trpc.analytics.getChartData.queryOptions({ timeRange: "7d" }),
-  );
-
-  const overview = overviewQuery.data;
-  const chartData = chartQuery.data ?? [];
+export function AnalyticsOverview({ overviewQuery, chartQuery }: AnalyticsOverviewProps) {
+  const overview = overviewQuery?.data;
+  const chartData = chartQuery?.data ?? [];
   const hasData =
     (overview?.totalVisits ?? 0) > 0 || (overview?.totalChats ?? 0) > 0 || chartData.length > 0;
 
