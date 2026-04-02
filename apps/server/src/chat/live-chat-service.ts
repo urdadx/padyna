@@ -9,10 +9,7 @@ import type {
   LiveChatRoomState,
   LiveChatServerEvent,
 } from "./live-chat-protocol";
-import {
-  parseLiveChatClientEvent,
-  stringifyLiveChatServerEvent,
-} from "./live-chat-protocol";
+import { parseLiveChatClientEvent, stringifyLiveChatServerEvent } from "./live-chat-protocol";
 
 type WsLike = {
   send(data: string): void;
@@ -122,11 +119,14 @@ function broadcastRoomState(room: RoomState) {
   }
 }
 
-function broadcastConversationStatus(room: RoomState, status: "opened" | "escalated" | "assigned" | "closed") {
+function broadcastConversationStatus(
+  room: RoomState,
+  status: "opened" | "escalated" | "assigned" | "closed",
+) {
   const sockets = getRoomSockets(room);
   for (const socket of sockets) {
     sendEvent(socket.ws, {
-      type: "conversation_status",
+      type: "conversation_status_changed",
       conversationId: room.conversationId,
       status,
     });
@@ -146,7 +146,7 @@ function closeRoomConnections(
   if (input.status) {
     for (const socket of sockets) {
       sendEvent(socket.ws, {
-        type: "conversation_status",
+        type: "conversation_status_changed",
         conversationId: room.conversationId,
         status: input.status,
       });
@@ -159,10 +159,7 @@ function closeRoomConnections(
   }
 }
 
-function handleConversationStatusLifecycle(
-  room: RoomState,
-  status: ConversationLifecycleStatus,
-) {
+function handleConversationStatusLifecycle(room: RoomState, status: ConversationLifecycleStatus) {
   if (status === "closed") {
     closeRoomConnections(room, {
       code: 4004,
@@ -184,7 +181,11 @@ function handleConversationStatusLifecycle(
   broadcastConversationStatus(room, status);
 }
 
-function broadcastToOtherRole(room: RoomState, senderConnectionId: string, event: LiveChatServerEvent) {
+function broadcastToOtherRole(
+  room: RoomState,
+  senderConnectionId: string,
+  event: LiveChatServerEvent,
+) {
   const sender = socketRegistry.get(senderConnectionId);
   if (!sender || !sender.role) {
     return;
@@ -243,11 +244,17 @@ async function getConversationMeta(conversationId: string): Promise<Conversation
   };
 }
 
-async function verifyAgentAccess(headers: Headers, conversation: ConversationMeta): Promise<{
-  ok: true;
-  userId: string;
-  userName: string;
-} | { ok: false; code: string; message: string }> {
+async function verifyAgentAccess(
+  headers: Headers,
+  conversation: ConversationMeta,
+): Promise<
+  | {
+      ok: true;
+      userId: string;
+      userName: string;
+    }
+  | { ok: false; code: string; message: string }
+> {
   const session = await auth.api.getSession({ headers });
 
   if (!session?.session || !session.user) {
@@ -347,7 +354,11 @@ async function persistLiveMessage(input: {
   };
 }
 
-async function handleJoinEvent(socket: SocketContext, event: LiveChatClientEvent, headers: Headers) {
+async function handleJoinEvent(
+  socket: SocketContext,
+  event: LiveChatClientEvent,
+  headers: Headers,
+) {
   if (event.type !== "join") {
     sendError(socket.ws, "JOIN_REQUIRED", "You must join before sending other events.");
     return;
@@ -369,7 +380,7 @@ async function handleJoinEvent(socket: SocketContext, event: LiveChatClientEvent
 
   if (!socket.role) {
     sendEvent(socket.ws, {
-      type: "conversation_status",
+      type: "conversation_status_changed",
       conversationId: conversation.id,
       status: conversation.status as "opened" | "escalated" | "assigned" | "closed",
     });
@@ -542,9 +553,12 @@ function cleanupConnection(socket: SocketContext) {
   broadcastRoomState(room);
 }
 
-function replaceExistingRoleConnection(room: RoomState, role: LiveChatRole, nextConnectionId: string) {
-  const existingConnectionId =
-    role === "agent" ? room.agentConnectionId : room.visitorConnectionId;
+function replaceExistingRoleConnection(
+  room: RoomState,
+  role: LiveChatRole,
+  nextConnectionId: string,
+) {
+  const existingConnectionId = role === "agent" ? room.agentConnectionId : room.visitorConnectionId;
 
   if (!existingConnectionId || existingConnectionId === nextConnectionId) {
     return;

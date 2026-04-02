@@ -222,10 +222,10 @@ export const conversationsRouter = router({
             ? {
                 assignedTo: null,
                 metadata: {
-                  ...((record.metadata as Record<string, unknown> | undefined) ?? {}),
+                  ...(record.metadata as Record<string, unknown> | undefined),
                   escalatedAt: new Date().toISOString(),
                   liveChatToken: getLiveChatToken(
-                    (record.metadata as Record<string, unknown> | undefined) ?? undefined,
+                    record.metadata as Record<string, unknown> | undefined,
                   ),
                   liveChatInitializedAt: new Date().toISOString(),
                   liveChatPhase: "waiting_for_join",
@@ -238,6 +238,13 @@ export const conversationsRouter = router({
         })
         .where(eq(chatConversation.id, input.id))
         .returning();
+
+      if (updated) {
+        ctx.liveChat?.broadcastConversationStatus?.({
+          conversationId: updated.id,
+          status: updated.status,
+        });
+      }
 
       return updated;
     }),

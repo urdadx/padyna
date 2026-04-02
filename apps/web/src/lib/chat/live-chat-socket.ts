@@ -31,6 +31,11 @@ type LiveChatServerEvent =
       status: "opened" | "escalated" | "assigned" | "closed";
     }
   | {
+      type: "conversation_status_changed";
+      conversationId: string;
+      status: "opened" | "escalated" | "assigned" | "closed";
+    }
+  | {
       type: "message";
       message: {
         id: string;
@@ -61,7 +66,12 @@ type UseLiveChatSocketInput = {
   autoJoin?: boolean;
   joinToken?: string;
   userName?: string;
-  onMessage?: (message: { id: string; role: "user" | "assistant"; text: string; createdAt: string }) => void;
+  onMessage?: (message: {
+    id: string;
+    role: "user" | "assistant";
+    text: string;
+    createdAt: string;
+  }) => void;
   onConversationStatus?: (payload: {
     conversationId: string;
     status: "opened" | "escalated" | "assigned" | "closed";
@@ -189,7 +199,10 @@ export function useLiveChatSocket({
     }
 
     const current = socketRef.current;
-    if (current && (current.readyState === WebSocket.OPEN || current.readyState === WebSocket.CONNECTING)) {
+    if (
+      current &&
+      (current.readyState === WebSocket.OPEN || current.readyState === WebSocket.CONNECTING)
+    ) {
       return;
     }
 
@@ -247,7 +260,10 @@ export function useLiveChatSocket({
         return;
       }
 
-      if (incoming.type === "conversation_status") {
+      if (
+        incoming.type === "conversation_status" ||
+        incoming.type === "conversation_status_changed"
+      ) {
         onConversationStatusRef.current?.({
           conversationId: incoming.conversationId,
           status: incoming.status,
@@ -287,7 +303,7 @@ export function useLiveChatSocket({
         });
       }
 
-      const nonRetryableCodes = new Set([4002, 4004, 4401, 4403, 4404]);
+      const nonRetryableCodes = new Set([4401, 4403, 4404]);
 
       if (!enabled || !shouldReconnectRef.current || nonRetryableCodes.has(event.code)) {
         setStatus("disconnected");
@@ -371,7 +387,10 @@ export function useLiveChatSocket({
     join();
   }, [enabled, autoJoin, isConnected, hasJoined, join, role, joinToken]);
 
-  const canSendMessages = useMemo(() => isConnected && hasJoined && isReady, [isConnected, hasJoined, isReady]);
+  const canSendMessages = useMemo(
+    () => isConnected && hasJoined && isReady,
+    [isConnected, hasJoined, isReady],
+  );
 
   return {
     status,

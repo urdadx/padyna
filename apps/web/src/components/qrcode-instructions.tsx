@@ -1,4 +1,4 @@
-import { XIcon, Download, QrCodeIcon } from "lucide-react";
+import { XIcon, QrCodeIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { QrCodeIcon as QrIcon } from "@/assets/icons/qrcode-icon";
 import { env } from "@padyna/env/web";
@@ -7,7 +7,7 @@ import { QRCodeCanvas } from "qrcode.react";
 
 interface Chatbot {
 	embedToken: string | null;
-	name: string;
+	name: string | null;
 }
 
 interface QRCodeInstructionsProps {
@@ -25,8 +25,9 @@ export const QRCodeInstructions = ({ chatbot, onClose }: QRCodeInstructionsProps
 		if (!canvas) return;
 		const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
 		const downloadLink = document.createElement("a");
+		const chatbotName = (chatbot.name ?? "chatbot").toLowerCase().replace(/\s+/g, "-");
 		downloadLink.href = pngUrl;
-		downloadLink.download = `${chatbot.name.toLowerCase().replace(/\s+/g, "-")}-qr.png`;
+		downloadLink.download = `${chatbotName}-qr.png`;
 		document.body.appendChild(downloadLink);
 		downloadLink.click();
 		document.body.removeChild(downloadLink);

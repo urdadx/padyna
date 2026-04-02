@@ -40,6 +40,11 @@ export type LiveChatServerEvent =
       status: "opened" | "escalated" | "assigned" | "closed";
     }
   | {
+      type: "conversation_status_changed";
+      conversationId: string;
+      status: "opened" | "escalated" | "assigned" | "closed";
+    }
+  | {
       type: "message";
       message: {
         id: string;
