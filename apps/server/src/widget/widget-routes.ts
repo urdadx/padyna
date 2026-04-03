@@ -46,6 +46,19 @@ type PublicWidgetChatbot = {
 
 export const widgetRoutes = new Hono();
 
+function buildWidgetConfig(chatbotRecord: PublicWidgetChatbot) {
+  return {
+    id: chatbotRecord.id,
+    name: chatbotRecord.name,
+    image: chatbotRecord.image,
+    primaryColor: chatbotRecord.primaryColor,
+    hidePoweredBy: chatbotRecord.hidePoweredBy,
+    suggestedMessages: chatbotRecord.suggestedMessages ?? [],
+    initialMessage: chatbotRecord.initialMessage,
+    isEnabled: chatbotRecord.isEnabled,
+  };
+}
+
 function parseOrigin(value: string | undefined): string | null {
   if (!value) {
     return null;
@@ -132,7 +145,10 @@ async function getWidgetChatbot(widgetId: string) {
   return rows[0] as PublicWidgetChatbot | undefined;
 }
 
-widgetRoutes.get("/:widgetId/config", async (c) => {
+async function resolveWidgetRequest(
+  c: any,
+  options: { requireEnabled?: boolean } = {},
+): Promise<{ chatbotRecord: PublicWidgetChatbot; requestOrigin: string | null } | Response> {
   const widgetId = c.req.param("widgetId");
   const chatbotRecord = await getWidgetChatbot(widgetId);
 
@@ -140,7 +156,7 @@ widgetRoutes.get("/:widgetId/config", async (c) => {
     return c.json({ message: "Widget not found" }, 404);
   }
 
-  if (!chatbotRecord.isEnabled) {
+  if (options.requireEnabled && !chatbotRecord.isEnabled) {
     return c.json({ message: "Widget is disabled" }, 403);
   }
 
@@ -149,30 +165,27 @@ widgetRoutes.get("/:widgetId/config", async (c) => {
     return c.json({ message: "Domain not allowed" }, 403);
   }
 
-  return c.json({
-    id: chatbotRecord.id,
-    name: chatbotRecord.name,
-    image: chatbotRecord.image,
-    primaryColor: chatbotRecord.primaryColor,
-    hidePoweredBy: chatbotRecord.hidePoweredBy,
-    suggestedMessages: chatbotRecord.suggestedMessages ?? [],
-    initialMessage: chatbotRecord.initialMessage,
-    isEnabled: chatbotRecord.isEnabled,
-  });
+  return { chatbotRecord, requestOrigin };
+}
+
+widgetRoutes.get("/:widgetId/config", async (c) => {
+  const resolved = await resolveWidgetRequest(c, { requireEnabled: true });
+  if (resolved instanceof Response) {
+    return resolved;
+  }
+
+  const { chatbotRecord } = resolved;
+
+  return c.json(buildWidgetConfig(chatbotRecord));
 });
 
 widgetRoutes.post("/:widgetId/init", async (c) => {
-  const widgetId = c.req.param("widgetId");
-  const chatbotRecord = await getWidgetChatbot(widgetId);
-
-  if (!chatbotRecord) {
-    return c.json({ message: "Widget not found" }, 404);
+  const resolved = await resolveWidgetRequest(c);
+  if (resolved instanceof Response) {
+    return resolved;
   }
 
-  const requestOrigin = getRequestOrigin(c);
-  if (!isDomainAllowed(chatbotRecord, requestOrigin)) {
-    return c.json({ message: "Domain not allowed" }, 403);
-  }
+  const { chatbotRecord } = resolved;
 
   const { conversationId } = await c.req.json();
 
@@ -211,16 +224,7 @@ widgetRoutes.post("/:widgetId/init", async (c) => {
   }
 
   return c.json({
-    config: {
-      id: chatbotRecord.id,
-      name: chatbotRecord.name,
-      image: chatbotRecord.image,
-      primaryColor: chatbotRecord.primaryColor,
-      hidePoweredBy: chatbotRecord.hidePoweredBy,
-      suggestedMessages: chatbotRecord.suggestedMessages ?? [],
-      initialMessage: chatbotRecord.initialMessage,
-      isEnabled: chatbotRecord.isEnabled,
-    },
+    config: buildWidgetConfig(chatbotRecord),
     messages,
     conversationStatus,
     liveChatToken,
@@ -228,21 +232,12 @@ widgetRoutes.post("/:widgetId/init", async (c) => {
 });
 
 widgetRoutes.post("/:widgetId/chat", async (c) => {
-  const widgetId = c.req.param("widgetId");
-  const chatbotRecord = await getWidgetChatbot(widgetId);
-
-  if (!chatbotRecord) {
-    return c.json({ message: "Widget not found" }, 404);
+  const resolved = await resolveWidgetRequest(c, { requireEnabled: true });
+  if (resolved instanceof Response) {
+    return resolved;
   }
 
-  if (!chatbotRecord.isEnabled) {
-    return c.json({ message: "Widget is disabled" }, 403);
-  }
-
-  const requestOrigin = getRequestOrigin(c);
-  if (!isDomainAllowed(chatbotRecord, requestOrigin)) {
-    return c.json({ message: "Domain not allowed" }, 403);
-  }
+  const { chatbotRecord, requestOrigin } = resolved;
 
   const { id: conversationId, messages } = await c.req.json();
   const uiMessages = messages;
@@ -283,21 +278,21 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
       const stream = createUIMessageStream({
         originalMessages: uiMessages,
         execute: async ({ writer }) => {
-          writer.write({
-            type: "finish",
-          });
+          writer.write({ type: "finish" });
         },
       });
       return createUIMessageStreamResponse({ stream });
     }
   }
 
+  const resolvedConversationId = targetConversationId ?? conversationId;
+
   const agent = createSupportChatAgent({
     chatbotId: chatbotRecord.id,
     organizationId: chatbotRecord.organizationId,
     chatbotName: chatbotRecord.name || "AI Assistant",
     chatbotUseCase: chatbotRecord.usecase || "support",
-    conversationId: targetConversationId ?? conversationId,
+    conversationId: resolvedConversationId,
   });
 
   return createAgentUIStreamResponse({
@@ -311,7 +306,7 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
         userId: undefined,
         messages: completedMessages as any,
         metadata: visitorMetadata,
-        conversationId,
+        conversationId: resolvedConversationId,
       });
     },
   });

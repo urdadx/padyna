@@ -15,6 +15,7 @@ import { chatRoutes, liveChatRoutes } from "./chat";
 import { widgetRoutes } from "./widget";
 import { analyticsStreamRoutes } from "./analytics/stream";
 import { endSessionRoute } from "./analytics/end-session";
+import { presenceRoutes } from "./analytics/live-user-count-routes";
 import { polarWebhook } from "./payments/webhook";
 import { checkout } from "./payments/checkout";
 import { websocket } from "hono/bun";
@@ -168,6 +169,7 @@ app.route("/api/live-chat", liveChatRoutes);
 app.route("/api/widget", widgetRoutes);
 app.route("/api/analytics/stream", analyticsStreamRoutes);
 app.route("/api/analytics/session-end", endSessionRoute);
+app.route("/api/analytics/presence", presenceRoutes);
 app.route("/api/", polarWebhook);
 app.route("/api/", checkout);
 

@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { db } from "@padyna/db";
-import { eq, and, gte, lte, count, countDistinct, avg, sql } from "drizzle-orm";
+import { eq, and, gte, lte, count, countDistinct, avg } from "drizzle-orm";
 import { visitorSessions, visitorEvents } from "@padyna/db/schema/index";
 import { authMiddleware } from "@/middlewares/auth-middleware";
 import { analyticsEvents } from "@padyna/api/lib/events";
+import { getLivePresenceCount } from "./live-user-count";
 
 const n = (val: unknown) => Number(val ?? 0);
 
@@ -35,7 +36,7 @@ function getDateRange(timeRange: string) {
 async function fetchOverview(chatbotId: string, timeRange: string) {
   const { start, end } = getDateRange(timeRange);
 
-  const [sessionsResult, eventsResult, activeVisitorsResult] = await Promise.all([
+  const [sessionsResult, eventsResult, activeVisitors] = await Promise.all([
     db
       .select({
         totalSessions: count().as("total_sessions"),
@@ -61,14 +62,7 @@ async function fetchOverview(chatbotId: string, timeRange: string) {
           lte(visitorEvents.timestamp, end),
         ),
       ),
-    db
-      .select({
-        count: sql<number>`count(${visitorSessions.id})::int`.as("active_visitors"),
-      })
-      .from(visitorSessions)
-      .where(
-        and(eq(visitorSessions.chatbotId, chatbotId), eq(visitorSessions.isWidgetActive, true)),
-      ),
+    getLivePresenceCount(chatbotId),
   ]);
 
   return {
@@ -76,7 +70,7 @@ async function fetchOverview(chatbotId: string, timeRange: string) {
     uniqueVisitors: n(sessionsResult[0]?.uniqueVisitors),
     totalChats: n(eventsResult[0]?.totalChats),
     averageSessionTime: Math.round(n(sessionsResult[0]?.avgDuration) / 1000),
-    activeVisitors: n(activeVisitorsResult[0]?.count),
+    activeVisitors: n(activeVisitors),
   };
 }
 

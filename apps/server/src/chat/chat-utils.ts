@@ -298,7 +298,7 @@ export async function persistConversationMessages(input: {
   });
 
   if (toInsert.length === 0) {
-    return;
+    return targetConversationId;
   }
 
   await db

@@ -24,6 +24,7 @@ export const env = createEnv({
     EXTRA_TEAM_MEMBER_ADDON: z.string().optional(),
     POLAR_API_URL: z.url().default("https://sandbox-api.polar.sh/v1"),
     RESEND_API_KEY: z.string().min(1).optional(),
+    REDIS_URL: z.string().min(1).default("redis://localhost:6379"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

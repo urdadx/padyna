@@ -11,10 +11,10 @@ import {
   loadConversationMessages,
   persistConversationMessages,
 } from "./chat-utils";
-import { broadcastConversationStatusUpdate } from "./live-chat-service";
 import { db } from "@padyna/db";
 import { chatbot } from "@padyna/db/schema/index";
 import { eq, and } from "drizzle-orm";
+import { broadcastConversationStatusUpdate } from "./live-chat-service";
 
 type Variables = {
   user: any;
@@ -89,21 +89,21 @@ chatRoutes.post("/", async (c) => {
       const stream = createUIMessageStream({
         originalMessages: uiMessages,
         execute: async ({ writer }) => {
-          writer.write({
-            type: "finish",
-          });
+          writer.write({ type: "finish" });
         },
       });
       return createUIMessageStreamResponse({ stream });
     }
   }
 
+  const resolvedConversationId = targetConversationId ?? conversationId;
+
   const agent = createSupportChatAgent({
     chatbotId: activeChatbot,
     organizationId: activeOrganization,
     chatbotName,
     chatbotUseCase,
-    conversationId: targetConversationId ?? conversationId,
+    conversationId: resolvedConversationId,
     userId,
   });
 
@@ -117,6 +117,7 @@ chatRoutes.post("/", async (c) => {
         organizationId: activeOrganization,
         userId,
         messages,
+        conversationId: resolvedConversationId,
       });
     },
   });
