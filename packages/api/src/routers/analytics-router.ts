@@ -8,9 +8,11 @@ import {
   analyticsDaily,
   analyticsWeekly,
   analyticsMonthly,
+  chatbot,
 } from "@padyna/db/schema/index";
 import { TRPCError } from "@trpc/server";
 import { analyticsEvents } from "../lib/events";
+import { createOrganizationNotification } from "@padyna/db/notifications";
 
 type DeviceInfo = {
   type: "desktop" | "mobile" | "tablet" | "bot" | "unknown";
@@ -703,6 +705,12 @@ export const analyticsRouter = router({
       const userAgent = input.userAgent || headers?.userAgent || "";
       const deviceType = detectDeviceFromUserAgent(userAgent).type;
 
+      const [chatbotRecord] = await db
+        .select({ organizationId: chatbot.organizationId })
+        .from(chatbot)
+        .where(eq(chatbot.id, input.chatbotId))
+        .limit(1);
+
       const [session] = await db
         .insert(visitorSessions)
         .values({
@@ -724,6 +732,29 @@ export const analyticsRouter = router({
         chatbotId: input.chatbotId,
         action: "session-create",
       });
+
+      if (chatbotRecord) {
+        try {
+          await createOrganizationNotification({
+            organizationId: chatbotRecord.organizationId,
+            chatbotId: input.chatbotId,
+            eventType: "visitor.new_unique",
+            entityType: "visitor",
+            entityId: input.visitorId,
+            title: "New unique visitor",
+            body: headers?.country ?? undefined,
+            metadata: {
+              visitorId: input.visitorId,
+              chatbotId: input.chatbotId,
+              country: headers?.country,
+              city: headers?.city,
+            },
+            dedupeKey: `visitor.new_unique:${input.chatbotId}:${input.visitorId}`,
+          });
+        } catch (error) {
+          console.error("Failed to create visitor.new_unique notification", error);
+        }
+      }
 
       return session;
     }),

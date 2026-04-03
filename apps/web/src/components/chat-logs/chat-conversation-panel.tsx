@@ -23,11 +23,21 @@ import { useLiveChatSocket } from "@/lib/chat/live-chat-socket";
 import { ChatStatusHeader } from "./chat-status-header";
 import { SupportMessage } from "../agent/agent-components/message";
 import { StatusIndicator } from "../agent/agent-components/status-indicator";
+import { useRouteContext } from "@tanstack/react-router";
 
 interface ChatConversationPanelProps {
 	chatId?: string;
 	className?: string;
 }
+
+type ChatComposerProps = {
+	isEscalated: boolean;
+	canSendLiveMessage: boolean;
+	hasJoined: boolean;
+	isAssignedToOther: boolean;
+	sendMessage: (text: string) => boolean;
+	sendTyping: (isTyping: boolean) => boolean;
+};
 
 function toUiMessage(message: any) {
 	const fallbackText = typeof message?.contentText === "string" ? message.contentText : "";
@@ -45,11 +55,129 @@ function toUiMessage(message: any) {
 	};
 }
 
-export const ChatConversationPanel = ({ chatId, className }: ChatConversationPanelProps) => {
+function ChatComposer({
+	isEscalated,
+	canSendLiveMessage,
+	hasJoined,
+	isAssignedToOther,
+	sendMessage,
+	sendTyping,
+}: ChatComposerProps) {
 	const [inputValue, setInputValue] = useState("");
-	const [socketMessages, setSocketMessages] = useState<any[]>([]);
 	const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const typingSentRef = useRef(false);
+
+	const inputDisabled = isEscalated ? !canSendLiveMessage || isAssignedToOther : true;
+
+	const placeholder = isEscalated
+		? canSendLiveMessage
+			? "Type your message..."
+			: "Waiting for both sides to join live chat..."
+		: "Escalate this chat to enable live messaging";
+
+	const stopTyping = useCallback(() => {
+		if (typingTimeoutRef.current) {
+			clearTimeout(typingTimeoutRef.current);
+			typingTimeoutRef.current = null;
+		}
+
+		if (typingSentRef.current) {
+			sendTyping(false);
+			typingSentRef.current = false;
+		}
+	}, [sendTyping]);
+
+	useEffect(() => {
+		if (!isEscalated || !hasJoined || !canSendLiveMessage || isAssignedToOther) {
+			stopTyping();
+			return;
+		}
+
+		if (inputValue.trim().length === 0) {
+			stopTyping();
+			return;
+		}
+
+		if (!typingSentRef.current) {
+			sendTyping(true);
+			typingSentRef.current = true;
+		}
+
+		if (typingTimeoutRef.current) {
+			clearTimeout(typingTimeoutRef.current);
+		}
+
+		typingTimeoutRef.current = setTimeout(() => {
+			if (typingSentRef.current) {
+				sendTyping(false);
+				typingSentRef.current = false;
+			}
+			typingTimeoutRef.current = null;
+		}, 1_200);
+	}, [
+		inputValue,
+		isEscalated,
+		hasJoined,
+		canSendLiveMessage,
+		isAssignedToOther,
+		sendTyping,
+		stopTyping,
+	]);
+
+	useEffect(() => {
+		return () => {
+			stopTyping();
+		};
+	}, [stopTyping]);
+
+	const submitMessage = useCallback(async () => {
+		const next = inputValue.trim();
+		if (!next || !isEscalated || !canSendLiveMessage || isAssignedToOther) {
+			return;
+		}
+
+		const sent = sendMessage(next);
+		if (!sent) {
+			return;
+		}
+
+		setInputValue("");
+		stopTyping();
+	}, [inputValue, isEscalated, canSendLiveMessage, isAssignedToOther, sendMessage, stopTyping]);
+
+	return (
+		<div className="bg-background p-1.5 rounded-2xl">
+			<PromptInput
+				value={inputValue}
+				onValueChange={setInputValue}
+				onSubmit={submitMessage}
+				className="w-full "
+				disabled={inputDisabled}>
+				<PromptInputTextarea placeholder={placeholder} disabled={inputDisabled} />
+				<PromptInputActions className="justify-end pt-2">
+					<PromptInputAction tooltip={"Send message"}>
+						<Button
+							type="button"
+							variant="default"
+							onClick={() => {
+								void submitMessage();
+							}}
+							disabled={inputDisabled || !inputValue.trim()}>
+							Send
+						</Button>
+					</PromptInputAction>
+				</PromptInputActions>
+			</PromptInput>
+		</div>
+	);
+}
+
+export const ChatConversationPanel = ({ chatId, className }: ChatConversationPanelProps) => {
+	const [socketMessages, setSocketMessages] = useState<any[]>([]);
 	const lastListInvalidateAtRef = useRef(0);
+
+	const { session } = useRouteContext({ from: "/(admin)" });
+	const currentUserId = session?.user?.id;
 
 	const { data: messages, isLoading } = useQuery({
 		...trpc.conversations.getMessages.queryOptions({ conversationId: chatId! }),
@@ -62,8 +190,29 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 		enabled: !!chatId,
 	});
 
+	const { data: organizationMembers } = useQuery({
+		...trpc.organization.getMembers.queryOptions(),
+		enabled: !!chatId,
+	});
+
 	const isEscalated =
 		conversation?.status === "escalated" || conversation?.status === "assigned";
+
+	const assignedUserName = useMemo(() => {
+		if (!conversation?.assignedTo) {
+			return undefined;
+		}
+
+		const assignedMember = organizationMembers?.find(
+			(member) => member.id === conversation.assignedTo,
+		);
+
+		return assignedMember?.name ?? assignedMember?.email ?? "Another agent";
+	}, [organizationMembers, conversation?.assignedTo]);
+
+	const isAssignedToOther = Boolean(
+		conversation?.assignedTo && currentUserId && conversation.assignedTo !== currentUserId,
+	);
 
 	const invalidateConversationCaches = useCallback(
 		(conversationId: string, input?: { includeMessages?: boolean }) => {
@@ -148,7 +297,6 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 
 	useEffect(() => {
 		setSocketMessages([]);
-		setInputValue("");
 	}, [chatId]);
 
 	const baseMessages = useMemo(() => {
@@ -176,47 +324,10 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 		return Array.from(mergedById.values());
 	}, [baseMessages, socketMessages]);
 
-	useEffect(() => {
-		if (!isEscalated || !liveChat.hasJoined) {
-			return;
-		}
-
-		if (typingTimeoutRef.current) {
-			clearTimeout(typingTimeoutRef.current);
-			typingTimeoutRef.current = null;
-		}
-
-		if (inputValue.trim().length === 0) {
-			liveChat.sendTyping(false);
-			return;
-		}
-
-		liveChat.sendTyping(true);
-		typingTimeoutRef.current = setTimeout(() => {
-			liveChat.sendTyping(false);
-			typingTimeoutRef.current = null;
-		}, 1_200);
-	}, [inputValue, isEscalated, liveChat.hasJoined, liveChat.sendTyping]);
-
-	useEffect(() => {
-		return () => {
-			if (typingTimeoutRef.current) {
-				clearTimeout(typingTimeoutRef.current);
-			}
-		};
-	}, []);
-
+	const blockedByAssignment = liveChat.isAssignedToOther || isAssignedToOther;
 	const canSendLiveMessage = isEscalated
-		? liveChat.canSendMessages && !liveChat.isAssignedToOther
+		? liveChat.canSendMessages && !blockedByAssignment
 		: false;
-
-	const inputDisabled = isEscalated ? !canSendLiveMessage : true;
-
-	const placeholder = isEscalated
-		? canSendLiveMessage
-			? "Type your message..."
-			: "Waiting for both sides to join live chat..."
-		: "Escalate this chat to enable live messaging";
 
 	const chatbotId = useMemo(() => {
 		if (liveMessages.length === 0) {
@@ -225,25 +336,6 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 
 		return liveMessages.find((message) => Boolean(message.chatbotId))?.chatbotId;
 	}, [liveMessages]);
-
-	const submitMessage = async () => {
-		const next = inputValue.trim();
-		if (!next || !isEscalated) {
-			return;
-		}
-
-		if (!canSendLiveMessage) {
-			return;
-		}
-
-		const sent = liveChat.sendMessage(next);
-		if (!sent) {
-			return;
-		}
-
-		setInputValue("");
-		liveChat.sendTyping(false);
-	};
 
 	const handleEndSession = () => {
 		if (!chatId || endSessionMutation.isPending) {
@@ -275,6 +367,7 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 				conversationId={chatId}
 				isHighPriority={conversation?.isHighPriority ?? false}
 				status={conversation?.status ?? "opened"}
+				assignedToUserId={conversation?.assignedTo}
 			/>
 			{isEscalated ? (
 				<ChatStatusHeader
@@ -285,7 +378,8 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 					onConnect={liveChat.connect}
 					onJoin={liveChat.join}
 					onEndSession={handleEndSession}
-					isAssignedToOther={liveChat.isAssignedToOther}
+					isAssignedToOther={blockedByAssignment}
+					assignedUserName={assignedUserName}
 				/>
 			) : null}
 			<ChatContainerRoot optimize className="flex-1 min-w-0 w-full smooth-div">
@@ -323,34 +417,14 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 					</div>
 					<ChatContainerScrollAnchor />
 				</ChatContainerContent>
-				<div className="bg-background p-1.5 rounded-2xl">
-					<PromptInput
-						value={inputValue}
-						onValueChange={setInputValue}
-						onSubmit={submitMessage}
-						className="w-full "
-						disabled={inputDisabled}>
-						<PromptInputTextarea
-							placeholder={placeholder}
-							disabled={inputDisabled}
-						/>
-						<PromptInputActions className="justify-end pt-2">
-							<PromptInputAction tooltip={"Send message"}>
-								<Button
-									type="button"
-									variant="default"
-									onClick={() => {
-										void submitMessage();
-									}}
-									disabled={
-										inputDisabled || !inputValue.trim()
-									}>
-									Send
-								</Button>
-							</PromptInputAction>
-						</PromptInputActions>
-					</PromptInput>
-				</div>
+				<ChatComposer
+					isEscalated={isEscalated}
+					canSendLiveMessage={canSendLiveMessage}
+					hasJoined={liveChat.hasJoined}
+					isAssignedToOther={blockedByAssignment}
+					sendMessage={liveChat.sendMessage}
+					sendTyping={liveChat.sendTyping}
+				/>
 			</ChatContainerRoot>
 		</div>
 	);

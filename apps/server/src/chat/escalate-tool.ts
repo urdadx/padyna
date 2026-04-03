@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { db } from "@padyna/db";
+import { createOrganizationNotification } from "@padyna/db/notifications";
 import { member, user } from "@padyna/db/schema/index";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -53,6 +54,28 @@ export function EscalateToHumanTool(input: CreateEscalateToHumanToolInput) {
           reason,
           summary,
         });
+
+        try {
+          await createOrganizationNotification({
+            organizationId: input.organizationId,
+            chatbotId: input.chatbotId,
+            actorUserId: input.userId,
+            eventType: "chat.escalated",
+            entityType: "conversation",
+            entityId: conversationId,
+            title: "Conversation escalated",
+            body: reason ?? "Escalated by AI assistant",
+            metadata: {
+              conversationId,
+              reason,
+              summary,
+              source: "escalate_tool",
+            },
+            dedupeKey: `chat.escalated:${conversationId}`,
+          });
+        } catch (error) {
+          console.error("Failed to create chat.escalated notification", error);
+        }
 
         broadcastConversationStatusUpdate({
           conversationId,

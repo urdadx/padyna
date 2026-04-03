@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { auth } from "@padyna/auth";
 import { db } from "@padyna/db";
+import { createOrganizationNotification } from "@padyna/db/notifications";
 import { chatConversation, chatMessage } from "@padyna/db/schema/index";
 import { and, eq } from "drizzle-orm";
 import type {
@@ -427,6 +428,27 @@ async function handleJoinEvent(
       .where(eq(chatConversation.id, conversation.id));
 
     broadcastConversationStatus(room, "assigned");
+
+    try {
+      await createOrganizationNotification({
+        organizationId: conversation.organizationId,
+        chatbotId: conversation.chatbotId,
+        actorUserId: authResult.userId,
+        eventType: "conversation.agent_joined",
+        entityType: "conversation",
+        entityId: conversation.id,
+        title: "Agent joined conversation",
+        body: authResult.userName,
+        metadata: {
+          conversationId: conversation.id,
+          agentUserId: authResult.userId,
+          agentName: authResult.userName,
+        },
+        dedupeKey: `conversation.agent_joined:${conversation.id}:${authResult.userId}`,
+      });
+    } catch (error) {
+      console.error("Failed to create conversation.agent_joined notification", error);
+    }
   } else {
     const visitorAccess = await verifyVisitorAccess(conversation, event.token);
     if (!visitorAccess.ok) {
@@ -443,6 +465,25 @@ async function handleJoinEvent(
     socket.role = "visitor";
     socket.userId = null;
     socket.userName = event.userName ?? "Visitor";
+
+    try {
+      await createOrganizationNotification({
+        organizationId: conversation.organizationId,
+        chatbotId: conversation.chatbotId,
+        eventType: "conversation.human_joined",
+        entityType: "conversation",
+        entityId: conversation.id,
+        title: "Visitor joined conversation",
+        body: socket.userName,
+        metadata: {
+          conversationId: conversation.id,
+          visitorName: socket.userName,
+        },
+        dedupeKey: `conversation.human_joined:${conversation.id}`,
+      });
+    } catch (error) {
+      console.error("Failed to create conversation.human_joined notification", error);
+    }
   }
 
   broadcastRoomState(room);

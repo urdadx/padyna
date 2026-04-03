@@ -3,6 +3,7 @@ import { protectedProcedure, router } from "../index";
 import { db } from "@padyna/db";
 import { eq, and, desc, asc, SQL } from "drizzle-orm";
 import { chatConversation, chatMessage } from "@padyna/db/schema/chat";
+import { createOrganizationNotification } from "@padyna/db/notifications";
 import { randomUUID } from "node:crypto";
 
 function getLiveChatToken(metadata: Record<string, unknown> | undefined): string {
@@ -187,6 +188,25 @@ export const conversationsRouter = router({
 
       await db.delete(chatConversation).where(eq(chatConversation.id, input.id));
 
+      try {
+        await createOrganizationNotification({
+          organizationId,
+          chatbotId: record.chatbotId,
+          actorUserId: ctx.session.user.id,
+          eventType: "chat.deleted",
+          entityType: "conversation",
+          entityId: record.id,
+          title: "Conversation deleted",
+          body: record.title,
+          metadata: {
+            conversationId: record.id,
+            previousStatus: record.status,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to create chat.deleted notification", error);
+      }
+
       return { success: true };
     }),
 
@@ -195,6 +215,7 @@ export const conversationsRouter = router({
       z.object({
         id: z.uuid(),
         status: z.enum(["opened", "escalated", "closed", "assigned"]),
+        assignedTo: z.string().uuid().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -214,6 +235,15 @@ export const conversationsRouter = router({
         throw new Error("Conversation not found");
       }
 
+      const isAdmin = ctx.session.user.role === "admin";
+      const removingExistingAssignment =
+        record.status === "assigned" && input.status !== "assigned";
+      const assignedToCurrentUser = record.assignedTo === ctx.session.user.id;
+
+      if (removingExistingAssignment && !isAdmin && !assignedToCurrentUser) {
+        throw new Error("Only admins or the assigned member can remove this assignment");
+      }
+
       const [updated] = await db
         .update(chatConversation)
         .set({
@@ -231,9 +261,24 @@ export const conversationsRouter = router({
                   liveChatPhase: "waiting_for_join",
                 },
               }
-            : input.status === "opened" || input.status === "closed"
-              ? { assignedTo: null }
-              : {}),
+            : input.status === "assigned"
+              ? (() => {
+                  if (!isAdmin) {
+                    const alreadyAssignedToOther =
+                      Boolean(record.assignedTo) && record.assignedTo !== ctx.session.user.id;
+
+                    if (alreadyAssignedToOther) {
+                      throw new Error("Conversation is already assigned to another member");
+                    }
+
+                    return { assignedTo: ctx.session.user.id };
+                  }
+
+                  return { assignedTo: input.assignedTo ?? ctx.session.user.id };
+                })()
+              : input.status === "opened" || input.status === "closed"
+                ? { assignedTo: null }
+                : {}),
           updatedAt: new Date(),
         })
         .where(eq(chatConversation.id, input.id))
@@ -244,6 +289,42 @@ export const conversationsRouter = router({
           conversationId: updated.id,
           status: updated.status,
         });
+
+        const eventTypeByStatus = {
+          escalated: "chat.escalated",
+          opened: "chat.opened",
+          closed: "chat.closed",
+          assigned: null,
+        } as const;
+
+        const eventType = eventTypeByStatus[input.status];
+
+        if (eventType) {
+          try {
+            await createOrganizationNotification({
+              organizationId,
+              chatbotId: updated.chatbotId,
+              actorUserId: ctx.session.user.id,
+              eventType,
+              entityType: "conversation",
+              entityId: updated.id,
+              title:
+                input.status === "escalated"
+                  ? "Conversation escalated"
+                  : input.status === "opened"
+                    ? "Conversation reopened"
+                    : "Conversation closed",
+              body: updated.title,
+              metadata: {
+                conversationId: updated.id,
+                status: input.status,
+                previousStatus: record.status,
+              },
+            });
+          } catch (error) {
+            console.error(`Failed to create ${eventType} notification`, error);
+          }
+        }
       }
 
       return updated;
@@ -281,6 +362,27 @@ export const conversationsRouter = router({
         })
         .where(eq(chatConversation.id, input.id))
         .returning();
+
+      if (updated && input.isHighPriority) {
+        try {
+          await createOrganizationNotification({
+            organizationId,
+            chatbotId: updated.chatbotId,
+            actorUserId: ctx.session.user.id,
+            eventType: "chat.priority_marked",
+            entityType: "conversation",
+            entityId: updated.id,
+            title: "Conversation marked as priority",
+            body: updated.title,
+            metadata: {
+              conversationId: updated.id,
+              isHighPriority: true,
+            },
+          });
+        } catch (error) {
+          console.error("Failed to create chat.priority_marked notification", error);
+        }
+      }
 
       return updated;
     }),

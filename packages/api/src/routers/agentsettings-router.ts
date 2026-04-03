@@ -4,6 +4,7 @@ import { db } from "@padyna/db";
 import { eq, and, desc, count } from "drizzle-orm";
 import { chatbot, organization } from "@padyna/db/schema/index";
 import { setActiveSessionContext } from "@padyna/db/set-active-session-context";
+import { createOrganizationNotification } from "@padyna/db/notifications";
 import { nanoid } from "nanoid";
 
 export const agentsettingsRouter = router({
@@ -104,6 +105,26 @@ export const agentsettingsRouter = router({
           embedToken,
         })
         .returning();
+
+      if (created) {
+        try {
+          await createOrganizationNotification({
+            organizationId,
+            chatbotId: created.id,
+            actorUserId: ctx.session.user.id,
+            eventType: "agent.created",
+            entityType: "chatbot",
+            entityId: created.id,
+            title: "New AI agent created",
+            body: created.name ?? "Untitled agent",
+            metadata: {
+              chatbotId: created.id,
+            },
+          });
+        } catch (error) {
+          console.error("Failed to create agent.created notification", error);
+        }
+      }
 
       return created;
     }),

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { Webhooks } from "@polar-sh/hono";
 import { db } from "@padyna/db";
+import { createOrganizationNotification } from "@padyna/db/notifications";
 import { eq, and, inArray } from "drizzle-orm";
 import { user } from "@padyna/db/schema/auth";
 import { subscription } from "@padyna/db/schema/subscription";
@@ -43,6 +44,93 @@ async function syncOrganizationLimits(organizationId: string) {
     .where(eq(organization.id, organizationId));
 }
 
+async function createBillingNotifications(input: {
+  organizationId: string | undefined;
+  userId: string;
+  subscriptionId: string;
+  status: string;
+  previousStatus?: string;
+  trialStart?: Date | null;
+  previousTrialStart?: Date | null;
+  trialEnd?: Date | null;
+  canceledAt?: Date | null;
+  previousCanceledAt?: Date | null;
+  modifiedAt?: Date | null;
+}) {
+  if (!input.organizationId) {
+    return;
+  }
+
+  const justStartedTrial =
+    input.status === "trialing" &&
+    (input.previousStatus !== "trialing" ||
+      (input.trialStart?.toISOString() ?? null) !== (input.previousTrialStart?.toISOString() ?? null));
+
+  const justEndedTrial = input.previousStatus === "trialing" && input.status !== "trialing";
+
+  const justCanceled =
+    (input.status === "canceled" || input.status === "revoked") &&
+    (input.previousStatus !== input.status ||
+      (input.canceledAt?.toISOString() ?? null) !== (input.previousCanceledAt?.toISOString() ?? null));
+
+  if (justStartedTrial) {
+    await createOrganizationNotification({
+      organizationId: input.organizationId,
+      actorUserId: input.userId,
+      eventType: "billing.trial_started",
+      entityType: "subscription",
+      entityId: input.subscriptionId,
+      title: "Trial started",
+      body: "Your organization trial is now active.",
+      metadata: {
+        subscriptionId: input.subscriptionId,
+        status: input.status,
+        trialStart: input.trialStart?.toISOString(),
+        trialEnd: input.trialEnd?.toISOString(),
+      },
+      dedupeKey: `billing.trial_started:${input.subscriptionId}:${input.trialStart?.toISOString() ?? input.modifiedAt?.toISOString() ?? ""}`,
+    });
+  }
+
+  if (justEndedTrial) {
+    await createOrganizationNotification({
+      organizationId: input.organizationId,
+      actorUserId: input.userId,
+      eventType: "billing.trial_ended",
+      entityType: "subscription",
+      entityId: input.subscriptionId,
+      title: "Trial ended",
+      body: "Your organization trial has ended.",
+      metadata: {
+        subscriptionId: input.subscriptionId,
+        previousStatus: input.previousStatus,
+        status: input.status,
+        trialEnd: input.trialEnd?.toISOString(),
+      },
+      dedupeKey: `billing.trial_ended:${input.subscriptionId}:${input.trialEnd?.toISOString() ?? input.modifiedAt?.toISOString() ?? ""}`,
+    });
+  }
+
+  if (justCanceled) {
+    await createOrganizationNotification({
+      organizationId: input.organizationId,
+      actorUserId: input.userId,
+      eventType: "billing.subscription_cancelled",
+      entityType: "subscription",
+      entityId: input.subscriptionId,
+      title: "Subscription cancelled",
+      body: "Your organization subscription was cancelled.",
+      metadata: {
+        subscriptionId: input.subscriptionId,
+        previousStatus: input.previousStatus,
+        status: input.status,
+        canceledAt: input.canceledAt?.toISOString(),
+      },
+      dedupeKey: `billing.subscription_cancelled:${input.subscriptionId}:${input.canceledAt?.toISOString() ?? input.modifiedAt?.toISOString() ?? input.status}`,
+    });
+  }
+}
+
 export const polarWebhook = new Hono();
 
 polarWebhook.post(
@@ -69,7 +157,7 @@ polarWebhook.post(
           return;
         }
 
-        const isSubscribed = ["active", "trialing", "uncanceled"].includes(data.status);
+          const isSubscribed = ["active", "trialing", "uncanceled"].includes(data.status);
 
         try {
           await db.update(user).set({ isSubscribed }).where(eq(user.id, userId));
@@ -110,6 +198,24 @@ polarWebhook.post(
                 updatedAt: data.modifiedAt ? new Date(data.modifiedAt) : new Date(),
               })
               .where(eq(subscription.polarSubscriptionId, data.id));
+
+            try {
+              await createBillingNotifications({
+                organizationId: organizationId ?? existingSub.organizationId ?? undefined,
+                userId,
+                subscriptionId: data.id,
+                status: data.status,
+                previousStatus: existingSub.status,
+                trialStart: data.trialStart ? new Date(data.trialStart) : null,
+                previousTrialStart: existingSub.trialStart,
+                trialEnd: data.trialEnd ? new Date(data.trialEnd) : null,
+                canceledAt: data.canceledAt ? new Date(data.canceledAt) : null,
+                previousCanceledAt: existingSub.canceledAt,
+                modifiedAt: data.modifiedAt ? new Date(data.modifiedAt) : null,
+              });
+            } catch (error) {
+              console.error("Failed to create billing notifications:", error);
+            }
           } else {
             await db
               .insert(subscription)
@@ -150,6 +256,21 @@ polarWebhook.post(
               .onConflictDoNothing({
                 target: subscription.id,
               });
+
+            try {
+              await createBillingNotifications({
+                organizationId,
+                userId,
+                subscriptionId: data.id,
+                status: data.status,
+                trialStart: data.trialStart ? new Date(data.trialStart) : null,
+                trialEnd: data.trialEnd ? new Date(data.trialEnd) : null,
+                canceledAt: data.canceledAt ? new Date(data.canceledAt) : null,
+                modifiedAt: data.modifiedAt ? new Date(data.modifiedAt) : null,
+              });
+            } catch (error) {
+              console.error("Failed to create billing notifications:", error);
+            }
           }
 
           if (organizationId) {

@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import { nanoid } from "nanoid";
 import { getActiveOrganization } from "@padyna/db/get-active-organization";
 import { getActiveChatbot } from "@padyna/db/get-active-chatbot";
+import { createOrganizationNotification } from "@padyna/db/notifications";
 import { chatbot, session, user } from "@padyna/db/schema/index";
 import { polarClient } from "./lib/payments";
 import { eq } from "drizzle-orm";
@@ -157,6 +158,57 @@ export const auth = betterAuth({
           } catch (error) {
             console.error("Failed to create default chatbot for organization:", {
               organizationId: organization.id,
+              error,
+            });
+          }
+        },
+        afterUpdateOrganization: async ({ organization, user }) => {
+          if (!organization) {
+            return;
+          }
+
+          try {
+            await createOrganizationNotification({
+              organizationId: organization.id,
+              actorUserId: user.id,
+              eventType: "team.name_updated",
+              entityType: "organization",
+              entityId: organization.id,
+              title: "Team details updated",
+              body: organization.name,
+              metadata: {
+                organizationId: organization.id,
+                organizationName: organization.name,
+              },
+            });
+          } catch (error) {
+            console.error("Failed to create team.name_updated notification:", {
+              organizationId: organization.id,
+              error,
+            });
+          }
+        },
+        afterCreateInvitation: async ({ invitation, inviter, organization }) => {
+          try {
+            await createOrganizationNotification({
+              organizationId: organization.id,
+              actorUserId: inviter.id,
+              eventType: "team.member_invited",
+              entityType: "invitation",
+              entityId: invitation.id,
+              title: "New team member invited",
+              body: invitation.email,
+              metadata: {
+                invitationId: invitation.id,
+                invitedEmail: invitation.email,
+                role: invitation.role,
+              },
+              dedupeKey: `team.member_invited:${invitation.id}`,
+            });
+          } catch (error) {
+            console.error("Failed to create team.member_invited notification:", {
+              organizationId: organization.id,
+              invitationId: invitation.id,
               error,
             });
           }

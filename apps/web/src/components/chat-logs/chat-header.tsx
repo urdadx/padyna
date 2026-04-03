@@ -7,21 +7,39 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { trpc, queryClient } from "@/utils/trpc";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useState } from "react";
+import { AssignDialog } from "./assign-dialog";
+import { useRouteContext } from "@tanstack/react-router";
 
 interface ChatHeaderProps {
 	conversationId?: string;
 	isHighPriority?: boolean;
 	status?: "opened" | "escalated" | "closed" | "assigned";
+	assignedToUserId?: string | null;
 }
 
 export const ChatHeader = ({
 	conversationId,
 	isHighPriority = false,
 	status = "opened",
+	assignedToUserId,
 }: ChatHeaderProps) => {
+	const [isEscalateDialogOpen, setIsEscalateDialogOpen] = useState(false);
 	const isClosed = status === "closed";
 	const newStatus = isClosed ? "opened" : "closed";
-	const isEscalated = status === "escalated";
+	const isEscalated = status === "escalated" || status === "assigned";
+	const isAssignedStatus = status === "assigned";
+
+	const { session } = useRouteContext({ from: "/(admin)" });
+
+	const isAdmin = session?.user?.role === "admin";
+	const currentUserId = session?.user?.id;
+	const isAssignedToOther = Boolean(
+		assignedToUserId && currentUserId && assignedToUserId !== currentUserId,
+	);
+	const canDeescalateAssignedConversation = Boolean(
+		isAdmin || (assignedToUserId && currentUserId && assignedToUserId === currentUserId),
+	);
 
 	const updatePriorityMutation = useMutation({
 		...trpc.conversations.updatePriority.mutationOptions(),
@@ -78,12 +96,52 @@ export const ChatHeader = ({
 					sort: "recent",
 				}).queryKey,
 			});
-			toast.success("Chat escalated to a human agent");
+			toast.success("Chat status updated");
+			setIsEscalateDialogOpen(false);
 		},
 		onError: () => {
-			toast.error("Failed to escalate. Please try again.");
+			toast.error("Failed to update status. Please try again.");
 		},
 	});
+
+	const handleEscalateClick = () => {
+		if (isAssignedStatus && !canDeescalateAssignedConversation) {
+			return;
+		}
+
+		if (isEscalated) {
+			escalateMutation.mutate({
+				id: conversationId!,
+				status: "opened",
+			});
+		} else {
+			setIsEscalateDialogOpen(true);
+		}
+	};
+
+	const assignToUser = (userId?: string) => {
+		if (!conversationId) return;
+
+		if (!isAdmin) {
+			if (isAssignedToOther || !currentUserId || (userId && userId !== currentUserId)) {
+				return;
+			}
+		}
+
+		escalateMutation.mutate({
+			id: conversationId,
+			status: "assigned",
+			assignedTo: isAdmin ? userId : currentUserId,
+		});
+	};
+
+	const unassignConversation = () => {
+		if (!conversationId || !isAdmin) return;
+		escalateMutation.mutate({
+			id: conversationId,
+			status: "escalated",
+		});
+	};
 
 	return (
 		<div className="px-2 sticky rounded-t-2xl top-0 flex justify-between h-14 shrink-0 items-center bg-background/50 backdrop-blur-lg border-b transition-[width,height] ease-linear z-10 group-has-data/[collapsible=icon]/sidebar-wrapper:h-12">
@@ -125,17 +183,13 @@ export const ChatHeader = ({
 						<Button
 							variant="outline"
 							className="text-gray-500 hover:text-black rounded-full"
-							onClick={() =>
-								conversationId &&
-								escalateMutation.mutate({
-									id: conversationId,
-									status: isEscalated ? "opened" : "escalated",
-								})
-							}
+							onClick={handleEscalateClick}
 							disabled={
 								!conversationId ||
 								escalateMutation.isPending ||
-								isClosed
+								isClosed ||
+								(isAssignedStatus &&
+									!canDeescalateAssignedConversation)
 							}>
 							<RoutingLinear
 								className={
@@ -146,7 +200,11 @@ export const ChatHeader = ({
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent>
-						{isEscalated ? "De-escalate" : "Escalate to human agent"}
+						{isAssignedStatus && !canDeescalateAssignedConversation
+							? "Only the assigned member or an admin can de-escalate this chat"
+							: isEscalated
+								? "De-escalate"
+								: "Escalate to human agent"}
 					</TooltipContent>
 				</Tooltip>
 				<Tooltip>
@@ -169,7 +227,7 @@ export const ChatHeader = ({
 									color={isClosed ? "green" : "white"}
 									className="h-4 w-4"
 								/>
-								{isClosed ? "Open" : "Close"}
+								{isClosed ? "Re-open" : "Close"}
 							</>
 						</Button>
 					</TooltipTrigger>
@@ -186,6 +244,17 @@ export const ChatHeader = ({
 					<TooltipContent>View chat details</TooltipContent>
 				</Tooltip>
 			</div>
+
+			<AssignDialog
+				isOpen={isEscalateDialogOpen}
+				onOpenChange={setIsEscalateDialogOpen}
+				onAssign={assignToUser}
+				onUnassign={unassignConversation}
+				isPending={escalateMutation.isPending}
+				isAdmin={!!isAdmin}
+				currentUserId={currentUserId}
+				assignedToUserId={assignedToUserId}
+			/>
 		</div>
 	);
 };

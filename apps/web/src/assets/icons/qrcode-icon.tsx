@@ -4,8 +4,8 @@ export function QrCodeIcon(props: SVGProps<SVGSVGElement>) {
 	return (
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
-			width="2em"
-			height="2em"
+			width="1.5em"
+			height="1.5em"
 			viewBox="0 0 24 24"
 			{...props}>
 			{/* Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ */}

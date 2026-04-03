@@ -2,7 +2,6 @@ import { XIcon, QrCodeIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { QrCodeIcon as QrIcon } from "@/assets/icons/qrcode-icon";
 import { env } from "@padyna/env/web";
-import { motion } from "motion/react";
 import { QRCodeCanvas } from "qrcode.react";
 
 interface Chatbot {
@@ -56,14 +55,37 @@ export const QRCodeInstructions = ({ chatbot, onClose }: QRCodeInstructionsProps
 								with your agent.
 							</p>
 						</div>
+						<div className="pt-5 pb-2">
+							<div className="mb-2 flex items-center justify-between">
+								<div className="flex items-center gap-3">
+									<QrIcon color="red" />
+									<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+										Share your agent using a QR code
+									</p>
+								</div>
+								<div className="flex gap-2">
+									<Button
+										className="text-sm font-medium text-gray-600 dark:text-gray-100"
+										variant="outline"
+										onClick={downloadQRCode}
+										size="sm">
+										Download
+									</Button>
+								</div>
+							</div>
+							<p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+								Download this QR code and display it in your store,
+								office etc
+							</p>
+						</div>
 
-						<div className="flex flex-col items-center justify-center py-10">
-							<div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 mb-6">
+						<div className="flex flex-col items-center justify-center py-6 space-y-4">
+							<div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
 								{websiteUrl ? (
 									<QRCodeCanvas
 										id="qr-code"
 										value={websiteUrl}
-										size={200}
+										size={250}
 										level="H"
 										marginSize={5}
 										className="rounded-lg shadow-sm"
@@ -73,36 +95,6 @@ export const QRCodeInstructions = ({ chatbot, onClose }: QRCodeInstructionsProps
 										<QrCodeIcon className="w-12 h-12 text-gray-300" />
 									</div>
 								)}
-							</div>
-
-							<div className="w-full max-w-sm space-y-4">
-								<div className="mt-auto border-gray-100 dark:border-gray-800">
-									<div className="flex items-center gap-3">
-										<div className="p-2 bg-red-50 dark:bg-red-950/30 rounded-lg">
-											<QrIcon color="red" />
-										</div>
-										<div>
-											<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-												Scan to chat
-											</p>
-											<p className="text-xs text-gray-500 dark:text-gray-400">
-												Your customers can scan to
-												open the chat interface
-											</p>
-										</div>
-									</div>
-								</div>
-
-								<motion.div
-									whileHover={{ scale: 1.02 }}
-									whileTap={{ scale: 0.98 }}>
-									<Button
-										className="w-full  flex items-center justify-center gap-2"
-										onClick={downloadQRCode}
-										disabled={!websiteUrl}>
-										Download
-									</Button>
-								</motion.div>
 							</div>
 						</div>
 					</div>

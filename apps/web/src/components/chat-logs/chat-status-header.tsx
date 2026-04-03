@@ -34,7 +34,9 @@ export const ChatStatusHeader = ({
 	const peerLabel = variant === "agent" ? "user" : "human agent";
 	const joinCta = variant === "agent" ? "Join chat" : "Join live chat";
 	const connectedLabel =
-		variant === "agent" ? "You are now live with the user" : "You are now live with a human agent";
+		variant === "agent"
+			? "You are now live with the user"
+			: "You are now live with a human agent";
 	const readyLabel = variant === "agent" ? "Ready to connect" : "Waiting to join live support";
 	const disconnectedLabel = `${selfLabel} are not connected.`;
 	const waitingLabel = hasJoined
@@ -42,7 +44,8 @@ export const ChatStatusHeader = ({
 		: isPeerJoined
 			? `${variant === "agent" ? "User" : "Human agent"} is waiting for you to join.`
 			: `Waiting for the ${peerLabel} to join...`;
-	const showJoinButton = Boolean(onJoin) && !hasJoined && (status === "connected" || status === "waiting");
+	const showJoinButton =
+		Boolean(onJoin) && !hasJoined && (status === "connected" || status === "waiting");
 
 	const getBackgroundColor = () => {
 		if (status === "connected" && hasJoined) {
@@ -113,11 +116,33 @@ export const ChatStatusHeader = ({
 				)}
 			</div>
 			<div className="flex items-center gap-2">
-				{showJoinButton && onJoin && (
-					<Button onClick={onJoin} variant="outline" size="sm" disabled={isAssignedToOther}>
-						{joinCta}
-					</Button>
+				{isAssignedToOther && (
+					<span className="text-xs text-muted-foreground italic">
+						Assigned to {assignedUserName}
+					</span>
 				)}
+				<Tooltip>
+					<TooltipTrigger>
+						<span>
+							{showJoinButton && onJoin && (
+								<Button
+									onClick={onJoin}
+									variant="outline"
+									size="sm"
+									disabled={isAssignedToOther}>
+									{joinCta}
+								</Button>
+							)}
+						</span>
+					</TooltipTrigger>
+					{isAssignedToOther && (
+						<TooltipContent>
+							{assignedUserName} has been assigned to this chat. You
+							can't engage.
+						</TooltipContent>
+					)}
+				</Tooltip>
+
 				{(status === "disconnected" || status === "error") && (
 					<Tooltip>
 						<TooltipTrigger>

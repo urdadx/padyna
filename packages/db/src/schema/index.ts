@@ -7,3 +7,4 @@ export * from "./visitor-sessions";
 export * from "./visitor-events";
 export * from "./analytics-ranges";
 export * from "./subscription";
+export * from "./notification";
