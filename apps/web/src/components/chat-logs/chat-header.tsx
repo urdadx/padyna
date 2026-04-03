@@ -40,6 +40,7 @@ export const ChatHeader = ({
 	const canDeescalateAssignedConversation = Boolean(
 		isAdmin || (assignedToUserId && currentUserId && assignedToUserId === currentUserId),
 	);
+	const canToggleConversationStatus = !isAssignedStatus || canDeescalateAssignedConversation;
 
 	const updatePriorityMutation = useMutation({
 		...trpc.conversations.updatePriority.mutationOptions(),
@@ -143,15 +144,37 @@ export const ChatHeader = ({
 		});
 	};
 
+	const priorityTooltipText = !conversationId
+		? "Select a chat first"
+		: isHighPriority
+			? "Remove priority"
+			: "Mark as priority";
+
+	const escalateTooltipText = !conversationId
+		? "Select a chat first"
+		: isClosed
+			? "Chat is currently closed, open first to escalate"
+			: isAssignedStatus && !canDeescalateAssignedConversation
+				? "Only the assigned member or an admin can de-escalate this chat"
+				: isEscalated
+					? "De-escalate"
+					: "Escalate to human agent";
+
+	const closeTooltipText = !conversationId
+		? "Select a chat first"
+		: !canToggleConversationStatus
+			? "Only the assigned member or an admin can close this chat"
+			: isClosed
+				? "Mark chat as open"
+				: "Mark chat as closed";
+
 	return (
 		<div className="px-2 sticky rounded-t-2xl top-0 flex justify-between h-14 shrink-0 items-center bg-background/50 backdrop-blur-lg border-b transition-[width,height] ease-linear z-10 group-has-data/[collapsible=icon]/sidebar-wrapper:h-12">
 			<div></div>
 
 			<div className="flex items-center gap-2">
 				<Tooltip>
-					<TooltipContent>
-						{isHighPriority ? "Remove priority" : "Mark as priority"}
-					</TooltipContent>
+					<TooltipContent>{priorityTooltipText}</TooltipContent>
 					<TooltipTrigger>
 						<Button
 							variant="outline"
@@ -199,13 +222,7 @@ export const ChatHeader = ({
 							{isEscalated ? "De-escalate" : "Escalate"}
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>
-						{isAssignedStatus && !canDeescalateAssignedConversation
-							? "Only the assigned member or an admin can de-escalate this chat"
-							: isEscalated
-								? "De-escalate"
-								: "Escalate to human agent"}
-					</TooltipContent>
+					<TooltipContent>{escalateTooltipText}</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger>
@@ -220,7 +237,9 @@ export const ChatHeader = ({
 								})
 							}
 							disabled={
-								!conversationId || toggleStatusMutation.isPending
+								!conversationId ||
+								toggleStatusMutation.isPending ||
+								!canToggleConversationStatus
 							}>
 							<>
 								<CheckMarkIcon
@@ -231,9 +250,7 @@ export const ChatHeader = ({
 							</>
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>
-						{isClosed ? "Mark chat as open" : "Mark chat as closed"}
-					</TooltipContent>
+					<TooltipContent>{closeTooltipText}</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger>
