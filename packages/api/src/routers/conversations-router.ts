@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../index";
 import { db } from "@padyna/db";
-import { eq, and, desc, asc, SQL } from "drizzle-orm";
+import { eq, and, or, desc, asc, SQL } from "drizzle-orm";
 import { chatConversation, chatMessage } from "@padyna/db/schema/chat";
 import { createOrganizationNotification } from "@padyna/db/notifications";
 import { randomUUID } from "node:crypto";
@@ -22,6 +22,7 @@ export const conversationsRouter = router({
         .object({
           filter: z.enum(["all", "escalated", "opened", "closed", "assigned"]),
           sort: z.enum(["recent", "oldest", "priority"]),
+          limit: z.number().int().min(1).max(200).optional(),
         })
         .optional(),
     )
@@ -32,6 +33,7 @@ export const conversationsRouter = router({
 
       const filter = input?.filter ?? "all";
       const sort = input?.sort ?? "recent";
+      const limit = input?.limit ?? 100;
 
       if (!organizationId || !chatbotId) {
         throw new Error("No active organization or chatbot");
@@ -44,24 +46,30 @@ export const conversationsRouter = router({
 
       if (filter !== "all") {
         if (filter === "assigned") {
+          filters.push(eq(chatConversation.status, "assigned"));
           filters.push(eq(chatConversation.assignedTo, userId));
+        } else if (filter === "escalated") {
+          filters.push(
+            or(eq(chatConversation.status, "escalated"), eq(chatConversation.status, "assigned")),
+          );
         } else {
           filters.push(eq(chatConversation.status, filter));
         }
       }
 
-      let orderBy = desc(chatConversation.updatedAt);
+      let orderBy: SQL[] = [desc(chatConversation.updatedAt)];
       if (sort === "oldest") {
-        orderBy = asc(chatConversation.updatedAt);
+        orderBy = [asc(chatConversation.updatedAt)];
       } else if (sort === "priority") {
-        orderBy = desc(chatConversation.isHighPriority);
+        orderBy = [desc(chatConversation.isHighPriority), desc(chatConversation.updatedAt)];
       }
 
       const result = await db
         .select()
         .from(chatConversation)
         .where(and(...filters))
-        .orderBy(orderBy);
+        .orderBy(...orderBy)
+        .limit(limit);
 
       return result;
     }),
