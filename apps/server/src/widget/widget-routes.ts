@@ -15,6 +15,7 @@ import {
 } from "../chat/chat-utils";
 import { initializeLiveChatConversation } from "../chat/live-chat-service";
 import { broadcastConversationStatusUpdate } from "../chat/live-chat-service";
+import { createRateLimitMiddleware, getClientIp } from "../lib/ratelimiter";
 
 function getLiveChatToken(metadata: Record<string, unknown> | null | undefined): string | null {
   if (!metadata) {
@@ -45,6 +46,19 @@ type PublicWidgetChatbot = {
 };
 
 export const widgetRoutes = new Hono();
+
+const WIDGET_CHAT_RATE_LIMIT_MAX_REQUESTS = 12;
+const WIDGET_CHAT_RATE_LIMIT_WINDOW_SECONDS = 60;
+const widgetChatRateLimitMiddleware = createRateLimitMiddleware({
+  namespace: "chat-widget-generation",
+  maxRequests: WIDGET_CHAT_RATE_LIMIT_MAX_REQUESTS,
+  windowSeconds: WIDGET_CHAT_RATE_LIMIT_WINDOW_SECONDS,
+  resolveIdentifier: (c) => {
+    const widgetId = c.req.param("widgetId");
+    const clientIp = getClientIp(c);
+    return `${widgetId}:${clientIp}`;
+  },
+});
 
 function buildWidgetConfig(chatbotRecord: PublicWidgetChatbot) {
   return {
@@ -231,7 +245,7 @@ widgetRoutes.post("/:widgetId/init", async (c) => {
   });
 });
 
-widgetRoutes.post("/:widgetId/chat", async (c) => {
+widgetRoutes.post("/:widgetId/chat", widgetChatRateLimitMiddleware, async (c) => {
   const resolved = await resolveWidgetRequest(c, { requireEnabled: true });
   if (resolved instanceof Response) {
     return resolved;
@@ -259,6 +273,7 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
     chatbotId: chatbotRecord.id,
     organizationId: chatbotRecord.organizationId,
     userId: undefined,
+    channel: "widget",
     messages: uiMessages,
     metadata: visitorMetadata,
     title,
@@ -304,6 +319,7 @@ widgetRoutes.post("/:widgetId/chat", async (c) => {
         chatbotId: chatbotRecord.id,
         organizationId: chatbotRecord.organizationId,
         userId: undefined,
+        channel: "widget",
         messages: completedMessages as any,
         metadata: visitorMetadata,
         conversationId: resolvedConversationId,

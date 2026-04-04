@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../index";
 import { db } from "@padyna/db";
-import { eq, and, gte, lte, lt, sql, desc, count, countDistinct, avg } from "drizzle-orm";
+import { eq, and, gte, lte, sql, desc, count, countDistinct, avg } from "drizzle-orm";
 import {
   visitorSessions,
   visitorEvents,
@@ -9,6 +9,7 @@ import {
   analyticsWeekly,
   analyticsMonthly,
   chatbot,
+  chatConversation,
 } from "@padyna/db/schema/index";
 import { TRPCError } from "@trpc/server";
 import { analyticsEvents } from "../lib/events";
@@ -154,76 +155,6 @@ export function getDateRange(timeRange: z.infer<typeof timeRangeSchema>) {
 }
 
 const n = (val: unknown) => Number(val ?? 0);
-
-const calcPercentChange = (curr: number, prev: number) => {
-  if (prev === 0) return curr > 0 ? 100 : 0;
-  return Math.round(((curr - prev) / prev) * 100);
-};
-
-const calcBounceRate = (bounces: number, total: number) =>
-  total > 0 ? Math.round((bounces / total) * 100 * 10) / 10 : 0;
-
-interface TrendRow {
-  totalSessions: unknown;
-  uniqueVisitors: unknown;
-  avgSessionDurationMs: unknown;
-  totalChatsStarted: unknown;
-  bounceCount: unknown;
-}
-
-function buildTrendResult(current: TrendRow | undefined, previous: TrendRow | undefined) {
-  const totalSessions = n(current?.totalSessions);
-  const totalSessionsPrev = n(previous?.totalSessions);
-  const uniqueVisitors = n(current?.uniqueVisitors);
-  const uniqueVisitorsPrev = n(previous?.uniqueVisitors);
-  const totalChats = n(current?.totalChatsStarted);
-  const totalChatsPrev = n(previous?.totalChatsStarted);
-  const avgDuration = n(current?.avgSessionDurationMs);
-  const avgDurationPrev = n(previous?.avgSessionDurationMs);
-  const bounceCount = n(current?.bounceCount);
-  const bounceCountPrev = n(previous?.bounceCount);
-
-  const bounceRate = calcBounceRate(bounceCount, totalSessions);
-  const bounceRatePrev = calcBounceRate(bounceCountPrev, totalSessionsPrev);
-
-  return {
-    totalSessions: {
-      value: totalSessions,
-      previousValue: totalSessionsPrev,
-      change: calcPercentChange(totalSessions, totalSessionsPrev),
-      direction: totalSessions >= totalSessionsPrev ? "up" : "down",
-      isPositive: totalSessions >= totalSessionsPrev,
-    },
-    uniqueVisitors: {
-      value: uniqueVisitors,
-      previousValue: uniqueVisitorsPrev,
-      change: calcPercentChange(uniqueVisitors, uniqueVisitorsPrev),
-      direction: uniqueVisitors >= uniqueVisitorsPrev ? "up" : "down",
-      isPositive: uniqueVisitors >= uniqueVisitorsPrev,
-    },
-    totalChats: {
-      value: totalChats,
-      previousValue: totalChatsPrev,
-      change: calcPercentChange(totalChats, totalChatsPrev),
-      direction: totalChats >= totalChatsPrev ? "up" : "down",
-      isPositive: totalChats >= totalChatsPrev,
-    },
-    bounceRate: {
-      value: bounceRate,
-      previousValue: bounceRatePrev,
-      change: calcPercentChange(bounceRate, bounceRatePrev),
-      direction: bounceRate <= bounceRatePrev ? "down" : "up",
-      isPositive: bounceRate <= bounceRatePrev,
-    },
-    avgSessionDuration: {
-      value: Math.round(avgDuration / 1000),
-      previousValue: Math.round(avgDurationPrev / 1000),
-      change: calcPercentChange(avgDuration, avgDurationPrev),
-      direction: avgDuration >= avgDurationPrev ? "up" : "down",
-      isPositive: avgDuration >= avgDurationPrev,
-    },
-  };
-}
 
 export const analyticsRouter = router({
   getOverview: protectedProcedure
@@ -484,6 +415,33 @@ export const analyticsRouter = router({
     }));
   }),
 
+  getTopPlatforms: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
+    const chatbotId = getActiveChatbot(ctx);
+    const { start, end } = getDateRange(input.timeRange);
+
+    const result = await db
+      .select({
+        platform: chatConversation.channel,
+        count: count().as("count"),
+      })
+      .from(chatConversation)
+      .where(
+        and(
+          eq(chatConversation.chatbotId, chatbotId),
+          gte(chatConversation.createdAt, start),
+          lte(chatConversation.createdAt, end),
+        ),
+      )
+      .groupBy(chatConversation.channel)
+      .orderBy(desc(count()))
+      .limit(input.limit);
+
+    return result.map((r) => ({
+      platform: r.platform ?? "widget",
+      value: n(r.count),
+    }));
+  }),
+
   getDaily: protectedProcedure
     .input(
       z.object({
@@ -536,131 +494,6 @@ export const analyticsRouter = router({
         .orderBy(desc(analyticsMonthly.year), desc(analyticsMonthly.month))
         .limit(input.limit);
     }),
-
-  getDailyTrend: protectedProcedure.query(async ({ ctx }) => {
-    const chatbotId = getActiveChatbot(ctx);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const trendFields = {
-      totalSessions: analyticsDaily.totalSessions,
-      uniqueVisitors: analyticsDaily.uniqueVisitors,
-      avgSessionDurationMs: analyticsDaily.avgSessionDurationMs,
-      totalChatsStarted: analyticsDaily.totalChatsStarted,
-      bounceCount: analyticsDaily.bounceCount,
-    };
-
-    const [todayData, yesterdayData] = await Promise.all([
-      db
-        .select(trendFields)
-        .from(analyticsDaily)
-        .where(and(eq(analyticsDaily.chatbotId, chatbotId), eq(analyticsDaily.date, today)))
-        .limit(1),
-      db
-        .select(trendFields)
-        .from(analyticsDaily)
-        .where(and(eq(analyticsDaily.chatbotId, chatbotId), eq(analyticsDaily.date, yesterday)))
-        .limit(1),
-    ]);
-
-    return buildTrendResult(todayData[0], yesterdayData[0]);
-  }),
-
-  getWeeklyTrend: protectedProcedure.query(async ({ ctx }) => {
-    const chatbotId = getActiveChatbot(ctx);
-
-    const now = new Date();
-    const thisWeekStart = new Date(now);
-    thisWeekStart.setDate(now.getDate() - now.getDay());
-    thisWeekStart.setHours(0, 0, 0, 0);
-
-    const lastWeekStart = new Date(thisWeekStart);
-    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-    const lastWeekEnd = new Date(thisWeekStart);
-    lastWeekEnd.setMilliseconds(-1);
-
-    const trendFields = {
-      totalSessions: analyticsWeekly.totalSessions,
-      uniqueVisitors: analyticsWeekly.uniqueVisitors,
-      avgSessionDurationMs: analyticsWeekly.avgSessionDurationMs,
-      totalChatsStarted: analyticsWeekly.totalChatsStarted,
-      bounceCount: analyticsWeekly.bounceCount,
-    };
-
-    const [thisWeek, lastWeek] = await Promise.all([
-      db
-        .select(trendFields)
-        .from(analyticsWeekly)
-        .where(
-          and(
-            eq(analyticsWeekly.chatbotId, chatbotId),
-            gte(analyticsWeekly.weekStart, thisWeekStart),
-          ),
-        )
-        .limit(1),
-      db
-        .select(trendFields)
-        .from(analyticsWeekly)
-        .where(
-          and(
-            eq(analyticsWeekly.chatbotId, chatbotId),
-            gte(analyticsWeekly.weekStart, lastWeekStart),
-            lt(analyticsWeekly.weekStart, thisWeekStart),
-          ),
-        )
-        .limit(1),
-    ]);
-
-    return buildTrendResult(thisWeek[0], lastWeek[0]);
-  }),
-
-  getMonthlyTrend: protectedProcedure.query(async ({ ctx }) => {
-    const chatbotId = getActiveChatbot(ctx);
-
-    const now = new Date();
-    const thisMonth = now.getMonth() + 1;
-    const thisYear = now.getFullYear();
-    const lastMonth = thisMonth === 1 ? 12 : thisMonth - 1;
-    const lastMonthYear = thisMonth === 1 ? thisYear - 1 : thisYear;
-
-    const trendFields = {
-      totalSessions: analyticsMonthly.totalSessions,
-      uniqueVisitors: analyticsMonthly.uniqueVisitors,
-      avgSessionDurationMs: analyticsMonthly.avgSessionDurationMs,
-      totalChatsStarted: analyticsMonthly.totalChatsStarted,
-      bounceCount: analyticsMonthly.bounceCount,
-    };
-
-    const [thisMonthData, lastMonthData] = await Promise.all([
-      db
-        .select(trendFields)
-        .from(analyticsMonthly)
-        .where(
-          and(
-            eq(analyticsMonthly.chatbotId, chatbotId),
-            eq(analyticsMonthly.month, thisMonth),
-            eq(analyticsMonthly.year, thisYear),
-          ),
-        )
-        .limit(1),
-      db
-        .select(trendFields)
-        .from(analyticsMonthly)
-        .where(
-          and(
-            eq(analyticsMonthly.chatbotId, chatbotId),
-            eq(analyticsMonthly.month, lastMonth),
-            eq(analyticsMonthly.year, lastMonthYear),
-          ),
-        )
-        .limit(1),
-    ]);
-
-    return buildTrendResult(thisMonthData[0], lastMonthData[0]);
-  }),
 
   trackEvent: publicProcedure
     .input(
@@ -741,8 +574,12 @@ export const analyticsRouter = router({
             eventType: "visitor.new_unique",
             entityType: "visitor",
             entityId: input.visitorId,
-            title: "New unique visitor",
-            body: headers?.country ?? undefined,
+            title: headers?.city
+              ? `New visitor from ${headers.city}, ${headers?.country ?? "Unknown"}`
+              : `New visitor from ${headers?.country ?? "Unknown"}`,
+            body: headers?.city
+              ? `${headers.city}, ${headers?.country ?? "Unknown"}`
+              : headers?.country,
             metadata: {
               visitorId: input.visitorId,
               chatbotId: input.chatbotId,

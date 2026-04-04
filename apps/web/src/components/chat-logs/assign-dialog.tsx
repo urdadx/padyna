@@ -3,6 +3,7 @@ import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
 import { trpc } from "@/utils/trpc";
 import { useQuery } from "@tanstack/react-query";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface AssignDialogProps {
 	isOpen: boolean;
@@ -27,6 +28,7 @@ export const AssignDialog = ({
 }: AssignDialogProps) => {
 	const isAssigned = Boolean(assignedToUserId);
 	const isAssignedToCurrentUser = Boolean(currentUserId && assignedToUserId === currentUserId);
+
 	const canSelfAssign = isAdmin || !isAssigned || isAssignedToCurrentUser;
 	const selfAssignDisabled = isPending || !canSelfAssign;
 	const disableMemberAssignButtons = isPending || !isAdmin;
@@ -102,21 +104,32 @@ export const AssignDialog = ({
 												</span>
 											</div>
 										</div>
-										<Button
-											size="sm"
-											variant="outline"
-											onClick={() =>
-												onAssign(member.id)
-											}
-											disabled={
-												isCurrentUser
-													? selfAssignDisabled
-													: disableMemberAssignButtons
-											}>
-											{isCurrentUser
-												? "Assign to self"
-												: "Assign"}
-										</Button>
+										<Tooltip>
+											<TooltipTrigger>
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={() =>
+														onAssign(
+															member.id,
+														)
+													}
+													disabled={
+														isCurrentUser
+															? selfAssignDisabled
+															: disableMemberAssignButtons
+													}>
+													Assign
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>
+												{isCurrentUser
+													? canSelfAssign
+														? "Assign to yourself"
+														: "You cannot assign this conversation to yourself"
+													: "Only admins can assign conversations to other members"}
+											</TooltipContent>
+										</Tooltip>
 									</div>
 								);
 							})

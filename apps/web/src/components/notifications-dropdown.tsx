@@ -85,7 +85,7 @@ export function NotificationsDropdown() {
 						Mark all read
 					</Button>
 				</div>
-				<ScrollArea className="max-h-80">
+				<ScrollArea className="max-h-80 smooth-div">
 					{notifications.length === 0 ? (
 						<div className="px-3 py-6 text-sm text-muted-foreground text-center">
 							No notifications yet.

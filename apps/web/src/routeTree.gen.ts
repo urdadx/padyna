@@ -22,7 +22,6 @@ import { Route as InvitationInvalidRouteImport } from './routes/invitation/inval
 import { Route as InvitationExpiredRouteImport } from './routes/invitation/expired'
 import { Route as InvitationErrorRouteImport } from './routes/invitation/error'
 import { Route as InvitationAlreadyAcceptedRouteImport } from './routes/invitation/already-accepted'
-import { Route as adminWorkflowsRouteImport } from './routes/(admin)/workflows'
 import { Route as adminTextRouteImport } from './routes/(admin)/text'
 import { Route as adminSettingsRouteImport } from './routes/(admin)/settings'
 import { Route as adminQuestionsRouteImport } from './routes/(admin)/questions'
@@ -33,6 +32,9 @@ import { Route as adminFilesRouteImport } from './routes/(admin)/files'
 import { Route as adminDataSourcesRouteImport } from './routes/(admin)/data-sources'
 import { Route as adminChatLogsRouteImport } from './routes/(admin)/chat-logs'
 import { Route as adminAnalyticsRouteImport } from './routes/(admin)/analytics'
+import { Route as adminActionsRouteImport } from './routes/(admin)/actions'
+import { Route as adminActionsIndexRouteImport } from './routes/(admin)/actions.index'
+import { Route as adminActionsNewRouteImport } from './routes/(admin)/actions.new'
 
 const WidgetRoute = WidgetRouteImport.update({
   id: '/widget',
@@ -99,11 +101,6 @@ const InvitationAlreadyAcceptedRoute =
     path: '/invitation/already-accepted',
     getParentRoute: () => rootRouteImport,
   } as any)
-const adminWorkflowsRoute = adminWorkflowsRouteImport.update({
-  id: '/workflows',
-  path: '/workflows',
-  getParentRoute: () => adminRouteRoute,
-} as any)
 const adminTextRoute = adminTextRouteImport.update({
   id: '/text',
   path: '/text',
@@ -154,6 +151,21 @@ const adminAnalyticsRoute = adminAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => adminRouteRoute,
 } as any)
+const adminActionsRoute = adminActionsRouteImport.update({
+  id: '/actions',
+  path: '/actions',
+  getParentRoute: () => adminRouteRoute,
+} as any)
+const adminActionsIndexRoute = adminActionsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => adminActionsRoute,
+} as any)
+const adminActionsNewRoute = adminActionsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => adminActionsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -161,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/success': typeof SuccessRoute
   '/widget': typeof WidgetRoute
+  '/actions': typeof adminActionsRouteWithChildren
   '/analytics': typeof adminAnalyticsRoute
   '/chat-logs': typeof adminChatLogsRoute
   '/data-sources': typeof adminDataSourcesRoute
@@ -171,7 +184,6 @@ export interface FileRoutesByFullPath {
   '/questions': typeof adminQuestionsRoute
   '/settings': typeof adminSettingsRoute
   '/text': typeof adminTextRoute
-  '/workflows': typeof adminWorkflowsRoute
   '/invitation/already-accepted': typeof InvitationAlreadyAcceptedRoute
   '/invitation/error': typeof InvitationErrorRoute
   '/invitation/expired': typeof InvitationExpiredRoute
@@ -179,6 +191,8 @@ export interface FileRoutesByFullPath {
   '/onboarding/pricing': typeof OnboardingPricingRoute
   '/invitation/': typeof InvitationIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/actions/new': typeof adminActionsNewRoute
+  '/actions/': typeof adminActionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -196,7 +210,6 @@ export interface FileRoutesByTo {
   '/questions': typeof adminQuestionsRoute
   '/settings': typeof adminSettingsRoute
   '/text': typeof adminTextRoute
-  '/workflows': typeof adminWorkflowsRoute
   '/invitation/already-accepted': typeof InvitationAlreadyAcceptedRoute
   '/invitation/error': typeof InvitationErrorRoute
   '/invitation/expired': typeof InvitationExpiredRoute
@@ -204,6 +217,8 @@ export interface FileRoutesByTo {
   '/onboarding/pricing': typeof OnboardingPricingRoute
   '/invitation': typeof InvitationIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
+  '/actions/new': typeof adminActionsNewRoute
+  '/actions': typeof adminActionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -213,6 +228,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/success': typeof SuccessRoute
   '/widget': typeof WidgetRoute
+  '/(admin)/actions': typeof adminActionsRouteWithChildren
   '/(admin)/analytics': typeof adminAnalyticsRoute
   '/(admin)/chat-logs': typeof adminChatLogsRoute
   '/(admin)/data-sources': typeof adminDataSourcesRoute
@@ -223,7 +239,6 @@ export interface FileRoutesById {
   '/(admin)/questions': typeof adminQuestionsRoute
   '/(admin)/settings': typeof adminSettingsRoute
   '/(admin)/text': typeof adminTextRoute
-  '/(admin)/workflows': typeof adminWorkflowsRoute
   '/invitation/already-accepted': typeof InvitationAlreadyAcceptedRoute
   '/invitation/error': typeof InvitationErrorRoute
   '/invitation/expired': typeof InvitationExpiredRoute
@@ -231,6 +246,8 @@ export interface FileRoutesById {
   '/onboarding/pricing': typeof OnboardingPricingRoute
   '/invitation/': typeof InvitationIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/(admin)/actions/new': typeof adminActionsNewRoute
+  '/(admin)/actions/': typeof adminActionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -240,6 +257,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/success'
     | '/widget'
+    | '/actions'
     | '/analytics'
     | '/chat-logs'
     | '/data-sources'
@@ -250,7 +268,6 @@ export interface FileRouteTypes {
     | '/questions'
     | '/settings'
     | '/text'
-    | '/workflows'
     | '/invitation/already-accepted'
     | '/invitation/error'
     | '/invitation/expired'
@@ -258,6 +275,8 @@ export interface FileRouteTypes {
     | '/onboarding/pricing'
     | '/invitation/'
     | '/onboarding/'
+    | '/actions/new'
+    | '/actions/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -275,7 +294,6 @@ export interface FileRouteTypes {
     | '/questions'
     | '/settings'
     | '/text'
-    | '/workflows'
     | '/invitation/already-accepted'
     | '/invitation/error'
     | '/invitation/expired'
@@ -283,6 +301,8 @@ export interface FileRouteTypes {
     | '/onboarding/pricing'
     | '/invitation'
     | '/onboarding'
+    | '/actions/new'
+    | '/actions'
   id:
     | '__root__'
     | '/'
@@ -291,6 +311,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/success'
     | '/widget'
+    | '/(admin)/actions'
     | '/(admin)/analytics'
     | '/(admin)/chat-logs'
     | '/(admin)/data-sources'
@@ -301,7 +322,6 @@ export interface FileRouteTypes {
     | '/(admin)/questions'
     | '/(admin)/settings'
     | '/(admin)/text'
-    | '/(admin)/workflows'
     | '/invitation/already-accepted'
     | '/invitation/error'
     | '/invitation/expired'
@@ -309,6 +329,8 @@ export interface FileRouteTypes {
     | '/onboarding/pricing'
     | '/invitation/'
     | '/onboarding/'
+    | '/(admin)/actions/new'
+    | '/(admin)/actions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -420,13 +442,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvitationAlreadyAcceptedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/(admin)/workflows': {
-      id: '/(admin)/workflows'
-      path: '/workflows'
-      fullPath: '/workflows'
-      preLoaderRoute: typeof adminWorkflowsRouteImport
-      parentRoute: typeof adminRouteRoute
-    }
     '/(admin)/text': {
       id: '/(admin)/text'
       path: '/text'
@@ -497,10 +512,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof adminAnalyticsRouteImport
       parentRoute: typeof adminRouteRoute
     }
+    '/(admin)/actions': {
+      id: '/(admin)/actions'
+      path: '/actions'
+      fullPath: '/actions'
+      preLoaderRoute: typeof adminActionsRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
+    '/(admin)/actions/': {
+      id: '/(admin)/actions/'
+      path: '/'
+      fullPath: '/actions/'
+      preLoaderRoute: typeof adminActionsIndexRouteImport
+      parentRoute: typeof adminActionsRoute
+    }
+    '/(admin)/actions/new': {
+      id: '/(admin)/actions/new'
+      path: '/new'
+      fullPath: '/actions/new'
+      preLoaderRoute: typeof adminActionsNewRouteImport
+      parentRoute: typeof adminActionsRoute
+    }
   }
 }
 
+interface adminActionsRouteChildren {
+  adminActionsNewRoute: typeof adminActionsNewRoute
+  adminActionsIndexRoute: typeof adminActionsIndexRoute
+}
+
+const adminActionsRouteChildren: adminActionsRouteChildren = {
+  adminActionsNewRoute: adminActionsNewRoute,
+  adminActionsIndexRoute: adminActionsIndexRoute,
+}
+
+const adminActionsRouteWithChildren = adminActionsRoute._addFileChildren(
+  adminActionsRouteChildren,
+)
+
 interface adminRouteRouteChildren {
+  adminActionsRoute: typeof adminActionsRouteWithChildren
   adminAnalyticsRoute: typeof adminAnalyticsRoute
   adminChatLogsRoute: typeof adminChatLogsRoute
   adminDataSourcesRoute: typeof adminDataSourcesRoute
@@ -511,10 +562,10 @@ interface adminRouteRouteChildren {
   adminQuestionsRoute: typeof adminQuestionsRoute
   adminSettingsRoute: typeof adminSettingsRoute
   adminTextRoute: typeof adminTextRoute
-  adminWorkflowsRoute: typeof adminWorkflowsRoute
 }
 
 const adminRouteRouteChildren: adminRouteRouteChildren = {
+  adminActionsRoute: adminActionsRouteWithChildren,
   adminAnalyticsRoute: adminAnalyticsRoute,
   adminChatLogsRoute: adminChatLogsRoute,
   adminDataSourcesRoute: adminDataSourcesRoute,
@@ -525,7 +576,6 @@ const adminRouteRouteChildren: adminRouteRouteChildren = {
   adminQuestionsRoute: adminQuestionsRoute,
   adminSettingsRoute: adminSettingsRoute,
   adminTextRoute: adminTextRoute,
-  adminWorkflowsRoute: adminWorkflowsRoute,
 }
 
 const adminRouteRouteWithChildren = adminRouteRoute._addFileChildren(

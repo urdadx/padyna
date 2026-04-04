@@ -26,6 +26,19 @@ type NormalizedMessage = {
   providerItemId: string | null;
 };
 
+type ConversationChannel =
+  | "web"
+  | "widget"
+  | "whatsapp"
+  | "discord"
+  | "slack"
+  | "telegram"
+  | "googlechat"
+  | "linear"
+  | "teams"
+  | "instagram"
+  | "messenger";
+
 function extractTextFromParts(parts: unknown[] | undefined): string {
   if (!parts || parts.length === 0) {
     return "";
@@ -116,6 +129,7 @@ async function getOrCreateConversation(input: {
   chatbotId: string;
   organizationId: string;
   userId: string | undefined;
+  channel?: ConversationChannel;
   title?: string;
   metadata?: Record<string, unknown>;
   conversationId?: string;
@@ -137,6 +151,7 @@ async function getOrCreateConversation(input: {
       chatbotId: input.chatbotId,
       organizationId: input.organizationId,
       userId: input.userId ?? undefined,
+      channel: input.channel ?? "widget",
       title: input.title || "New Conversation",
       metadata: input.metadata,
     });
@@ -169,6 +184,7 @@ async function getOrCreateConversation(input: {
       chatbotId: input.chatbotId,
       organizationId: input.organizationId,
       userId: input.userId ?? undefined,
+      channel: input.channel ?? "widget",
       title: input.title || "New Conversation",
       metadata: input.metadata,
     })
@@ -237,6 +253,7 @@ export async function persistConversationMessages(input: {
   chatbotId: string;
   organizationId: string;
   userId: string | undefined;
+  channel?: ConversationChannel;
   messages: StoredUIMessage[];
   title?: string;
   metadata?: Record<string, unknown>;
@@ -251,6 +268,7 @@ export async function persistConversationMessages(input: {
     chatbotId: input.chatbotId,
     organizationId: input.organizationId,
     userId: input.userId,
+    channel: input.channel,
     title: input.title,
     metadata: input.metadata,
     conversationId: input.conversationId,

@@ -15,6 +15,7 @@ import { db } from "@padyna/db";
 import { chatbot } from "@padyna/db/schema/index";
 import { eq, and } from "drizzle-orm";
 import { broadcastConversationStatusUpdate } from "./live-chat-service";
+import { createRateLimitMiddleware } from "../lib/ratelimiter";
 
 type Variables = {
   user: any;
@@ -23,9 +24,31 @@ type Variables = {
 
 export const chatRoutes = new Hono<{ Variables: Variables }>();
 
+const AUTH_CHAT_RATE_LIMIT_MAX_REQUESTS = 30;
+const AUTH_CHAT_RATE_LIMIT_WINDOW_SECONDS = 60;
+const authChatRateLimitMiddleware = createRateLimitMiddleware({
+  namespace: "chat-auth-generation",
+  maxRequests: AUTH_CHAT_RATE_LIMIT_MAX_REQUESTS,
+  windowSeconds: AUTH_CHAT_RATE_LIMIT_WINDOW_SECONDS,
+  resolveIdentifier: (c) => {
+    const session = c.get("session") as Variables["session"];
+    const user = c.get("user") as Variables["user"];
+
+    const userId = user?.id;
+    const activeOrganization = session?.activeOrganization;
+    const activeChatbot = session?.activeChatbot;
+
+    if (!userId || !activeOrganization || !activeChatbot) {
+      return null;
+    }
+
+    return `${userId}:${activeOrganization}:${activeChatbot}`;
+  },
+});
+
 chatRoutes.use(authMiddleware);
 
-chatRoutes.post("/", async (c) => {
+chatRoutes.post("/", authChatRateLimitMiddleware, async (c) => {
   const session = c.get("session");
   const activeChatbot = session.activeChatbot;
   const activeOrganization = session.activeOrganization;
@@ -71,6 +94,7 @@ chatRoutes.post("/", async (c) => {
     chatbotId: activeChatbot,
     organizationId: activeOrganization,
     userId,
+    channel: "web",
     messages: uiMessages,
     title,
     conversationId,
@@ -116,6 +140,7 @@ chatRoutes.post("/", async (c) => {
         chatbotId: activeChatbot,
         organizationId: activeOrganization,
         userId,
+        channel: "web",
         messages,
         conversationId: resolvedConversationId,
       });
