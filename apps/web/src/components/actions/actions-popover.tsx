@@ -17,15 +17,9 @@ type ActionsPopoverProps = {
 	onEdit?: () => void;
 	onToggleEnable?: () => void;
 	onDelete?: () => void;
-	isEnabled?: boolean;
 };
 
-export const ActionsPopover = ({
-	onEdit,
-	onToggleEnable,
-	onDelete,
-	isEnabled = true,
-}: ActionsPopoverProps) => {
+export const ActionsPopover = ({ item, onEdit, onToggleEnable, onDelete }: ActionsPopoverProps) => {
 	return (
 		<>
 			<DropdownMenu>
@@ -42,7 +36,7 @@ export const ActionsPopover = ({
 					</DropdownMenuItem>
 					<DropdownMenuItem onClick={onToggleEnable}>
 						<RestartLinear className="size-4" />
-						{isEnabled ? "Disable" : "Enable"}
+						{item.status === "Active" ? "Disable" : "Enable"}
 					</DropdownMenuItem>
 
 					<DropdownMenuItem onClick={onDelete}>

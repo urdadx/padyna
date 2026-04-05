@@ -47,6 +47,15 @@ type PublicWidgetChatbot = {
 
 export const widgetRoutes = new Hono();
 
+function resolveConversationChannel(c: any): "web" | "widget" {
+  const platform = c.req.query("platform");
+  if (platform === "web") {
+    return "web";
+  }
+
+  return "widget";
+}
+
 const WIDGET_CHAT_RATE_LIMIT_MAX_REQUESTS = 12;
 const WIDGET_CHAT_RATE_LIMIT_WINDOW_SECONDS = 60;
 const widgetChatRateLimitMiddleware = createRateLimitMiddleware({
@@ -252,6 +261,7 @@ widgetRoutes.post("/:widgetId/chat", widgetChatRateLimitMiddleware, async (c) =>
   }
 
   const { chatbotRecord, requestOrigin } = resolved;
+  const channel = resolveConversationChannel(c);
 
   const { id: conversationId, messages } = await c.req.json();
   const uiMessages = messages;
@@ -273,7 +283,7 @@ widgetRoutes.post("/:widgetId/chat", widgetChatRateLimitMiddleware, async (c) =>
     chatbotId: chatbotRecord.id,
     organizationId: chatbotRecord.organizationId,
     userId: undefined,
-    channel: "widget",
+    channel,
     messages: uiMessages,
     metadata: visitorMetadata,
     title,
@@ -319,7 +329,7 @@ widgetRoutes.post("/:widgetId/chat", widgetChatRateLimitMiddleware, async (c) =>
         chatbotId: chatbotRecord.id,
         organizationId: chatbotRecord.organizationId,
         userId: undefined,
-        channel: "widget",
+        channel,
         messages: completedMessages as any,
         metadata: visitorMetadata,
         conversationId: resolvedConversationId,

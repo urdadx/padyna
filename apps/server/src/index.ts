@@ -20,6 +20,7 @@ import { polarWebhook } from "./payments/webhook";
 import { checkout } from "./payments/checkout";
 import { websocket } from "hono/bun";
 import { broadcastConversationStatusUpdate } from "./chat/live-chat-service";
+import { calendlyRoutes } from "./integrations/calendly";
 
 const app = new Hono();
 
@@ -172,6 +173,7 @@ app.route("/api/analytics/session-end", endSessionRoute);
 app.route("/api/analytics/presence", presenceRoutes);
 app.route("/api/", polarWebhook);
 app.route("/api/", checkout);
+app.route("/api/integrations/calendly", calendlyRoutes);
 
 app.use("/api/trpc/*", async (c, next) => {
   const accept = c.req.header("trpc-accept");

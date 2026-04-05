@@ -27,7 +27,7 @@ import { DisabledBanner, EscalatedBanner, ErrorBanner, ClosedBanner } from "../c
 import { getInputPlaceholder } from "./get-input-placeholder";
 import { useAnalytics } from "./use-analytics";
 import { useSubmitMessage } from "./use-submit-message";
-import { useWidgetSession } from "./use-widget-sssion";
+import { useWidgetSession } from "./use-widget-session";
 import { StatusIndicator } from "../agent/agent-components/status-indicator";
 import { SupportMessage } from "../agent/agent-components/message";
 import { env } from "@padyna/env/web";
@@ -49,6 +49,7 @@ type WidgetPreviewProps = {
 	widgetId: string;
 	serverUrl: string;
 	hostOrigin?: string;
+	platform?: "web" | "widget";
 	chatId?: string;
 	resetChatId?: () => void;
 };
@@ -60,24 +61,40 @@ type InitResponse = {
 	liveChatToken: string | null;
 };
 
-function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: WidgetPreviewProps) {
-	const hostOriginQuery = useMemo(
-		() => (hostOrigin ? `?hostOrigin=${encodeURIComponent(hostOrigin)}` : ""),
-		[hostOrigin],
-	);
+function WidgetPreviewContent({
+	widgetId,
+	hostOrigin,
+	platform,
+	chatId,
+	resetChatId,
+}: WidgetPreviewProps) {
+	const queryParams = useMemo(() => {
+		const params = new URLSearchParams();
+
+		if (hostOrigin) {
+			params.set("hostOrigin", hostOrigin);
+		}
+
+		if (platform) {
+			params.set("platform", platform);
+		}
+
+		const value = params.toString();
+		return value ? `?${value}` : "";
+	}, [hostOrigin, platform]);
 
 	const transport = useMemo(
 		() =>
 			new DefaultChatTransport({
-				api: `${env.VITE_SERVER_URL}/api/widget/${widgetId}/chat${hostOriginQuery}`,
+				api: `${env.VITE_SERVER_URL}/api/widget/${widgetId}/chat${queryParams}`,
 			}),
-		[widgetId, hostOriginQuery],
+		[widgetId, queryParams],
 	);
 
 	const [input, setInput] = useState("");
 	const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const initQueryKey = ["widget-init", widgetId, chatId, hostOrigin];
+	const initQueryKey = ["widget-init", widgetId, chatId, hostOrigin, platform];
 
 	const {
 		data: initData,
@@ -89,7 +106,15 @@ function WidgetPreviewContent({ widgetId, hostOrigin, chatId, resetChatId }: Wid
 			const response = await api.post(
 				`/api/widget/${widgetId}/init`,
 				{ conversationId: chatId },
-				{ params: hostOrigin ? { hostOrigin } : undefined },
+				{
+					params:
+						hostOrigin || platform
+							? {
+									...(hostOrigin ? { hostOrigin } : {}),
+									...(platform ? { platform } : {}),
+								}
+							: undefined,
+				},
 			);
 			return response.data as InitResponse;
 		},

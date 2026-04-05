@@ -1,0 +1,127 @@
+# FETCH USER'S CALENDLY EVENT TYPES
+
+# API URL
+
+curl --request GET \
+ --url https://api.calendly.com/event_types \
+ --header 'Authorization: ' \
+ --header 'Content-Type: application/json'
+
+Returns all Event Types associated with a specified User. Use:
+
+organization to look up all Event Types that belong to the organization
+user to look up a user's Event Types in an organization
+Either organization or user are required query params when using this endpoint.
+
+# RESPONSE EXAMPLE
+
+{
+"collection": [
+{
+"uri": "https://api.calendly.com/event_types/AAAAAAAAAAAAAAAA",
+"name": "15 Minute Meeting",
+"active": true,
+"booking_method": "instant",
+"slug": "acmesales",
+"scheduling_url": "https://calendly.com/acmesales",
+"duration": 15,
+"duration_options": [
+1,
+13,
+15,
+720
+],
+"kind": "solo",
+"pooling_type": "round_robin",
+"type": "StandardEventType",
+"color": "#fff200",
+"created_at": "2019-01-02T03:04:05.678123Z",
+"updated_at": "2019-08-07T06:05:04.321123Z",
+"internal_note": "Internal note",
+"is_paid": false,
+"description_plain": "15 Minute Meeting",
+"description_html": "<p>15 Minute Meeting</p>",
+"profile": {
+"type": "User",
+"name": "Tamara Jones",
+"owner": "https://api.calendly.com/users/AAAAAAAAAAAAAAAA"
+},
+"secret": true,
+"deleted_at": null,
+"admin_managed": false,
+"locations": [
+{
+"kind": "inbound_call",
+"phone_number": "+ 380934567654",
+"additional_info": "Additional information about location"
+}
+],
+"position": 0,
+"custom_questions": [
+{
+"name": "Company Name",
+"type": "string",
+"position": 0,
+"enabled": true,
+"required": true,
+"answer_choices": [],
+"include_other": false
+},
+{
+"name": "What would you like to discuss?",
+"type": "text",
+"position": 0,
+"enabled": true,
+"required": true,
+"answer_choices": [],
+"include_other": false
+},
+{
+"name": "Number of employees",
+"answer_choices": [
+"1",
+"2-10",
+"11-20",
+"20+"
+],
+"enabled": true,
+"include_other": true,
+"position": 2,
+"required": false,
+"type": "single_select"
+},
+{
+"name": "Multi-Select Question",
+"answer_choices": [
+"Answer 1",
+"Answer 2",
+"Answer 3",
+"Answer 4"
+],
+"enabled": true,
+"include_other": true,
+"position": 2,
+"required": false,
+"type": "multi_select"
+},
+{
+"name": "Phone Number",
+"type": "phone_number",
+"position": 0,
+"enabled": true,
+"required": true,
+"answer_choices": [],
+"include_other": false
+}
+],
+"locale": "en"
+}
+],
+"pagination": {
+"count": 20,
+"next_page": "https://api.calendly.com/event_types?count=1&page_token=sNjq4TvMDfUHEl7zHRR0k0E1PCEJWvdi",
+"previous_page": "https://api.calendly.com/event_types?count=1&page_token=VJs2rfDYeY8ahZpq0QI1O114LJkNjd7H",
+"next_page_token": "sNjq4TvMDfUHEl7zHRR0k0E1PCEJWvdi",
+"previous_page_token": "VJs2rfDYeY8ahZpq0QI1O114LJkNjd7H"
+}
+}

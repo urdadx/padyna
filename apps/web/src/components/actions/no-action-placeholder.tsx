@@ -1,5 +1,5 @@
 import { BoltLinear } from "@/assets/icons/bolt-duotone";
-import { Button } from "../ui/button";
+import { CreateActionDialog } from "./create-action-dialog";
 
 export const NoActionsPlaceholder = () => {
 	return (
@@ -18,7 +18,7 @@ export const NoActionsPlaceholder = () => {
 			<p className="text-sm my-2 text-muted-foreground">
 				Create custom actions that connect your favorite tools.
 			</p>
-			<Button>Create an action </Button>
+			<CreateActionDialog />
 		</div>
 	);
 };

@@ -1,30 +1,29 @@
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
+import { CalendlyIntegrationCard } from "./calendly-integration-card";
+import { TelegramIntegrationCard } from "./telegram-integration-card";
+import { GithubIntegrationCard } from "./github-integration-card";
+import { JiraIntegrationCard } from "./jira-integration-card";
+import { DiscordIntegrationCard } from "./discord-integration-card";
+import { SlackIntegrationCard } from "./slack-integration-card";
+import type { IntegrationCardData } from "./types";
+import { ClickupIntegrationCard } from "./clickup-integration-card";
 
-export const IntegrationCard = ({ data }: { data: any }) => {
-  return (
-    <div className="bg-white rounded-xl p-3 border border-gray-200  w-full max-w-md mx-auto h-full">
-      <div className="flex flex-col gap-2 h-full">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <img
-              className="size-7 sm:size-8"
-              src={data.logo}
-              alt="integration-icon"
-              loading="lazy"
-            />
-          </div>
-          <Badge variant="outline" className="gap-1 text-xs">
-            <span className="size-2 rounded-full bg-green-500"></span>
-            Connected
-          </Badge>
-        </div>
-        <h3 className="font-medium font-sans text-sm sm:text-base">{data.name}</h3>
-        <p className="text-gray-600 text-sm sm:text-md grow">{data.description}</p>
-        <Button size="sm" className="w-fit rounded-sm text-sm" variant="outline">
-          Connect
-        </Button>
-      </div>
-    </div>
-  );
+export const IntegrationCard = ({ data }: { data: IntegrationCardData }) => {
+	switch (data.id) {
+		case "calendly":
+			return <CalendlyIntegrationCard data={data} />;
+		case "telegram":
+			return <TelegramIntegrationCard data={data} />;
+		case "github":
+			return <GithubIntegrationCard data={data} />;
+		case "jira":
+			return <JiraIntegrationCard data={data} />;
+		case "discord":
+			return <DiscordIntegrationCard data={data} />;
+		case "slack":
+			return <SlackIntegrationCard data={data} />;
+		case "clickup":
+			return <ClickupIntegrationCard data={data} />;
+		default:
+			return null;
+	}
 };

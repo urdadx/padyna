@@ -1,13 +1,34 @@
 import { AgentPreviewPanel } from "@/components/agent/agent-preview";
-import { ActionsForm } from "@/components/actions/actions-form";
+import { CalendlyActionForm } from "@/components/actions/forms/calendly-action-form";
+import { CalActionForm } from "@/components/actions/forms/cal-action-form";
+import { SlackActionForm } from "@/components/actions/forms/slack-action-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
+
+const actionSchema = z.object({
+	action: z.string().optional(),
+});
 
 export const Route = createFileRoute("/(admin)/actions/new")({
 	component: RouteComponent,
+	validateSearch: actionSchema,
 });
 
 function RouteComponent() {
+	const { action } = Route.useSearch();
+	const selectedAction =
+		action === "cal" || action === "slack" || action === "calendly"
+			? action
+			: "calendly";
+
+	const actionForm =
+		selectedAction === "cal"
+			? <CalActionForm />
+			: selectedAction === "slack"
+				? <SlackActionForm />
+				: <CalendlyActionForm />;
+
 	return (
 		<Tabs
 			defaultValue="settings"
@@ -15,7 +36,7 @@ function RouteComponent() {
 			<div className="hidden min-h-0 lg:flex lg:w-160 lg:shrink-0 lg:border-r lg:bg-background">
 				<div className="flex min-h-0 h-full w-full flex-col">
 					<div className="flex-1 overflow-hidden smooth-div p-5">
-						<ActionsForm />
+						{actionForm}
 					</div>
 				</div>
 			</div>
@@ -39,9 +60,7 @@ function RouteComponent() {
 				<TabsContent
 					value="settings"
 					className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-					<div className="flex-1 p-5">
-						<ActionsForm />
-					</div>
+					<div className="flex-1 p-5">{actionForm}</div>
 				</TabsContent>
 
 				<TabsContent

@@ -11,7 +11,7 @@ function RouteComponent() {
 		{
 			id: "1",
 			name: "Send Slack Message",
-			actionType: "jira" as const,
+			actionType: "slack" as const,
 			status: "inactive" as const,
 			timesUsed: 42,
 			description: "Send a message to a Slack channel",
@@ -19,18 +19,18 @@ function RouteComponent() {
 		{
 			id: "2",
 			name: "Create Jira Ticket",
-			actionType: "slack" as const,
+			actionType: "jira" as const,
 			status: "inactive" as const,
 			timesUsed: 28,
 			description: "Create a new ticket in Jira",
 		},
 		{
 			id: "3",
-			name: "Fetch Weather Data",
+			name: "Get Calendly Bookings",
 			actionType: "calendly" as const,
 			status: "active" as const,
 			timesUsed: 15,
-			description: "Get current weather for a location",
+			description: "Fetch recent bookings from Calendly",
 		},
 	];
 	const isLoading = false;

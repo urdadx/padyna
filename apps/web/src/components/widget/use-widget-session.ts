@@ -26,7 +26,6 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
   const visibilityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const presenceSocketRef = useRef<WebSocket | null>(null);
 
-  // Expose refs needed by analytics hook
   const sessionId = sessionIdRef;
   const visitorId = visitorIdRef;
   const chatStarted = chatStartedRef;
@@ -55,9 +54,7 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
           presenceSocketRef.current = null;
         }
       };
-      ws.onerror = () => {
-        // Best effort: count is corrected once socket closes/reconnects.
-      };
+      ws.onerror = () => {};
 
       presenceSocketRef.current = ws;
     } catch (error) {
@@ -117,9 +114,7 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
           keepalive: true,
         });
       }
-    } catch {
-      // Best effort during unload
-    }
+    } catch {}
 
     clearStoredSession(chatbotId);
     sessionIdRef.current = null;
@@ -189,7 +184,6 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
     chatStartedRef.current = false;
   }, []);
 
-  // Reset chatStarted when chatId changes
   useEffect(() => {
     if (chatId) {
       chatStartedRef.current = false;
@@ -204,7 +198,7 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
       if (document.visibilityState === "hidden") {
         visibilityTimeoutRef.current = setTimeout(async () => {
           await endCurrentSession();
-        }, 1000);
+        }, 30000);
       } else {
         if (visibilityTimeoutRef.current) {
           clearTimeout(visibilityTimeoutRef.current);
@@ -243,6 +237,24 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
+  }, [chatbotId, isEnabled, openSession, endCurrentSession]);
+
+  // tracking for website link
+  useEffect(() => {
+    if (!chatbotId || !isEnabled) {
+      return;
+    }
+
+    const isStandalonePage = window.self === window.top;
+    if (!isStandalonePage) {
+      return;
+    }
+
+    void openSession();
+
+    return () => {
+      void endCurrentSession();
+    };
   }, [chatbotId, isEnabled, openSession, endCurrentSession]);
 
   // Reliable tab/window close handling (page unload can cancel async RPC calls)

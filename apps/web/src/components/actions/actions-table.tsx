@@ -27,8 +27,7 @@ import { Input } from "../ui/input";
 import { SearchLinear } from "@/assets/icons/search-icon";
 import { ActionsPopover } from "./actions-popover";
 import { MultiSelectToolbar } from "../multi-select-toolbar";
-import { Button } from "../ui/button";
-import { PlusIcon } from "lucide-react";
+import { CreateActionDialog } from "./create-action-dialog";
 
 export type ActionItem = {
 	id: string;
@@ -119,7 +118,7 @@ const columns: ColumnDef<ActionItem>[] = [
 			return (
 				<div
 					className={cn(
-						"cal-xs w-max font-normal border rounded-sm px-2 py-0.5 ",
+						"text-xs w-max font-normal border rounded-sm px-2 py-0.5 ",
 						status === "Active" &&
 							"bg-green-50 text-green-500  border-green-500/20",
 						status === "Inactive" &&
@@ -208,10 +207,7 @@ export function ActionsTable({ data, isLoading }: ActionsTableProps) {
 						<SearchLinear className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 cal-muted-foreground" />
 					</div>
 				</div>
-				<Button>
-					<PlusIcon className="h-4 w-4 text-white" />
-					Create new action
-				</Button>
+				<CreateActionDialog />
 			</div>
 			<div className="rounded-xl border bg-background overflow-x-auto">
 				<Table className="">
