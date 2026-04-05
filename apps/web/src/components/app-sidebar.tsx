@@ -46,11 +46,6 @@ const data = {
 			url: "/data-sources",
 			icon: DatabaseLinear,
 		},
-		// {
-		// 	title: "Topics",
-		// 	url: "/topic",
-		// 	icon: SearchLinear,
-		// },
 	],
 	activity: [
 		{

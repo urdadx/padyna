@@ -6,6 +6,8 @@ import { DiscordIntegrationCard } from "./discord-integration-card";
 import { SlackIntegrationCard } from "./slack-integration-card";
 import type { IntegrationCardData } from "./types";
 import { ClickupIntegrationCard } from "./clickup-integration-card";
+import { CalIntegrationCard } from "./cal-integration-card";
+import { WhatsAppIntegrationCard } from "./whatsapp-integration-card";
 
 export const IntegrationCard = ({ data }: { data: IntegrationCardData }) => {
 	switch (data.id) {
@@ -23,6 +25,10 @@ export const IntegrationCard = ({ data }: { data: IntegrationCardData }) => {
 			return <SlackIntegrationCard data={data} />;
 		case "clickup":
 			return <ClickupIntegrationCard data={data} />;
+		case "cal":
+			return <CalIntegrationCard data={data} />;
+		case "whatsapp":
+			return <WhatsAppIntegrationCard data={data} />;
 		default:
 			return null;
 	}

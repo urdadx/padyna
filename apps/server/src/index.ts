@@ -21,6 +21,7 @@ import { checkout } from "./payments/checkout";
 import { websocket } from "hono/bun";
 import { broadcastConversationStatusUpdate } from "./chat/live-chat-service";
 import { calendlyRoutes } from "./integrations/calendly";
+import { jiraRoutes } from "./integrations/jira";
 
 const app = new Hono();
 
@@ -174,6 +175,7 @@ app.route("/api/analytics/presence", presenceRoutes);
 app.route("/api/", polarWebhook);
 app.route("/api/", checkout);
 app.route("/api/integrations/calendly", calendlyRoutes);
+app.route("/api/integrations/jira", jiraRoutes);
 
 app.use("/api/trpc/*", async (c, next) => {
   const accept = c.req.header("trpc-accept");

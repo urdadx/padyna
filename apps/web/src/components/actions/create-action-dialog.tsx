@@ -45,6 +45,13 @@ export const CreateActionDialog = () => {
 			title: "Send Slack Message",
 			description: "Send notifications and messages to a Slack channel",
 		},
+		{
+			href: "/actions/new",
+			search: { action: "jira" },
+			iconSrc: JiraImg,
+			title: "Create Jira Ticket",
+			description: "Create and manage tickets in Jira",
+		},
 
 		{
 			href: "/actions/new",
@@ -60,14 +67,7 @@ export const CreateActionDialog = () => {
 			title: "Custom",
 			description: "Create a custom action to trigger external events",
 		},
-		{
-			href: "/actions/new",
-			search: { action: "jira" },
-			iconSrc: JiraImg,
-			title: "Create Jira Ticket",
-			description: "Create and manage tickets in Jira",
-			comingSoon: true,
-		},
+
 		{
 			href: "/actions/new",
 			search: { action: "discord" },
