@@ -7,7 +7,6 @@ import TelegramLogo from "@/assets/telegram.png";
 import GithubLogo from "@/assets/github.png";
 import JiraLogo from "@/assets/jira.png";
 import ClickUpIcon from "@/assets/clickup.png";
-import CalLogo from "@/assets/cal.avif";
 import WhatsAppLogo from "@/assets/whatsapp.png";
 
 export const Route = createFileRoute("/(admin)/integrations")({
@@ -41,12 +40,7 @@ function RouteComponent() {
 			description: "Connect your agent to Calendly to manage bookings and meetings.",
 			logo: CalendlyLogo,
 		},
-		{
-			id: "cal",
-			name: "Cal.com",
-			description: "Connect your agent to Cal.com to manage bookings and meetings.",
-			logo: CalLogo,
-		},
+
 		{
 			id: "whatsapp",
 			name: "WhatsApp",

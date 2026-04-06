@@ -10,3 +10,4 @@ export * from "./subscription";
 export * from "./notification";
 export * from "./calendly";
 export * from "./jira";
+export * from "./discord";

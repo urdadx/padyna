@@ -17,29 +17,36 @@ interface CreateSupportChatAgentInput {
   chatbotUseCase?: AgentUseCase;
   conversationId?: string;
   userId?: string;
+  allowEscalation?: boolean;
 }
 
 export function createSupportChatAgent(input: CreateSupportChatAgentInput) {
+  const tools = {
+    knowledge_base: cached(
+      KnowledgeBaseTool({
+        chatbotId: input.chatbotId,
+        organizationId: input.organizationId,
+      }),
+    ),
+    ...(input.allowEscalation === false
+      ? {}
+      : {
+          escalate_to_human: cached(
+            EscalateToHumanTool({
+              chatbotId: input.chatbotId,
+              chatbotName: input.chatbotName,
+              organizationId: input.organizationId,
+              conversationId: input.conversationId,
+              userId: input.userId,
+            }),
+          ),
+        }),
+  };
+
   return new ToolLoopAgent({
     model: openai(CHAT_MODEL),
     stopWhen: stepCountIs(5),
     instructions: getAgentPrompt(input.chatbotUseCase ?? "support", input.chatbotName),
-    tools: {
-      knowledge_base: cached(
-        KnowledgeBaseTool({
-          chatbotId: input.chatbotId,
-          organizationId: input.organizationId,
-        }),
-      ),
-      escalate_to_human: cached(
-        EscalateToHumanTool({
-          chatbotId: input.chatbotId,
-          chatbotName: input.chatbotName,
-          organizationId: input.organizationId,
-          conversationId: input.conversationId,
-          userId: input.userId,
-        }),
-      ),
-    },
+    tools,
   });
 }

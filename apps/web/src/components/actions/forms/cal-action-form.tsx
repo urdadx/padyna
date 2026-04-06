@@ -41,12 +41,12 @@ export function CalActionForm() {
 				<div className="flex flex-col gap-1">
 					<Label htmlFor="eventUrl">Cal event URL</Label>
 					<small className="text-muted-foreground">
-						Paste the Cal.com booking URL for this action.
+						Example: https://cal.com/urdadx/30mins
 					</small>
 				</div>
 				<Input
 					id="eventUrl"
-					placeholder="https://cal.com/your-event"
+					placeholder="Enter your Cal.com event URL"
 					value={eventUrl}
 					onChange={(e) => setEventUrl(e.target.value)}
 				/>
