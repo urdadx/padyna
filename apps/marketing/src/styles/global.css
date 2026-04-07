@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Inter";
+  src: url("../../../web/src/assets/fonts/inter/Inter-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("../../../web/src/assets/fonts/inter/Inter-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("../../../web/src/assets/fonts/inter/Inter-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Erode";
+  src: url("../../../web/src/assets/fonts/Erode-Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Erode";
+  src: url("../../../web/src/assets/fonts/Erode-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Erode";
+  src: url("../../../web/src/assets/fonts/Erode-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Erode";
+  src: url("../../../web/src/assets/fonts/Erode-Semibold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Erode";
+  src: url("../../../web/src/assets/fonts/Erode-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Erode";
+  src: url("../../../web/src/assets/fonts/Erode-LightItalic.otf") format("opentype");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Erode";
+  src: url("../../../web/src/assets/fonts/Erode-Italic.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Erode";
+  src: url("../../../web/src/assets/fonts/Erode-MediumItalic.otf") format("opentype");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Erode";
+  src: url("../../../web/src/assets/fonts/Erode-SemiboldItalic.otf") format("opentype");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Erode";
+  src: url("../../../web/src/assets/fonts/Erode-BoldItalic.otf") format("opentype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@theme inline {
+  --font-sans: "Inter", sans-serif;
+  --font-display: "Erode", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply font-sans;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
+  }
+}
