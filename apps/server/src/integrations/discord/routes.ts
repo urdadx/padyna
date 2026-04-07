@@ -4,6 +4,7 @@ import { authMiddleware } from "../../middlewares/auth-middleware";
 import { handleDiscordOAuthCallback } from "./auth/callback";
 import { createDiscordConnectUrl } from "./auth/connect";
 import { discordBot } from "./bot";
+import { DiscordApiError, getDiscordGuildChannels } from "./client";
 import {
   getActiveDiscordConnectionByChatbot,
   isDiscordBotConfigured,
@@ -52,6 +53,54 @@ securedDiscordRoutes.get("/status", async (c) => {
         }
       : null,
   });
+});
+
+securedDiscordRoutes.get("/channels", async (c) => {
+  const user = c.get("user") as DiscordAuthContext["user"];
+  const session = c.get("session") as DiscordAuthContext["session"];
+
+  if (!user?.id) {
+    return c.json({ message: "Unauthorized" }, 401);
+  }
+
+  if (!isDiscordBotConfigured()) {
+    return c.json({ message: "Discord bot is not configured" }, 503);
+  }
+
+  const access = await verifyActiveChatbotAccess({ user, session });
+  if (!access) {
+    return c.json({ message: "No active chatbot in your current organization" }, 400);
+  }
+
+  const connection = await getActiveDiscordConnectionByChatbot(access.chatbotId);
+  if (!connection) {
+    return c.json(
+      { message: "Discord integration is not enabled yet. Please check the integrations page" },
+      404,
+    );
+  }
+
+  try {
+    const channels = await getDiscordGuildChannels(connection.guildId);
+
+    return c.json({
+      chatbotId: access.chatbotId,
+      guildId: connection.guildId,
+      channels,
+    });
+  } catch (error) {
+    if (error instanceof DiscordApiError) {
+      return c.json(
+        {
+          message: error.message,
+          details: error.details,
+        },
+        error.statusCode >= 400 && error.statusCode < 600 ? error.statusCode : 502,
+      );
+    }
+
+    return c.json({ message: "Failed to load Discord channels" }, 502);
+  }
 });
 
 securedDiscordRoutes.delete("/disconnect", async (c) => {

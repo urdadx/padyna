@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { JiraActionForm } from "@/components/actions/forms/jira-action-form";
+import { DiscordActionForm } from "@/components/actions/forms/discord-action-form";
 
 const actionSchema = z.object({
 	action: z.string().optional(),
@@ -25,7 +26,9 @@ function RouteComponent() {
 				? "calendly"
 				: action === "jira"
 					? "jira"
-					: null;
+					: action === "discord"
+						? "discord"
+						: null;
 
 	const actionForm =
 		selectedAction === "cal" ? (
@@ -36,6 +39,8 @@ function RouteComponent() {
 			<CalendlyActionForm />
 		) : selectedAction === "jira" ? (
 			<JiraActionForm />
+		) : selectedAction === "discord" ? (
+			<DiscordActionForm />
 		) : null;
 
 	return (

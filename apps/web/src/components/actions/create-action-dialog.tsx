@@ -74,7 +74,6 @@ export const CreateActionDialog = () => {
 			iconSrc: DiscordImg,
 			title: "Send Discord Message",
 			description: "Send notifications and messages to a Discord channel",
-			comingSoon: true,
 		},
 	];
 
