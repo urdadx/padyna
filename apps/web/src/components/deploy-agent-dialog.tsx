@@ -13,11 +13,13 @@ import { trpc } from "@/utils/trpc";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import Spinner from "./ui/spinner";
+import { TelegramIcon } from "@/assets/icons/telegram-icon";
+import { TelegramInstructions } from "./telegram-instructions";
 
 export const DeployAgentDialog = () => {
 	const { session } = useRouteContext({ from: "/(admin)" });
 	const [isOpen, setIsOpen] = useState(false);
-	const [activeTab, setActiveTab] = useState<"widget" | "link" | "qr">("widget");
+	const [activeTab, setActiveTab] = useState<"widget" | "link" | "qr" | "telegram">("widget");
 	const chatbotId = session?.session.activeChatbot;
 
 	const { data: chatbot, isLoading } = useQuery({
@@ -114,6 +116,30 @@ export const DeployAgentDialog = () => {
 									</span>
 								</button>
 								<button
+									onClick={() => setActiveTab("telegram")}
+									className={cn(
+										"group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all",
+										activeTab === "telegram"
+											? "bg-white text-gray-900 shadow-xs ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-700"
+											: "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100",
+									)}>
+									{activeTab === "telegram" && (
+										<div className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-blue-300"></div>
+									)}
+									<div className="flex h-5 w-5 shrink-0 items-center justify-center">
+										<TelegramIcon
+											color={
+												activeTab === "telegram"
+													? "#0088CC"
+													: "gray"
+											}
+										/>
+									</div>
+									<span className="flex-1 text-sm font-medium">
+										Share via telegram
+									</span>
+								</button>
+								<button
 									onClick={() => setActiveTab("qr")}
 									className={cn(
 										"group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all",
@@ -154,6 +180,12 @@ export const DeployAgentDialog = () => {
 					)}
 					{activeTab === "qr" && (
 						<QRCodeInstructions
+							chatbot={chatbot}
+							onClose={() => setIsOpen(false)}
+						/>
+					)}
+					{activeTab === "telegram" && (
+						<TelegramInstructions
 							chatbot={chatbot}
 							onClose={() => setIsOpen(false)}
 						/>

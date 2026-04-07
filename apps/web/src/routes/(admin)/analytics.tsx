@@ -7,7 +7,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
 export const timeRangeSchema = z.object({
-	timeRange: z.enum(["24h", "7d", "30d", "90d"]).optional().default("24h"),
+	timeRange: z.enum(["24h", "7d", "30d", "90d"]).optional().default("7d"),
 });
 
 export const Route = createFileRoute("/(admin)/analytics")({

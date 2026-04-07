@@ -55,7 +55,10 @@ export const ChatHistorySidebar = ({
 		data: conversations,
 		refetch,
 		isRefetching,
-	} = useSuspenseQuery(trpc.conversations.getAll.queryOptions({ filter, sort }));
+	} = useSuspenseQuery({
+		...trpc.conversations.getAll.queryOptions({ filter, sort }),
+		refetchOnMount: true,
+	});
 
 	const currentFilter = FILTER_OPTIONS.find((f) => f.value === filter);
 	const currentSort = SORT_OPTIONS.find((s) => s.value === sort);

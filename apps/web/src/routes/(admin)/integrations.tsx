@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import CalendlyLogo from "@/assets/calendly.png";
 import DiscordLogo from "@/assets/discord.png";
 import SlackLogo from "@/assets/slack-1.png";
-import TelegramLogo from "@/assets/telegram.png";
 import GithubLogo from "@/assets/github.png";
 import JiraLogo from "@/assets/jira.png";
 import ClickUpIcon from "@/assets/clickup.png";
@@ -15,12 +14,6 @@ export const Route = createFileRoute("/(admin)/integrations")({
 
 function RouteComponent() {
 	const integrations = [
-		{
-			id: "telegram",
-			name: "Telegram",
-			description: "Connect your agent to Telegram to manage conversations",
-			logo: TelegramLogo,
-		},
 		{
 			id: "github",
 			name: "GitHub",

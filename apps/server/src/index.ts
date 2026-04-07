@@ -23,6 +23,7 @@ import { broadcastConversationStatusUpdate } from "./chat/live-chat-service";
 import { calendlyRoutes } from "./integrations/calendly";
 import { discordRoutes, registerDiscordGatewayCron } from "./integrations/discord";
 import { jiraRoutes } from "./integrations/jira";
+import { telegramRoutes } from "./integrations/telegram";
 
 const app = new Hono();
 
@@ -178,6 +179,7 @@ app.route("/api/", checkout);
 app.route("/api/integrations/calendly", calendlyRoutes);
 app.route("/api/integrations/discord", discordRoutes);
 app.route("/api/integrations/jira", jiraRoutes);
+app.route("/api/integrations/telegram", telegramRoutes);
 
 registerDiscordGatewayCron();
 
