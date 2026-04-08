@@ -6,13 +6,20 @@ import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
+	SelectLabel,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 import { ActionFormShell } from "./action-form-shell";
+
+const eventTypeItems = [
+	{ label: "Event Type 1", value: "event1" },
+	{ label: "Event Type 2", value: "event2" },
+];
 
 export function CalendlyActionForm() {
 	const [name, setName] = useState("");
@@ -50,14 +57,21 @@ export function CalendlyActionForm() {
 					Select your preferred event <AlertCircleIcon size={14} />
 				</Label>
 				<Select
+					items={eventTypeItems}
 					value={eventType}
 					onValueChange={(value) => setEventType(value ?? "")}>
 					<SelectTrigger className="w-full">
 						<SelectValue placeholder="Select event type" />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="event1">Event Type 1</SelectItem>
-						<SelectItem value="event2">Event Type 2</SelectItem>
+						<SelectGroup>
+							<SelectLabel>Event types</SelectLabel>
+							{eventTypeItems.map((item) => (
+								<SelectItem key={item.value} value={item.value}>
+									{item.label}
+								</SelectItem>
+							))}
+						</SelectGroup>
 					</SelectContent>
 				</Select>
 			</div>

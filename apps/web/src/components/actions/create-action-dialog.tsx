@@ -1,9 +1,9 @@
-import { SolarBoxMinimalisticBoldDuotone } from "@/assets/icons/box-icon";
 import CalendlyImg from "@/assets/calendly.png";
 import CalImg from "@/assets/cal.avif";
 import DiscordImg from "@/assets/discord.png";
 import SlackImg from "@/assets/slack.png";
 import JiraImg from "@/assets/jira.png";
+import ClickUpImg from "@/assets/clickup.png";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -42,7 +42,7 @@ export const CreateActionDialog = () => {
 			href: "/actions/new",
 			search: { action: "slack" },
 			iconSrc: SlackImg,
-			title: "Send Slack Message",
+			title: "Send Slack message",
 			description: "Send notifications and messages to a Slack channel",
 		},
 		{
@@ -50,7 +50,7 @@ export const CreateActionDialog = () => {
 			search: { action: "jira" },
 			iconSrc: JiraImg,
 			title: "Create Jira Ticket",
-			description: "Create and manage tickets in Jira",
+			description: "Allow customers to create support tickets in Jira",
 		},
 
 		{
@@ -62,17 +62,17 @@ export const CreateActionDialog = () => {
 		},
 		{
 			href: "/actions/new",
-			search: { action: "custom" },
-			icon: <SolarBoxMinimalisticBoldDuotone color="#e500b9" className="w-6 h-6" />,
-			title: "Custom",
-			description: "Create a custom action to trigger external events",
+			search: { action: "clickup" },
+			iconSrc: ClickUpImg,
+			title: "Create ClickUp task",
+			description: "Allow customers to create support tickets in ClickUp",
 		},
 
 		{
 			href: "/actions/new",
 			search: { action: "discord" },
 			iconSrc: DiscordImg,
-			title: "Send Discord Message",
+			title: "Send Discord message",
 			description: "Send notifications and messages to a Discord channel",
 		},
 	];

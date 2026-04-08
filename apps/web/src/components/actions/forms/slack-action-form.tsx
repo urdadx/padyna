@@ -6,12 +6,20 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { ActionFormShell } from "./action-form-shell";
 import {
-	SelectTrigger,
 	Select,
-	SelectItem,
 	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+
+const workspaceItems = [
+	{ label: "Workspace 1", value: "workspace-1" },
+	{ label: "Workspace 2", value: "workspace-2" },
+	{ label: "Workspace 3", value: "workspace-3" },
+];
 
 export function SlackActionForm() {
 	const [name, setName] = useState("");
@@ -52,15 +60,21 @@ export function SlackActionForm() {
 					</small>
 				</div>
 				<Select
+					items={workspaceItems}
 					value={workspace}
 					onValueChange={(value) => setWorkspace(value ?? "")}>
 					<SelectTrigger className="w-full">
 						<SelectValue placeholder="Select workspace" />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="workspace-1">Workspace 1</SelectItem>
-						<SelectItem value="workspace-2">Workspace 2</SelectItem>
-						<SelectItem value="workspace-3">Workspace 3</SelectItem>
+						<SelectGroup>
+							<SelectLabel>Workspaces</SelectLabel>
+							{workspaceItems.map((item) => (
+								<SelectItem key={item.value} value={item.value}>
+									{item.label}
+								</SelectItem>
+							))}
+						</SelectGroup>
 					</SelectContent>
 				</Select>
 			</div>

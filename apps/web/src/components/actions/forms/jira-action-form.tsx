@@ -6,13 +6,26 @@ import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
+	SelectLabel,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 import { ActionFormShell } from "./action-form-shell";
+
+const projectItems = [
+	{ label: "Project 1", value: "project1" },
+	{ label: "Project 2", value: "project2" },
+];
+
+const issueTypeItems = [
+	{ label: "Task", value: "issue1" },
+	{ label: "Bug", value: "issue2" },
+	{ label: "Story", value: "issue3" },
+];
 
 export function JiraActionForm() {
 	const [name, setName] = useState("");
@@ -51,14 +64,21 @@ export function JiraActionForm() {
 					Select project <AlertCircleIcon size={14} />
 				</Label>
 				<Select
+					items={projectItems}
 					value={projects}
 					onValueChange={(value) => setProjects(value ?? "")}>
 					<SelectTrigger className="w-full">
 						<SelectValue placeholder="Select project" />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="project1">Project 1</SelectItem>
-						<SelectItem value="project2">Project 2</SelectItem>
+						<SelectGroup>
+							<SelectLabel>Projects</SelectLabel>
+							{projectItems.map((item) => (
+								<SelectItem key={item.value} value={item.value}>
+									{item.label}
+								</SelectItem>
+							))}
+						</SelectGroup>
 					</SelectContent>
 				</Select>
 			</div>
@@ -66,15 +86,21 @@ export function JiraActionForm() {
 			<div className="space-y-2">
 				<Label htmlFor="projects">Select issue type</Label>
 				<Select
+					items={issueTypeItems}
 					value={issueTypes}
 					onValueChange={(value) => setIssueTypes(value ?? "")}>
 					<SelectTrigger className="w-full">
 						<SelectValue placeholder="Select issue type" />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="issue1">Task</SelectItem>
-						<SelectItem value="issue2">Bug</SelectItem>
-						<SelectItem value="issue3">Story</SelectItem>
+						<SelectGroup>
+							<SelectLabel>Issue types</SelectLabel>
+							{issueTypeItems.map((item) => (
+								<SelectItem key={item.value} value={item.value}>
+									{item.label}
+								</SelectItem>
+							))}
+						</SelectGroup>
 					</SelectContent>
 				</Select>
 			</div>

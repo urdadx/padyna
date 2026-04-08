@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
+	SelectLabel,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
@@ -53,6 +55,12 @@ export function DiscordActionForm() {
 
 	const channels = data?.channels ?? [];
 	const channelError = (error as AxiosError<{ message: string }>)?.response?.data?.message;
+	const channelItems = channels.map((channel) => ({
+		label: channel.parentName
+			? `${channel.parentName} / #${channel.name}`
+			: `#${channel.name}`,
+		value: channel.id,
+	}));
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -89,6 +97,7 @@ export function DiscordActionForm() {
 					</small>
 				)}
 				<Select
+					items={channelItems}
 					value={channelId}
 					onValueChange={(value) => setChannelId(value ?? "")}
 					disabled={isLoadingChannels || channels.length === 0}>
@@ -102,13 +111,14 @@ export function DiscordActionForm() {
 						/>
 					</SelectTrigger>
 					<SelectContent>
-						{channels.map((channel) => (
-							<SelectItem key={channel.id} value={channel.id}>
-								{channel.parentName
-									? `${channel.parentName} / #${channel.name}`
-									: `#${channel.name}`}
-							</SelectItem>
-						))}
+						<SelectGroup>
+							<SelectLabel>Channels</SelectLabel>
+							{channelItems.map((item) => (
+								<SelectItem key={item.value} value={item.value}>
+									{item.label}
+								</SelectItem>
+							))}
+						</SelectGroup>
 					</SelectContent>
 				</Select>
 			</div>

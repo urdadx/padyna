@@ -1,6 +1,7 @@
 import { AgentPreviewPanel } from "@/components/agent/agent-preview";
 import { CalendlyActionForm } from "@/components/actions/forms/calendly-action-form";
 import { CalActionForm } from "@/components/actions/forms/cal-action-form";
+import { ClickUpActionForm } from "@/components/actions/forms/clickup-action-form";
 import { SlackActionForm } from "@/components/actions/forms/slack-action-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createFileRoute } from "@tanstack/react-router";
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/(admin)/actions/new")({
 function RouteComponent() {
 	const { action } = Route.useSearch();
 	const selectedAction =
-		action === "cal" || action === "slack" || action === "calendly"
+		action === "cal" || action === "slack" || action === "calendly" || action === "clickup"
 			? action
 			: "calendly" === action
 				? "calendly"
@@ -37,6 +38,8 @@ function RouteComponent() {
 			<SlackActionForm />
 		) : selectedAction === "calendly" ? (
 			<CalendlyActionForm />
+		) : selectedAction === "clickup" ? (
+			<ClickUpActionForm />
 		) : selectedAction === "jira" ? (
 			<JiraActionForm />
 		) : selectedAction === "discord" ? (

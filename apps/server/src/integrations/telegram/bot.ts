@@ -20,10 +20,6 @@ export function isTelegramBotConfigured() {
   return Boolean(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_BOT_USERNAME);
 }
 
-function getTelegramMode() {
-  return env.NODE_ENV === "production" ? "webhook" : "polling";
-}
-
 const telegramRuntime =
   globalThis.__padynaTelegramBot ??
   (() => {
@@ -33,7 +29,7 @@ const telegramRuntime =
         telegram: createTelegramAdapter({
           apiBaseUrl: env.TELEGRAM_API_BASE_URL,
           botToken: env.TELEGRAM_BOT_TOKEN,
-          mode: getTelegramMode(),
+          mode: env.NODE_ENV === "production" ? "webhook" : "polling",
           secretToken: env.TELEGRAM_WEBHOOK_SECRET,
           userName: env.TELEGRAM_BOT_USERNAME,
         }),

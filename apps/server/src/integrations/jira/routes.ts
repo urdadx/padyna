@@ -27,10 +27,12 @@ type Variables = {
   session: any;
 };
 
+const publicJiraRoutes = new Hono();
 const securedJiraRoutes = new Hono<{ Variables: Variables }>();
 securedJiraRoutes.use(authMiddleware);
 
 const createJiraIssueBodySchema = z.object({
+  chatbotId: z.uuid(),
   projectId: z.string().min(1),
   issueTypeId: z.string().min(1),
   summary: z.string().trim().min(1),
@@ -105,6 +107,20 @@ async function resolveJiraRequestContext(c: Context<{ Variables: Variables }>) {
   }
 
   return { access, integration: usableIntegration };
+}
+
+async function resolvePublicJiraIssueContext(
+  c: Context,
+  payload: z.infer<typeof createJiraIssueBodySchema>,
+) {
+  const integration = await getActiveJiraIntegrationByChatbot(payload.chatbotId);
+  if (!integration) {
+    return {
+      response: c.json({ message: "Jira is not connected for this chatbot" }, 404),
+    };
+  }
+
+  return { integration };
 }
 
 securedJiraRoutes.get("/connect", async (c) => {
@@ -334,12 +350,7 @@ securedJiraRoutes.get("/fields", async (c) => {
   }
 });
 
-securedJiraRoutes.post("/issue", async (c) => {
-  const resolved = await resolveJiraRequestContext(c);
-  if ("response" in resolved) {
-    return resolved.response;
-  }
-
+publicJiraRoutes.post("/issue", async (c) => {
   const parseResult = createJiraIssueBodySchema.safeParse(await c.req.json());
   if (!parseResult.success) {
     return c.json(
@@ -352,6 +363,10 @@ securedJiraRoutes.post("/issue", async (c) => {
   }
 
   const payload = parseResult.data;
+  const resolved = await resolvePublicJiraIssueContext(c, payload);
+  if ("response" in resolved) {
+    return resolved.response;
+  }
 
   try {
     const issue = await createJiraIssue({
@@ -380,4 +395,5 @@ securedJiraRoutes.post("/issue", async (c) => {
 export const jiraRoutes = new Hono();
 
 jiraRoutes.get("/callback", handleJiraOAuthCallback);
+jiraRoutes.route("/", publicJiraRoutes);
 jiraRoutes.route("/", securedJiraRoutes);

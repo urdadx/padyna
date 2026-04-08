@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import CalendlyLogo from "@/assets/calendly.png";
 import DiscordLogo from "@/assets/discord.png";
 import SlackLogo from "@/assets/slack-1.png";
-import GithubLogo from "@/assets/github.png";
 import JiraLogo from "@/assets/jira.png";
 import ClickUpIcon from "@/assets/clickup.png";
 import WhatsAppLogo from "@/assets/whatsapp.png";
@@ -14,13 +13,13 @@ export const Route = createFileRoute("/(admin)/integrations")({
 
 function RouteComponent() {
 	const integrations = [
-		{
-			id: "github",
-			name: "GitHub",
-			description:
-				"Connect your codebase to your agent for code-related queries and tasks",
-			logo: GithubLogo,
-		},
+		// {
+		// 	id: "github",
+		// 	name: "GitHub",
+		// 	description:
+		// 		"Connect your codebase to your agent for code-related queries and tasks",
+		// 	logo: GithubLogo,
+		// },
 		{
 			id: "jira",
 			name: "Jira",

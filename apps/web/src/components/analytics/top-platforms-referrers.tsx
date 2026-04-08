@@ -15,6 +15,7 @@ import { trpc } from "@/utils/trpc";
 import { getApexDomain } from "@/lib/utils";
 import { GOOGLE_FAVICON_URL } from "@/constants/domains";
 import { TopSkeleton } from "./top-skeleton";
+import { TelegramLinear } from "@/assets/icons/telegram-icon";
 
 const TIME_RANGE_ITEMS = [
 	{ label: "Last 24 hours", value: "24h" },
@@ -57,6 +58,8 @@ export function TopPlatforms() {
 				return <SlackLinear color="black" className="w-4 h-4" />;
 			case "discord":
 				return <DiscordLinear color="black" className="w-4 h-4" />;
+			case "telegram":
+				return <TelegramLinear color="black" className="w-4 h-4" />;
 			case "whatsapp":
 				return <WhatsappLinear color="black" className="w-4 h-4" />;
 			default:

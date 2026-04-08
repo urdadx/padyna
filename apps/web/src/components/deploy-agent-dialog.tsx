@@ -85,7 +85,13 @@ export const DeployAgentDialog = () => {
 										<div className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-purple-500"></div>
 									)}
 									<div className="flex h-5 w-5 shrink-0 items-center justify-center">
-										<WidgetIcon />
+										<WidgetIcon
+											color={
+												activeTab === "widget"
+													? "purple"
+													: "gray"
+											}
+										/>
 									</div>
 									<span className="flex-1 text-sm font-medium">
 										Install the widget
