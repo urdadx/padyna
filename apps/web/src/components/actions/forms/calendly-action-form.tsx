@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { AxiosError } from "axios";
 import { AlertCircleIcon } from "lucide-react";
 
+import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,16 +19,45 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { ActionFormShell } from "./action-form-shell";
 
-const eventTypeItems = [
-	{ label: "Event Type 1", value: "event1" },
-	{ label: "Event Type 2", value: "event2" },
-];
+type CalendlyEventType = {
+	uri: string;
+	name: string;
+	active: boolean;
+	duration?: number;
+};
+
+type CalendlyEventTypesResponse = {
+	eventTypes: CalendlyEventType[];
+};
 
 export function CalendlyActionForm() {
 	const [name, setName] = useState("");
 	const [eventType, setEventType] = useState("");
 	const [description, setDescription] = useState("");
 	const [enabled, setEnabled] = useState(true);
+
+	const {
+		data,
+		isLoading: isLoadingEventTypes,
+		error,
+	} = useQuery({
+		queryKey: ["calendly", "event-types"],
+		refetchOnMount: true,
+		queryFn: async () => {
+			const response = await api.get<CalendlyEventTypesResponse>(
+				"/api/integrations/calendly/event-types",
+			);
+			return response.data;
+		},
+	});
+
+	const eventTypes = data?.eventTypes ?? [];
+	const eventTypeItems = eventTypes.map((item) => ({
+		label: item.duration ? `${item.name} (${item.duration} min)` : item.name,
+		value: item.uri,
+	}));
+	const eventTypeMessage =
+		(error as AxiosError<{ message: string }>)?.response?.data?.message ?? null;
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -56,12 +88,24 @@ export function CalendlyActionForm() {
 				<Label htmlFor="eventType">
 					Select your preferred event <AlertCircleIcon size={14} />
 				</Label>
+				{eventTypeMessage ? (
+					<small className="text-red-500">{eventTypeMessage}</small>
+				) : (
+					<small className="text-muted-foreground">
+						Choose an event type from your connected Calendly account.
+					</small>
+				)}
 				<Select
 					items={eventTypeItems}
 					value={eventType}
-					onValueChange={(value) => setEventType(value ?? "")}>
+					onValueChange={(value) => setEventType(value ?? "")}
+					disabled={isLoadingEventTypes || eventTypeItems.length === 0}>
 					<SelectTrigger className="w-full">
-						<SelectValue placeholder="Select event type" />
+						<SelectValue
+							placeholder={
+								isLoadingEventTypes ? "Loading event types..." : "Select event type"
+							}
+						/>
 					</SelectTrigger>
 					<SelectContent>
 						<SelectGroup>

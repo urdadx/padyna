@@ -54,7 +54,7 @@ export const TelegramInstructions = ({ chatbot, onClose }: TelegramInstructionsP
 						<div className=" min-w-0 shrink-0">
 							<div className=" flex items-start justify-between">
 								<h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-									Share your agent on Telegram
+									Share your agent as a Telegram bot
 								</h3>
 								<Button
 									size="icon"
