@@ -1,12 +1,13 @@
 import { db } from "@padyna/db";
 import { slackConnection } from "@padyna/db/schema/index";
 import { and, eq } from "drizzle-orm";
+import { env } from "@padyna/env/server";
 import { Hono, type Context } from "hono";
 import { authMiddleware } from "../../middlewares/auth-middleware";
 import { handleSlackOAuthCallback } from "./auth/callback";
 import { createSlackConnectUrl } from "./auth/connect";
 import { initializeSlackBot, slackAdapter, slackBot } from "./bot";
-import { getSlackChannels, joinSlackChannel, SlackApiError } from "./client";
+import { getSlackChannels, joinSlackChannel, postSlackChannelMessage, SlackApiError } from "./client";
 import {
   getActiveSlackConnectionByChatbot,
   isSlackConfigured,
@@ -43,6 +44,112 @@ function getSlackErrorStatusCode(statusCode?: number) {
               : statusCode === 429
                 ? 429
                 : 502;
+}
+
+function getBearerToken(value: string | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const [scheme, token] = value.split(/\s+/, 2);
+  if (scheme?.toLowerCase() !== "bearer" || !token) {
+    return null;
+  }
+
+  return token;
+}
+
+function normalizeSlackNotificationMessage(message: string, audience?: string | null) {
+  const trimmedMessage = message.trim();
+
+  if (!trimmedMessage) {
+    return "";
+  }
+
+  const audienceTag =
+    audience === "here"
+      ? "<!here>"
+      : audience === "everyone"
+        ? "<!everyone>"
+        : audience === "channel"
+          ? "<!channel>"
+          : null;
+
+  const normalizedMessage = trimmedMessage
+    .replace(/^@everyone\b/i, "<!channel>")
+    .replace(/^@channel\b/i, "<!channel>")
+    .replace(/^@here\b/i, "<!here>");
+
+  if (!audienceTag) {
+    return normalizedMessage;
+  }
+
+  if (normalizedMessage.startsWith("<!channel>") || normalizedMessage.startsWith("<!here>") || normalizedMessage.startsWith("<!everyone>")) {
+    return normalizedMessage;
+  }
+
+  return `${audienceTag} ${normalizedMessage}`;
+}
+
+async function resolveSlackNotifyRequest(c: Context) {
+  const notifySecret = env.SLACK_NOTIFY_SECRET;
+
+  if (!notifySecret) {
+    return {
+      response: c.json({ message: "Slack notify endpoint is not configured" }, 503),
+    };
+  }
+
+  const authorizationHeader = c.req.header("Authorization");
+  const bearerToken = getBearerToken(authorizationHeader);
+
+  if (!bearerToken || bearerToken !== notifySecret) {
+    return {
+      response: c.json({ message: "Unauthorized" }, 401),
+    };
+  }
+
+  const body = (await c.req.json()) as {
+    audience?: unknown;
+    chatbotId?: unknown;
+    message?: unknown;
+  };
+
+  const chatbotId = typeof body.chatbotId === "string" ? body.chatbotId.trim() : "";
+  const message = typeof body.message === "string" ? body.message.trim() : "";
+  const audience = typeof body.audience === "string" ? body.audience.trim().toLowerCase() : null;
+
+  if (!chatbotId) {
+    return { response: c.json({ message: "chatbotId is required" }, 400) };
+  }
+
+  if (!message) {
+    return { response: c.json({ message: "message is required" }, 400) };
+  }
+
+  if (audience && !["channel", "everyone", "here"].includes(audience)) {
+    return { response: c.json({ message: "audience must be one of: channel, everyone, here" }, 400) };
+  }
+
+  const connection = await getActiveSlackConnectionByChatbot(chatbotId);
+  if (!connection) {
+    return {
+      response: c.json({ message: "Slack integration is not enabled for this chatbot" }, 404),
+    };
+  }
+
+  if (connection.channelId === SLACK_PENDING_CHANNEL_ID) {
+    return {
+      response: c.json({ message: "Slack integration is pending channel selection" }, 409),
+    };
+  }
+
+  return {
+    audience,
+    connection,
+    message,
+    chatbotId,
+  };
 }
 
 export async function handleSlackWebhook(c: Context) {
@@ -256,6 +363,52 @@ securedSlackRoutes.delete("/disconnect", async (c) => {
 export const slackRoutes = new Hono();
 
 publicSlackRoutes.get("/callback", handleSlackOAuthCallback);
+publicSlackRoutes.post("/notify", async (c) => {
+  if (!isSlackConfigured()) {
+    return c.json({ message: "Slack integration is not configured" }, 503);
+  }
+
+  const resolved = await resolveSlackNotifyRequest(c);
+  if ("response" in resolved) {
+    return resolved.response;
+  }
+
+  const notificationMessage = normalizeSlackNotificationMessage(
+    resolved.message,
+    resolved.audience,
+  );
+
+  if (!notificationMessage) {
+    return c.json({ message: "message is required" }, 400);
+  }
+
+  try {
+    await postSlackChannelMessage(
+      resolved.connection.teamId,
+      resolved.connection.channelId,
+      notificationMessage,
+    );
+
+    return c.json({
+      ok: true,
+      chatbotId: resolved.chatbotId,
+      channelId: resolved.connection.channelId,
+      teamId: resolved.connection.teamId,
+    });
+  } catch (error) {
+    if (error instanceof SlackApiError) {
+      return c.json(
+        {
+          message: error.message,
+          details: error.details,
+        },
+        { status: getSlackErrorStatusCode(error.statusCode) },
+      );
+    }
+
+    return c.json({ message: "Failed to send Slack notification" }, 502);
+  }
+});
 publicSlackRoutes.post("/webhook", handleSlackWebhook);
 
 slackRoutes.route("/", publicSlackRoutes);

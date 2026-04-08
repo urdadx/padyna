@@ -82,7 +82,7 @@ export const DeployAgentDialog = () => {
 											: "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100",
 									)}>
 									{activeTab === "widget" && (
-										<div className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-purple-500"></div>
+										<div className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-purple-800"></div>
 									)}
 									<div className="flex h-5 w-5 shrink-0 items-center justify-center">
 										<WidgetIcon

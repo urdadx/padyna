@@ -138,7 +138,7 @@ return null;
 						<div className="pt-5 pb-2">
 							<div className="mb-2 flex items-center justify-between">
 								<div className="flex items-center gap-3">
-									<WidgetIcon />
+									<WidgetIcon color="purple" />
 									<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 										Standard HTML website
 									</p>

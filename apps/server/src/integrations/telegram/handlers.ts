@@ -22,7 +22,10 @@ type ConversationRecord = {
   id: string;
   chatbotId: string;
   organizationId: string;
+  title: string;
 };
+
+const TELEGRAM_DEFAULT_TITLE = "Telegram conversation";
 
 function getTelegramRawMessage(message: any) {
   return (message.raw ?? {}) as TelegramMessage;
@@ -66,6 +69,7 @@ async function findConversationById(conversationId: string) {
       id: chatConversation.id,
       chatbotId: chatConversation.chatbotId,
       organizationId: chatConversation.organizationId,
+      title: chatConversation.title,
     })
     .from(chatConversation)
     .where(eq(chatConversation.id, conversationId))
@@ -80,6 +84,7 @@ async function findConversationByChatAndChatbot(telegramChatId: string, chatbotI
       id: chatConversation.id,
       chatbotId: chatConversation.chatbotId,
       organizationId: chatConversation.organizationId,
+      title: chatConversation.title,
     })
     .from(chatConversation)
     .where(
@@ -100,6 +105,7 @@ async function findLatestConversationByChat(telegramChatId: string) {
       id: chatConversation.id,
       chatbotId: chatConversation.chatbotId,
       organizationId: chatConversation.organizationId,
+      title: chatConversation.title,
     })
     .from(chatConversation)
     .where(
@@ -132,6 +138,24 @@ async function persistTelegramMessage(args: {
       parts: [{ type: "text", text: args.contentText }],
     })
     .onConflictDoNothing();
+}
+
+async function updateConversationTitleFromMessage(conversation: ConversationRecord, contentText: string) {
+  const nextTitle = contentText.trim();
+
+  if (!nextTitle || conversation.title !== TELEGRAM_DEFAULT_TITLE) {
+    return;
+  }
+
+  await db
+    .update(chatConversation)
+    .set({
+      title: nextTitle,
+      updatedAt: new Date(),
+    })
+    .where(eq(chatConversation.id, conversation.id));
+
+  conversation.title = nextTitle;
 }
 
 async function resolveActiveConversation(thread: any, message: any) {
@@ -264,7 +288,7 @@ async function handleStartCommand(thread: any, message: any, text: string) {
           chatbotId: chatbotRecord.id,
           organizationId: chatbotRecord.organizationId,
           channel: "telegram",
-          title: chatbotRecord.name || "Telegram conversation",
+          title: TELEGRAM_DEFAULT_TITLE,
           metadata: {
             chatbotId: chatbotRecord.id,
             telegramChatId,
@@ -275,6 +299,7 @@ async function handleStartCommand(thread: any, message: any, text: string) {
           id: chatConversation.id,
           chatbotId: chatConversation.chatbotId,
           organizationId: chatConversation.organizationId,
+          title: chatConversation.title,
         })
         .then((rows) => rows[0] ?? null)
     );
@@ -322,6 +347,8 @@ async function handleTelegramMessage(thread: any, message: any) {
     messageId: getMessageId(message),
     contentText,
   });
+
+  await updateConversationTitleFromMessage(conversation, contentText);
 
   await runAgentAndRespond({
     thread,

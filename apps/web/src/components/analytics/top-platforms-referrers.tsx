@@ -166,8 +166,8 @@ export function TopPlatforms() {
 											tab="Platforms"
 											unit="messages"
 											data={topPlatforms}
-											barBackground="bg-orange-200"
-											hoverBackground="hover:bg-orange-50"
+											barBackground="bg-green-200"
+											hoverBackground="hover:bg-green-50"
 											maxValue={maxPlatformCount}
 											limit={5}
 										/>
@@ -216,8 +216,8 @@ export function TopPlatforms() {
 											tab="Referrers"
 											unit="visits"
 											data={topReferrers}
-											barBackground="bg-orange-200"
-											hoverBackground="hover:bg-orange-50"
+											barBackground="bg-green-200"
+											hoverBackground="hover:bg-green-50"
 											maxValue={maxReferrerCount}
 											limit={5}
 										/>

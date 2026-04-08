@@ -15,13 +15,33 @@ function getLiveChatToken(metadata: Record<string, unknown> | undefined): string
   return randomUUID();
 }
 
+const conversationSortSchema = z.enum([
+  "recent",
+  "oldest",
+  "priority",
+  "web",
+  "whatsapp",
+  "telegram",
+  "discord",
+  "slack",
+  "instagram",
+  "messenger",
+  "googlechat",
+  "teams",
+  "linear",
+]);
+
+function isPlatformSort(sort: z.infer<typeof conversationSortSchema>) {
+  return !["recent", "oldest", "priority"].includes(sort);
+}
+
 export const conversationsRouter = router({
   getAll: protectedProcedure
     .input(
       z
         .object({
           filter: z.enum(["all", "escalated", "opened", "closed", "assigned"]),
-          sort: z.enum(["recent", "oldest", "priority"]),
+          sort: conversationSortSchema,
           limit: z.number().int().min(1).max(200).optional(),
         })
         .optional(),
@@ -54,6 +74,16 @@ export const conversationsRouter = router({
           );
         } else {
           filters.push(eq(chatConversation.status, filter));
+        }
+      }
+
+      if (isPlatformSort(sort)) {
+        if (sort === "web") {
+          filters.push(
+            or(eq(chatConversation.channel, "web"), eq(chatConversation.channel, "widget")),
+          );
+        } else {
+          filters.push(eq(chatConversation.channel, sort));
         }
       }
 

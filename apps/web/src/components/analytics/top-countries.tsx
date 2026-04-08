@@ -148,8 +148,8 @@ export function TopCountries() {
 											tab="Countries"
 											unit="visits"
 											data={topCountries}
-											barBackground="bg-green-200"
-											hoverBackground="hover:bg-green-50"
+											barBackground="bg-orange-200"
+											hoverBackground="hover:bg-orange-50"
 											maxValue={maxCountryCount}
 											limit={5}
 										/>
@@ -179,7 +179,7 @@ export function TopCountries() {
 							setDialogOpen={setCountriesDialogOpen}
 							allLinks={mapCountries}
 							maxTotalCount={maxCountryCount}
-							bgColor="bg-green"
+							bgColor="bg-orange"
 						/>
 					</TabsContent>
 
@@ -198,8 +198,8 @@ export function TopCountries() {
 											tab="Devices"
 											unit="visits"
 											data={topDevices}
-											barBackground="bg-green-200"
-											hoverBackground="hover:bg-green-50"
+											barBackground="bg-orange-200"
+											hoverBackground="hover:bg-orange-50"
 											maxValue={maxDeviceCount}
 											limit={5}
 										/>
@@ -229,7 +229,7 @@ export function TopCountries() {
 							setDialogOpen={setDevicesDialogOpen}
 							allLinks={mapDevices}
 							maxTotalCount={maxDeviceCount}
-							bgColor="bg-green"
+							bgColor="bg-orange"
 						/>
 					</TabsContent>
 
@@ -248,8 +248,8 @@ export function TopCountries() {
 											tab="OS"
 											unit="visits"
 											data={topOS}
-											barBackground="bg-green-200"
-											hoverBackground="hover:bg-green-50"
+											barBackground="bg-orange-200"
+											hoverBackground="hover:bg-orange-50"
 											maxValue={maxOSCount}
 											limit={5}
 										/>
@@ -279,7 +279,7 @@ export function TopCountries() {
 							setDialogOpen={setOsDialogOpen}
 							allLinks={mapOS}
 							maxTotalCount={maxOSCount}
-							bgColor="bg-green"
+							bgColor="bg-orange"
 						/>
 					</TabsContent>
 				</div>

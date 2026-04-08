@@ -4,7 +4,20 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 
 type FilterOption = "all" | "escalated" | "opened" | "closed" | "assigned";
-type SortOption = "recent" | "oldest" | "priority";
+type SortOption =
+  | "recent"
+  | "oldest"
+  | "priority"
+  | "web"
+  | "whatsapp"
+  | "telegram"
+  | "discord"
+  | "slack"
+  | "instagram"
+  | "messenger"
+  | "googlechat"
+  | "teams"
+  | "linear";
 
 export const Route = createFileRoute("/(admin)/chat-logs")({
   component: RouteComponent,
@@ -13,7 +26,23 @@ export const Route = createFileRoute("/(admin)/chat-logs")({
       .object({
         chatId: z.string().optional(),
         filter: z.enum(["all", "escalated", "opened", "closed", "assigned"]).default("all"),
-        sort: z.enum(["recent", "oldest", "priority"]).default("recent"),
+        sort: z
+          .enum([
+            "recent",
+            "oldest",
+            "priority",
+            "web",
+            "whatsapp",
+            "telegram",
+            "discord",
+            "slack",
+            "instagram",
+            "messenger",
+            "googlechat",
+            "teams",
+            "linear",
+          ])
+          .default("recent"),
       })
       .parse(search),
 });

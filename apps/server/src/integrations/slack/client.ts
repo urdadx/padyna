@@ -1,4 +1,4 @@
-import { slackAdapter, initializeSlackBot } from "./bot";
+import { slackAdapter, initializeSlackBot, slackBot } from "./bot";
 
 export class SlackApiError extends Error {
   statusCode: number;
@@ -90,5 +90,17 @@ export async function joinSlackChannel(teamId: string, channelId: string) {
   const data = (await response.json()) as SlackJoinResponse;
   if (!data.ok && data.error !== "already_in_channel" && data.error !== "method_not_supported_for_channel_type") {
     throw new SlackApiError("Failed to join Slack channel", 502, data.error);
+  }
+}
+
+export async function postSlackChannelMessage(teamId: string, channelId: string, message: string) {
+  const installation = await getSlackInstallation(teamId);
+
+  try {
+    await slackAdapter.withBotToken(installation.botToken, async () => {
+      await slackBot.channel(`slack:${channelId}`).post(message);
+    });
+  } catch (error) {
+    throw new SlackApiError("Failed to post Slack channel message", 502, error);
   }
 }

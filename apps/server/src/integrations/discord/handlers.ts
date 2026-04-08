@@ -33,6 +33,18 @@ function getDiscordRawMessage(message: any) {
   return (message.raw ?? {}) as DiscordRawMessage;
 }
 
+function getDiscordConversationTitle(message: any) {
+  const title =
+    typeof message.text === "string"
+      ? message.text
+          .trim()
+          .replace(/^(?:<@!?\d+>|@[A-Za-z0-9_.-]+)(?:[\s,:-]+)?/, "")
+          .trim()
+      : "";
+
+  return title || "Discord conversation";
+}
+
 async function getChatbotRecord(connection: DiscordConnectionRecord) {
   const chatbots = await db.query.chatbot.findMany({
     columns: {
@@ -112,7 +124,7 @@ async function createConversationForMention(args: {
       chatbotId: args.connection.chatbotId,
       organizationId: args.connection.organizationId,
       channel: "discord",
-      title: args.message.text?.trim() || "Discord conversation",
+      title: getDiscordConversationTitle(args.message),
       metadata: {
         guildId: rawMessage.guild_id ?? null,
         channelId: rawMessage.channel_id ?? null,

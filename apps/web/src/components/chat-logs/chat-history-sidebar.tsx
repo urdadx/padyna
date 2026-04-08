@@ -14,7 +14,20 @@ import {
 import { RestartLinear } from "@/assets/icons/restart-icon";
 
 export type FilterOption = "all" | "escalated" | "opened" | "closed" | "assigned";
-export type SortOption = "recent" | "oldest" | "priority";
+export type SortOption =
+	| "recent"
+	| "oldest"
+	| "priority"
+	| "web"
+	| "whatsapp"
+	| "telegram"
+	| "discord"
+	| "slack"
+	| "instagram"
+	| "messenger"
+	| "googlechat"
+	| "teams"
+	| "linear";
 
 const FILTER_OPTIONS: { label: string; value: FilterOption }[] = [
 	{ label: "All", value: "all" },
@@ -28,6 +41,11 @@ const SORT_OPTIONS: { label: string; value: SortOption }[] = [
 	{ label: "Recent", value: "recent" },
 	{ label: "Oldest", value: "oldest" },
 	{ label: "Highest priority", value: "priority" },
+	{ label: "Website/Widget", value: "web" },
+	{ label: "WhatsApp", value: "whatsapp" },
+	{ label: "Telegram", value: "telegram" },
+	{ label: "Discord", value: "discord" },
+	{ label: "Slack", value: "slack" },
 ];
 
 interface ChatHistorySidebarProps {
@@ -159,6 +177,7 @@ export const ChatHistorySidebar = ({
 							title={conversation.title}
 							status="closed"
 							date={conversation.updatedAt.toString()}
+							platform={conversation.channel}
 							isSelected={selectedId === conversation.id}
 							onClick={() => onSelect(conversation.id)}
 							onDeleted={onDeleted}
