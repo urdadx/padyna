@@ -2,15 +2,7 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../index";
 import { db } from "@padyna/db";
 import { eq, and, gte, lte, sql, desc, count, countDistinct, avg } from "drizzle-orm";
-import {
-  visitorSessions,
-  visitorEvents,
-  analyticsDaily,
-  analyticsWeekly,
-  analyticsMonthly,
-  chatbot,
-  chatConversation,
-} from "@padyna/db/schema/index";
+import { visitorSessions, visitorEvents, chatbot, chatConversation } from "@padyna/db/schema/index";
 import { TRPCError } from "@trpc/server";
 import { analyticsEvents } from "../lib/events";
 import { createOrganizationNotification } from "@padyna/db/notifications";
@@ -441,60 +433,6 @@ export const analyticsRouter = router({
       value: n(r.count),
     }));
   }),
-
-  getDaily: protectedProcedure
-    .input(
-      z.object({
-        startDate: z.date().optional(),
-        endDate: z.date().optional(),
-        limit: z.number().min(1).max(365).default(30),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      const chatbotId = getActiveChatbot(ctx);
-      const end = input.endDate ?? new Date();
-      const start = input.startDate ?? new Date(end.getTime() - input.limit * 24 * 60 * 60 * 1000);
-
-      return db
-        .select()
-        .from(analyticsDaily)
-        .where(
-          and(
-            eq(analyticsDaily.chatbotId, chatbotId),
-            gte(analyticsDaily.date, start),
-            lte(analyticsDaily.date, end),
-          ),
-        )
-        .orderBy(analyticsDaily.date)
-        .limit(input.limit);
-    }),
-
-  getWeekly: protectedProcedure
-    .input(z.object({ limit: z.number().min(1).max(52).default(12) }))
-    .query(async ({ ctx, input }) => {
-      const chatbotId = getActiveChatbot(ctx);
-
-      return db
-        .select()
-        .from(analyticsWeekly)
-        .where(eq(analyticsWeekly.chatbotId, chatbotId))
-        .orderBy(desc(analyticsWeekly.weekStart))
-        .limit(input.limit);
-    }),
-
-  getMonthly: protectedProcedure
-    .input(z.object({ limit: z.number().min(1).max(24).default(12) }))
-    .query(async ({ ctx, input }) => {
-      const chatbotId = getActiveChatbot(ctx);
-
-      return db
-        .select()
-        .from(analyticsMonthly)
-        .where(eq(analyticsMonthly.chatbotId, chatbotId))
-        .orderBy(desc(analyticsMonthly.year), desc(analyticsMonthly.month))
-        .limit(input.limit);
-    }),
-
   trackEvent: publicProcedure
     .input(
       z.object({

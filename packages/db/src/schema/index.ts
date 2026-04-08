@@ -11,3 +11,4 @@ export * from "./calendly";
 export * from "./jira";
 export * from "./discord";
 export * from "./clickup";
+export * from "./slack";
