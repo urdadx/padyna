@@ -3,52 +3,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExpandIcon } from "lucide-react";
 import { useState } from "react";
 import BarList from "./bar-list";
+
 import { ViewAllStats } from "./view-all-stats";
-import { TopicIconLinear } from "@/assets/icons/topics-icon";
+import { trpc } from "@/utils/trpc";
+import { useQuery } from "@tanstack/react-query";
+import { BoltLinear } from "@/assets/icons/bolt-duotone";
+import { TopSkeleton } from "./top-skeleton";
 
 export function TopActions() {
 	const [actionsDialogOpen, setWorkflowsDialogOpen] = useState(false);
 
-	const mapActions = [
-		{
-			icon: <TopicIconLinear color="black" />,
-			title: "Pricing & Plans",
-			value: 850,
-			href: "",
-			linkId: "",
-		},
-		{
-			icon: <TopicIconLinear color="black" />,
-			title: "Technical Support",
-			value: 620,
-			href: "",
-			linkId: "",
-		},
-		{
-			icon: <TopicIconLinear color="black" />,
-			title: "Feature Requests",
-			value: 410,
-			href: "",
-			linkId: "",
-		},
-		{
-			icon: <TopicIconLinear color="black" />,
-			title: "Integration Help",
-			value: 380,
-			href: "",
-			linkId: "",
-		},
-		{
-			icon: <TopicIconLinear color="black" />,
-			title: "Account Management",
-			value: 250,
-			href: "",
-			linkId: "",
-		},
-	];
+	const { data: actions, isLoading } = useQuery(
+		trpc.analytics.getTopActions.queryOptions({ limit: 10 }),
+	);
+
+	if (isLoading) {
+		return <TopSkeleton />;
+	}
+
+	const mapActions = (actions ?? []).map((action) => ({
+		...action,
+		icon: <BoltLinear color="black" />,
+	}));
 
 	const topWorkflows = mapActions.slice(0, 5);
-	const maxTopicCount = Math.max(...mapActions.map((t) => t.value));
+	const maxTopicCount = Math.max(...mapActions.map((t) => t.value), 0);
 
 	return (
 		<div className="h-87.5 w-full rounded-xl border bg-white flex flex-col overflow-hidden">

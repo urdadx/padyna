@@ -1,10 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { db } from "@padyna/db";
-import {
-  chatConversation,
-  chatMessage,
-  discordConnection,
-} from "@padyna/db/schema/index";
+import { chatConversation, chatMessage, discordConnection } from "@padyna/db/schema/index";
 import { createSupportChatAgent } from "../../chat";
 
 declare global {
@@ -158,7 +154,7 @@ async function runAgentAndRespond(args: {
   try {
     await args.thread.startTyping();
 
-    const agent = createSupportChatAgent({
+    const agent = await createSupportChatAgent({
       chatbotId: args.connection.chatbotId,
       organizationId: args.connection.organizationId,
       chatbotName: chatbotRecord.name || "AI Assistant",
@@ -195,7 +191,9 @@ export function registerDiscordHandlers(discordBot: any) {
     const guildId = rawMessage.guild_id;
 
     if (!guildId) {
-      await thread.post("Discord direct messages are not supported yet. Connect the bot to a server first.");
+      await thread.post(
+        "Discord direct messages are not supported yet. Connect the bot to a server first.",
+      );
       return;
     }
 

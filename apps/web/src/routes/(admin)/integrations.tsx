@@ -6,6 +6,7 @@ import SlackLogo from "@/assets/slack-1.png";
 import JiraLogo from "@/assets/jira.png";
 import ClickUpIcon from "@/assets/clickup.png";
 import WhatsAppLogo from "@/assets/whatsapp.png";
+import LinearLogo from "@/assets/linear.svg";
 
 export const Route = createFileRoute("/(admin)/integrations")({
 	component: RouteComponent,
@@ -32,6 +33,12 @@ function RouteComponent() {
 			description: "Connect your agent to Calendly to manage bookings and meetings.",
 			logo: CalendlyLogo,
 		},
+		// {
+		// 	id: "linear",
+		// 	name: "Linear",
+		// 	description: "Connect your agent to Linear to create support tickets",
+		// 	logo: LinearLogo,
+		// },
 
 		{
 			id: "whatsapp",

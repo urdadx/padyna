@@ -154,7 +154,7 @@ export function ClickupIntegrationCard({ data }: { data: IntegrationCardData }) 
 					{isConnected && (
 						<Badge variant="outline" className="gap-1 text-xs">
 							<span className="size-2 rounded-full bg-green-500"></span>
-							Connected
+							Active
 						</Badge>
 					)}
 				</div>

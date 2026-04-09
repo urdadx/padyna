@@ -312,7 +312,7 @@ widgetRoutes.post("/:widgetId/chat", widgetChatRateLimitMiddleware, async (c) =>
 
   const resolvedConversationId = targetConversationId ?? conversationId;
 
-  const agent = createSupportChatAgent({
+  const agent = await createSupportChatAgent({
     chatbotId: chatbotRecord.id,
     organizationId: chatbotRecord.organizationId,
     chatbotName: chatbotRecord.name || "AI Assistant",

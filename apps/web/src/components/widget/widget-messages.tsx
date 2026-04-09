@@ -8,6 +8,12 @@ import { mermaid } from "@streamdown/mermaid";
 import { WidgetMarkdownCodeBlock } from "./widget-components/code-block";
 import { Fragment } from "react";
 import { FeedbackBar } from "../agent/feedback-bar";
+import {
+  CalendlyAppointmentForm,
+  getCalendlyAppointmentFormPayloads,
+} from "../actions/forms/calendly-appointment-form";
+import { getJiraIssueFormPayloads, JiraIssueForm } from "../actions/forms/jira-issue-form";
+import { ClickUpIssueForm, getClickUpIssueFormPayloads } from "../actions/forms/clickup-issue-form";
 
 const streamdownPlugins = { cjk, code, math, mermaid };
 
@@ -59,11 +65,16 @@ export const WidgetMessages = ({
 
     const hasTextContent = textParts.length > 0;
     const hasContentText = Boolean(message.contentText);
+    const calendlyAppointmentForms = getCalendlyAppointmentFormPayloads(parts);
+    const jiraIssueForms = getJiraIssueFormPayloads(parts);
+    const clickUpIssueForms = getClickUpIssueFormPayloads(parts);
+    const formCount =
+      calendlyAppointmentForms.length + jiraIssueForms.length + clickUpIssueForms.length;
 
     const hasVisibleContent = hasTextContent || hasContentText || parts.length === 0;
 
     const getStatusLabel = () => {
-      if (!isCurrentlyStreaming || hasTextContent) return null;
+      if (!isCurrentlyStreaming || hasTextContent || formCount > 0) return null;
 
       const isSearchingDocs = parts.some(
         (p: any) => p.type === "tool-knowledge_base" && p.state !== "output-available",
@@ -83,52 +94,72 @@ export const WidgetMessages = ({
 
     const messageContent = statusLabel ? (
       <WidgetStatusIndicator label={statusLabel} />
-    ) : hasContentText && textParts.length === 0 ? (
-      <p className="whitespace-pre-wrap">{message.contentText}</p>
     ) : (
-      textParts.map((part, partIndex) => (
-        <Streamdown
-          key={`${message.id}-${partIndex}`}
-          isAnimating={isCurrentlyStreaming}
-          plugins={streamdownPlugins}
-          controls={false}
-          components={{
-            h1: () => null,
-            h2: () => null,
-            h3: () => null,
-            h4: () => null,
-            h5: () => null,
-            h6: () => null,
-            a: ({ children, href }) => (
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="cursor-help font-medium text-neutral-900 underline decoration-dotted underline-offset-2 hover:text-neutral-600"
-              >
-                {children}
-              </a>
-            ),
-            ul: ({ children }) => <ul className="list-outside list-disc pl-6">{children}</ul>,
-            ol: ({ children }) => <ol className="list-outside list-decimal pl-6">{children}</ol>,
-            code: WidgetMarkdownCodeBlock,
-          }}
-          className="text-foreground text-content-emphasis overflow-wrap-anywhere wrap-break-word min-w-0 w-full overflow-hidden"
-        >
-          {part.text}
-        </Streamdown>
-      ))
+      <div className="space-y-3">
+        {hasContentText && textParts.length === 0 ? (
+          <p className="whitespace-pre-wrap">{message.contentText}</p>
+        ) : (
+          textParts.map((part, partIndex) => (
+            <Streamdown
+              key={`${message.id}-${partIndex}`}
+              isAnimating={isCurrentlyStreaming}
+              plugins={streamdownPlugins}
+              controls={false}
+              components={{
+                h1: () => null,
+                h2: () => null,
+                h3: () => null,
+                h4: () => null,
+                h5: () => null,
+                h6: () => null,
+                a: ({ children, href }) => (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cursor-help font-medium text-neutral-900 underline decoration-dotted underline-offset-2 hover:text-neutral-600"
+                  >
+                    {children}
+                  </a>
+                ),
+                ul: ({ children }) => <ul className="list-outside list-disc pl-6">{children}</ul>,
+                ol: ({ children }) => (
+                  <ol className="list-outside list-decimal pl-6">{children}</ol>
+                ),
+                code: WidgetMarkdownCodeBlock,
+              }}
+              className="text-foreground text-content-emphasis overflow-wrap-anywhere wrap-break-word min-w-0 w-full overflow-hidden"
+            >
+              {part.text}
+            </Streamdown>
+          ))
+        )}
+      </div>
     );
 
     return (
       <Fragment key={message.id}>
-        <WidgetMessage
-          isUser={isUser}
-          animate={isUser || isCurrentlyStreaming}
-          primaryColor={primaryColor}
-        >
-          {!hasVisibleContent && !statusLabel ? null : messageContent}
-        </WidgetMessage>
+        {!formCount || hasVisibleContent || statusLabel ? (
+          <WidgetMessage
+            isUser={isUser}
+            animate={isUser || isCurrentlyStreaming}
+            primaryColor={primaryColor}
+          >
+            {!hasVisibleContent && !statusLabel ? null : messageContent}
+          </WidgetMessage>
+        ) : null}
+        {calendlyAppointmentForms.map((payload, formIndex) => (
+          <CalendlyAppointmentForm
+            key={`${message.id}-calendly-form-${formIndex}`}
+            payload={payload}
+          />
+        ))}
+        {jiraIssueForms.map((payload, formIndex) => (
+          <JiraIssueForm key={`${message.id}-jira-form-${formIndex}`} payload={payload} />
+        ))}
+        {clickUpIssueForms.map((payload, formIndex) => (
+          <ClickUpIssueForm key={`${message.id}-clickup-form-${formIndex}`} payload={payload} />
+        ))}
         {showFeedbackBlock ? (
           <FeedbackBar
             key={`vote-${message.id}`}

@@ -2,7 +2,6 @@ import { env } from "@padyna/env/server";
 
 const CLICKUP_AUTH_BASE_URL = "https://app.clickup.com/api";
 const CLICKUP_API_BASE_URL = "https://api.clickup.com/api/v2";
-const CLICKUP_DEFAULT_TASK_STATUS = "Open";
 const CLICKUP_DEFAULT_TASK_TAGS = ["ai support bot", "padyna"] as const;
 
 export type ClickUpTokenResponse = {
@@ -189,7 +188,6 @@ export async function createClickUpTask(args: {
       ...(args.markdownDescription
         ? { markdown_description: args.markdownDescription }
         : {}),
-      status: CLICKUP_DEFAULT_TASK_STATUS,
       tags: [...CLICKUP_DEFAULT_TASK_TAGS],
       archived: false,
     },

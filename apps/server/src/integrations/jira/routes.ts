@@ -1,6 +1,6 @@
 import { db } from "@padyna/db";
-import { jiraIntegration } from "@padyna/db/schema/index";
-import { and, eq } from "drizzle-orm";
+import { agentAction, jiraIntegration } from "@padyna/db/schema/index";
+import { and, eq, sql } from "drizzle-orm";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import {
   getJiraProjects,
 } from "./auth/client";
 import { createJiraConnectUrl } from "./auth/connect";
+import { jiraActionConfigSchema } from "../../actions/schema";
 import {
   getActiveJiraIntegrationByChatbot,
   isJiraAccessTokenExpired,
@@ -38,6 +39,12 @@ const createJiraIssueBodySchema = z.object({
   summary: z.string().trim().min(1),
   description: z.string().trim().min(1).optional(),
   priorityId: z.string().min(1).optional(),
+});
+
+const createJiraIssueFromActionBodySchema = z.object({
+  actionId: z.uuid(),
+  summary: z.string().trim().min(1),
+  description: z.string().trim().min(1).optional(),
 });
 
 function getJiraErrorStatusCode(statusCode?: number) {
@@ -120,7 +127,33 @@ async function resolvePublicJiraIssueContext(
     };
   }
 
-  return { integration };
+  try {
+    const usableIntegration = await refreshJiraAccessTokenIfNeeded(integration);
+
+    if (isJiraAccessTokenExpired(usableIntegration)) {
+      return {
+        response: c.json({ message: "Jira connection expired. Reconnect the integration." }, 401),
+      };
+    }
+
+    return { integration: usableIntegration };
+  } catch (error) {
+    if (error instanceof JiraApiError) {
+      return {
+        response: c.json(
+          {
+            message: "Jira connection expired. Reconnect the integration.",
+            details: error.details,
+          },
+          401,
+        ),
+      };
+    }
+
+    return {
+      response: c.json({ message: "Failed to refresh Jira connection" }, 502),
+    };
+  }
 }
 
 securedJiraRoutes.get("/connect", async (c) => {
@@ -350,12 +383,12 @@ securedJiraRoutes.get("/fields", async (c) => {
   }
 });
 
-publicJiraRoutes.post("/issue", async (c) => {
-  const parseResult = createJiraIssueBodySchema.safeParse(await c.req.json());
+publicJiraRoutes.post("/action-issue", async (c) => {
+  const parseResult = createJiraIssueFromActionBodySchema.safeParse(await c.req.json());
   if (!parseResult.success) {
     return c.json(
       {
-        message: "Invalid Jira issue payload",
+        message: "Invalid Jira action issue payload",
         issues: z.treeifyError(parseResult.error),
       },
       400,
@@ -363,7 +396,25 @@ publicJiraRoutes.post("/issue", async (c) => {
   }
 
   const payload = parseResult.data;
-  const resolved = await resolvePublicJiraIssueContext(c, payload);
+  const [action] = await db
+    .select()
+    .from(agentAction)
+    .where(and(eq(agentAction.id, payload.actionId), eq(agentAction.provider, "jira")))
+    .limit(1);
+
+  if (!action) {
+    return c.json({ message: "Jira action not found" }, 404);
+  }
+
+  const config = jiraActionConfigSchema.parse(action.config);
+  const resolved = await resolvePublicJiraIssueContext(c, {
+    chatbotId: action.chatbotId,
+    projectId: config.projectId,
+    issueTypeId: config.issueTypeId,
+    summary: payload.summary,
+    description: payload.description,
+  });
+
   if ("response" in resolved) {
     return resolved.response;
   }
@@ -372,14 +423,27 @@ publicJiraRoutes.post("/issue", async (c) => {
     const issue = await createJiraIssue({
       accessToken: resolved.integration.accessToken,
       cloudId: resolved.integration.cloudId,
-      projectId: payload.projectId,
-      issueTypeId: payload.issueTypeId,
+      projectId: config.projectId,
+      issueTypeId: config.issueTypeId,
       summary: payload.summary,
       description: payload.description,
-      priorityId: payload.priorityId,
     });
 
-    return c.json(issue, 201);
+    await db
+      .update(agentAction)
+      .set({
+        timesUsed: sql`${agentAction.timesUsed} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(agentAction.id, action.id));
+
+    return c.json(
+      {
+        issue,
+        issueUrl: `${resolved.integration.siteUrl}/browse/${issue.key}`,
+      },
+      201,
+    );
   } catch (error) {
     if (error instanceof JiraApiError) {
       return c.json(

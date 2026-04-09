@@ -41,7 +41,7 @@ const SORT_OPTIONS: { label: string; value: SortOption }[] = [
 	{ label: "Recent", value: "recent" },
 	{ label: "Oldest", value: "oldest" },
 	{ label: "Highest priority", value: "priority" },
-	{ label: "Website/Widget", value: "web" },
+	{ label: "Widget", value: "web" },
 	{ label: "WhatsApp", value: "whatsapp" },
 	{ label: "Telegram", value: "telegram" },
 	{ label: "Discord", value: "discord" },

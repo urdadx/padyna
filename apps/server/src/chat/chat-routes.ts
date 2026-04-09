@@ -122,7 +122,7 @@ chatRoutes.post("/", authChatRateLimitMiddleware, async (c) => {
 
   const resolvedConversationId = targetConversationId ?? conversationId;
 
-  const agent = createSupportChatAgent({
+  const agent = await createSupportChatAgent({
     chatbotId: activeChatbot,
     organizationId: activeOrganization,
     chatbotName,

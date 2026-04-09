@@ -3,14 +3,7 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "../ui/dialog";
+
 import {
 	Select,
 	SelectContent,
@@ -22,6 +15,15 @@ import {
 } from "../ui/select";
 import Spinner from "../ui/spinner";
 import type { IntegrationCardData } from "./types";
+import { AlertCircleIcon } from "lucide-react";
+import {
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "../ui/alert-dialog";
 
 type SlackIntegrationStatus = {
 	id: string;
@@ -274,16 +276,16 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 
 	return (
 		<div className="bg-white rounded-xl p-3 border border-gray-200  w-full max-w-md mx-auto h-full">
-			<Dialog open={isSetupDialogOpen} onOpenChange={setIsSetupDialogOpen}>
-				<DialogContent>
-					<DialogHeader className="pb-0">
-						<DialogTitle className="text-lg font-semibold">
-							Select Slack Channel
-						</DialogTitle>
-						<DialogDescription>
-							Choose the Slack channel where this bot should reply.
-						</DialogDescription>
-					</DialogHeader>
+			<AlertDialog open={isSetupDialogOpen} onOpenChange={setIsSetupDialogOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader className="pb-0">
+						<AlertDialogTitle className="text-xl font-semibold">
+							Choose Slack Channel
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							Select a channel where this bot should be installed.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
 
 					<div className="space-y-3">
 						{channelError ? (
@@ -301,13 +303,13 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 									placeholder={
 										isLoadingChannels
 											? "Loading channels..."
-											: "Select channel"
+											: "Slack channel"
 									}
 								/>
 							</SelectTrigger>
 							<SelectContent>
 								<SelectGroup>
-									<SelectLabel>Channels</SelectLabel>
+									<SelectLabel>Slack channels</SelectLabel>
 									{channelItems.map((item) => (
 										<SelectItem
 											key={item.value}
@@ -318,12 +320,13 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 								</SelectGroup>
 							</SelectContent>
 						</Select>
-						<p className="text-xs text-muted-foreground">
-							The bot will only reply in the selected channel.
+						<p className="text-xs text-muted-foreground flex items-center">
+							<AlertCircleIcon className="size-3 inline-block mr-1" />
+							The agent will only reply in the selected channel.
 						</p>
 					</div>
 
-					<DialogFooter>
+					<AlertDialogFooter>
 						<Button
 							variant="outline"
 							disabled={isSavingChannel}
@@ -340,15 +343,15 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 							onClick={() => void handleSaveChannel()}>
 							{isSavingChannel ? (
 								<>
-									<Spinner color="white" /> Saving...
+									<Spinner className="text-white" /> Saving...
 								</>
 							) : (
 								"Save channel"
 							)}
 						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 
 			<div className="flex flex-col gap-2 h-full">
 				<div className="flex justify-between items-center gap-2">
@@ -363,7 +366,7 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 					{isConnected ? (
 						<Badge variant="outline" className="gap-1 text-xs">
 							<span className="size-2 rounded-full bg-green-500"></span>
-							Connected
+							Active
 						</Badge>
 					) : needsChannelSelection ? (
 						<Badge variant="outline" className="text-xs">

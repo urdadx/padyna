@@ -1,4 +1,5 @@
 import { AlertCircleIcon } from "lucide-react";
+import { CheckMarkIcon } from "@/assets/icons/checkmark-icon";
 import { Button } from "../ui/button";
 
 export const EscalatedBanner = () => {
@@ -72,6 +73,28 @@ export const ClosedBanner = ({ startNewConversation }: { startNewConversation: (
 					className="self-start">
 					Start new conversation
 				</Button>
+			</div>
+		</div>
+	);
+};
+
+export const IssueSubmittedBanner = () => {
+	return (
+		<div className="rounded-lg bg-green-50/40 border border-green-100 p-4">
+			<div className="flex gap-2 items-start">
+				<CheckMarkIcon
+					className="h-5 w-5 shrink-0 text-green-800"
+					color="green"
+					aria-hidden="true"
+				/>
+				<div className="space-y-1">
+					<h3 className="text-sm font-sans font-semibold text-green-800">
+						Your ticket has been submitted
+					</h3>
+					<p className="text-sm font-sans font-normal text-green-700">
+						Our team will take a look at it and get back to you shortly.
+					</p>
+				</div>
 			</div>
 		</div>
 	);

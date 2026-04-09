@@ -26,6 +26,7 @@ import { discordRoutes, registerDiscordGatewayCron } from "./integrations/discor
 import { jiraRoutes } from "./integrations/jira";
 import { handleSlackWebhook, slackRoutes } from "./integrations/slack";
 import { telegramRoutes } from "./integrations/telegram";
+import { actionRoutes } from "./actions";
 
 const app = new Hono();
 
@@ -183,6 +184,7 @@ app.route("/api/integrations/clickup", clickupRoutes);
 app.route("/api/integrations/discord", discordRoutes);
 app.route("/api/integrations/jira", jiraRoutes);
 app.route("/api/integrations/slack", slackRoutes);
+app.route("/api/actions", actionRoutes);
 app.post("/api/integrations/webhooks/slack", handleSlackWebhook);
 app.post("/api/webhooks/slack", handleSlackWebhook);
 app.route("/api/integrations/telegram", telegramRoutes);

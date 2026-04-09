@@ -37,6 +37,8 @@ type DiscordMessageResponse = {
   channel_id: string;
 };
 
+export type DiscordNotificationAudience = "none" | "here" | "everyone";
+
 export type DiscordChannelOption = {
   id: string;
   name: string;
@@ -45,6 +47,33 @@ export type DiscordChannelOption = {
   parentName: string | null;
   position: number;
 };
+
+function normalizeDiscordNotificationMessage(
+  message: string,
+  audience: DiscordNotificationAudience = "none",
+) {
+  const trimmedMessage = message.trim();
+
+  if (!trimmedMessage) {
+    return "";
+  }
+
+  const audienceTag = audience === "here" ? "@here" : audience === "everyone" ? "@everyone" : null;
+
+  const normalizedMessage = trimmedMessage
+    .replace(/^@everyone\b/i, "@everyone")
+    .replace(/^@here\b/i, "@here");
+
+  if (!audienceTag) {
+    return normalizedMessage;
+  }
+
+  if (normalizedMessage.startsWith("@everyone") || normalizedMessage.startsWith("@here")) {
+    return normalizedMessage;
+  }
+
+  return `${audienceTag} ${normalizedMessage}`;
+}
 
 function assertDiscordBotToken() {
   const botToken = env.DISCORD_BOT_TOKEN;
@@ -128,6 +157,7 @@ export async function sendDiscordChannelMessage(input: {
   chatbotId: string;
   channelId: string;
   content: string;
+  audience?: DiscordNotificationAudience;
 }) {
   const connection = await getActiveDiscordConnectionByChatbot(input.chatbotId);
 
@@ -153,7 +183,13 @@ export async function sendDiscordChannelMessage(input: {
     {
       method: "POST",
       body: JSON.stringify({
-        content: input.content,
+        content: normalizeDiscordNotificationMessage(input.content, input.audience ?? "none"),
+        allowed_mentions:
+          input.audience === "none"
+            ? { parse: [] }
+            : {
+                parse: ["everyone"],
+              },
       }),
     },
   );

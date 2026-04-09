@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
+import { useNavigate } from "@tanstack/react-router";
 import { AlertCircleIcon } from "lucide-react";
+import { toast } from "sonner";
 
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
@@ -16,6 +18,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { queryClient } from "@/utils/trpc";
 
 import { ActionFormShell } from "./action-form-shell";
 
@@ -36,7 +39,14 @@ type JiraProjectsResponse = {
 	values: JiraProject[];
 };
 
+type CreateJiraActionResponse = {
+	action: {
+		id: string;
+	};
+};
+
 export function JiraActionForm() {
+	const navigate = useNavigate();
 	const [name, setName] = useState("");
 	const [projectId, setProjectId] = useState("");
 	const [issueTypeId, setIssueTypeId] = useState("");
@@ -79,21 +89,78 @@ export function JiraActionForm() {
 
 	const projects = projectsData?.values ?? [];
 	const issueTypes = issueTypesData ?? [];
+
 	const projectItems = projects.map((project) => ({
 		label: `${project.name} (${project.key})`,
 		value: project.id,
 	}));
+
 	const issueTypeItems = issueTypes.map((issueType) => ({
 		label: issueType.subtask ? `${issueType.name} (Sub-task)` : issueType.name,
 		value: issueType.id,
 	}));
+
 	const projectsMessage =
 		(projectsError as AxiosError<{ message: string }>)?.response?.data?.message ?? null;
+
 	const issueTypesMessage =
 		(issueTypesError as AxiosError<{ message: string }>)?.response?.data?.message ?? null;
 
+	const selectedProject = projects.find((project) => project.id === projectId) ?? null;
+	const selectedIssueType =
+		issueTypes.find((issueType) => issueType.id === issueTypeId) ?? null;
+
+	const createActionMutation = useMutation({
+		mutationFn: async () => {
+			const response = await api.post<CreateJiraActionResponse>("/api/actions/jira", {
+				name: name.trim(),
+				description: description.trim(),
+				enabled,
+				config: {
+					projectId: selectedProject!.id,
+					projectKey: selectedProject!.key,
+					projectName: selectedProject!.name,
+					issueTypeId: selectedIssueType!.id,
+					issueTypeName: selectedIssueType!.name,
+				},
+			});
+
+			return response.data;
+		},
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({ queryKey: ["actions"] });
+			toast.success("Jira action created");
+			navigate({ to: "/actions" });
+		},
+		onError: (error: any) => {
+			toast.error(error.response?.data?.message || "Failed to create Jira action");
+		},
+	});
+
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+
+		if (!name.trim()) {
+			toast.error("Action name is required");
+			return;
+		}
+
+		if (!selectedProject) {
+			toast.error("Select a Jira project");
+			return;
+		}
+
+		if (!selectedIssueType) {
+			toast.error("Select a Jira issue type");
+			return;
+		}
+
+		if (!description.trim()) {
+			toast.error("When to use is required");
+			return;
+		}
+
+		createActionMutation.mutate();
 	};
 
 	return (
@@ -101,7 +168,9 @@ export function JiraActionForm() {
 			title="Create Jira tickets"
 			enabled={enabled}
 			onEnabledChange={setEnabled}
-			onSubmit={handleSubmit}>
+			onSubmit={handleSubmit}
+			isSubmitting={createActionMutation.isPending}
+			submitLabel="Save action">
 			<div className="space-y-2">
 				<div className="flex flex-col gap-1">
 					<Label htmlFor="name">Action name</Label>
@@ -125,7 +194,7 @@ export function JiraActionForm() {
 					<small className="text-red-500">{projectsMessage}</small>
 				) : (
 					<small className="text-muted-foreground">
-						Choose a project from your connected Jira site.
+						Choose a project from your connected Jira account.
 					</small>
 				)}
 				<Select
@@ -135,7 +204,11 @@ export function JiraActionForm() {
 					disabled={isLoadingProjects || projectItems.length === 0}>
 					<SelectTrigger className="w-full" id="jira-project">
 						<SelectValue
-							placeholder={isLoadingProjects ? "Loading projects..." : "Select project"}
+							placeholder={
+								isLoadingProjects
+									? "Loading projects..."
+									: "Select project"
+							}
 						/>
 					</SelectTrigger>
 					<SelectContent>
@@ -164,11 +237,15 @@ export function JiraActionForm() {
 					items={issueTypeItems}
 					value={issueTypeId}
 					onValueChange={(value) => setIssueTypeId(value ?? "")}
-					disabled={!projectId || isLoadingIssueTypes || issueTypeItems.length === 0}>
+					disabled={
+						!projectId || isLoadingIssueTypes || issueTypeItems.length === 0
+					}>
 					<SelectTrigger className="w-full" id="jira-issue-type">
 						<SelectValue
 							placeholder={
-								isLoadingIssueTypes ? "Loading issue types..." : "Select issue type"
+								isLoadingIssueTypes
+									? "Loading issue types..."
+									: "Select issue type"
 							}
 						/>
 					</SelectTrigger>

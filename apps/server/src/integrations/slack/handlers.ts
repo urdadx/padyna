@@ -170,7 +170,7 @@ async function runAgentAndRespond(args: {
   try {
     await args.thread.startTyping();
 
-    const agent = createSupportChatAgent({
+    const agent = await createSupportChatAgent({
       chatbotId: args.connection.chatbotId,
       organizationId: args.connection.organizationId,
       chatbotName: chatbotRecord.name || "AI Assistant",

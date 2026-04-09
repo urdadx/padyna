@@ -12,9 +12,14 @@ import {
 } from "@tanstack/react-table";
 import { useState, useMemo } from "react";
 
+import { CalendlyIcon } from "@/assets/icons/calendly-icon";
+import { JiraIcon } from "@/assets/icons/jira-icon";
 import { cn } from "@/lib/utils";
+import { SlackFill } from "@/assets/icons/slack-icon";
+import { IntegrationLinear } from "@/assets/icons/integration-icon";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TablePagination } from "@/components/datasource/table-pagination";
+import { CuteIconWrapper } from "@/components/cute-icon-wrapper";
 import {
 	Table,
 	TableBody,
@@ -28,6 +33,9 @@ import { SearchLinear } from "@/assets/icons/search-icon";
 import { ActionsPopover } from "./actions-popover";
 import { MultiSelectToolbar } from "../multi-select-toolbar";
 import { CreateActionDialog } from "./create-action-dialog";
+import Spinner from "../ui/spinner";
+import { ClickUpIcon } from "@/assets/icons/clickup-icon";
+import { DiscordBold } from "@/assets/icons/discord-icon";
 
 export type ActionItem = {
 	id: string;
@@ -35,14 +43,14 @@ export type ActionItem = {
 	description: string;
 	noUsed: number;
 	status: "Active" | "Inactive";
-	type: "Calendly" | "Cal" | "custom" | "Jira" | "Slack";
+	type: "Calendly" | "Cal" | "ClickUp" | "Discord" | "Jira" | "Slack";
 };
 
-type ActionRow = {
+export type ActionRow = {
 	id: string;
 	name: string;
-	actionType: "jira" | "calendly" | "slack" | "cal";
-	status: "inactive" | "active";
+	provider: "jira" | "calendly" | "slack" | "cal" | "clickup" | "discord";
+	enabled: boolean;
 	timesUsed: number;
 	description: string;
 };
@@ -53,16 +61,56 @@ function mapActionToItem(db: ActionRow): ActionItem {
 		name: db.name,
 		description: db.description,
 		noUsed: db.timesUsed,
-		status: db.status === "active" ? "Active" : "Inactive",
+		status: db.enabled ? "Active" : "Inactive",
 		type:
-			db.actionType === "calendly"
+			db.provider === "calendly"
 				? "Calendly"
-				: db.actionType === "cal"
+				: db.provider === "cal"
 					? "Cal"
-					: db.actionType === "slack"
+					: db.provider === "slack"
 						? "Slack"
-						: "Jira",
+						: db.provider === "clickup"
+							? "ClickUp"
+							: db.provider === "discord"
+								? "Discord"
+								: "Jira",
 	};
+}
+
+function getActionIcon(type: ActionItem["type"]) {
+	switch (type) {
+		case "Calendly":
+			return CalendlyIcon;
+		case "Jira":
+			return JiraIcon;
+		case "Slack":
+			return SlackFill;
+		case "ClickUp":
+			return ClickUpIcon;
+		case "Discord":
+			return DiscordBold;
+		default:
+			return IntegrationLinear;
+	}
+}
+
+function getActionIconColor(type: ActionItem["type"]) {
+	switch (type) {
+		case "Calendly":
+			return "#006bff";
+		case "Jira":
+			return "#f2c744";
+		case "Slack":
+			return "#36c5f0";
+		case "Cal":
+			return "#111827";
+		case "ClickUp":
+			return "#ec4c47";
+		case "Discord":
+			return "#5865F2";
+		default:
+			return "#6b7280";
+	}
 }
 
 const columns: ColumnDef<ActionItem>[] = [
@@ -89,9 +137,15 @@ const columns: ColumnDef<ActionItem>[] = [
 	{
 		accessorKey: "name",
 		cell: ({ row }) => {
+			const type = row.original.type;
+			const ActionIcon = getActionIcon(type);
+
 			return (
-				<div className="font-normal">
-					<span className="truncate max-w-xs">{row.getValue("name")}</span>
+				<div className="font-normal flex gap-2 items-center">
+					<CuteIconWrapper icon={ActionIcon} color={getActionIconColor(type)} />
+					<span className="block max-w-xs truncate text-sm">
+						{row.getValue("name")}
+					</span>
 				</div>
 			);
 		},
@@ -102,12 +156,19 @@ const columns: ColumnDef<ActionItem>[] = [
 	{
 		accessorKey: "description",
 		header: "Description",
+		cell: ({ row }) => (
+			<span className="block max-w-xs truncate text-sm">
+				{row.getValue("description")}
+			</span>
+		),
 	},
 	{
 		accessorKey: "noUsed",
 		header: "# times used",
 		cell: ({ row }) => (
-			<span className="flex justify-center">{row.getValue("noUsed")}</span>
+			<span className="flex w-full text-center justify-center">
+				{row.getValue("noUsed")}
+			</span>
 		),
 	},
 
@@ -278,6 +339,7 @@ export function ActionsTable({ data, isLoading }: ActionsTableProps) {
 									className="h-64 cal-center w-full justify-center"
 									colSpan={columns.length}>
 									<div className="flex flex-col items-center justify-center gap-2">
+										<Spinner size={32} />
 										<p className="cal-sm cal-muted-foreground">
 											Loading actions...
 										</p>

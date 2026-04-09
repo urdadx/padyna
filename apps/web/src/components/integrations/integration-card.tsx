@@ -7,6 +7,7 @@ import type { IntegrationCardData } from "./types";
 import { ClickupIntegrationCard } from "./clickup-integration-card";
 import { CalIntegrationCard } from "./cal-integration-card";
 import { WhatsAppIntegrationCard } from "./whatsapp-integration-card";
+import { LinearIntegrationCard } from "./linear-integration-card";
 
 export const IntegrationCard = ({ data }: { data: IntegrationCardData }) => {
 	switch (data.id) {
@@ -16,6 +17,8 @@ export const IntegrationCard = ({ data }: { data: IntegrationCardData }) => {
 			return <GithubIntegrationCard data={data} />;
 		case "jira":
 			return <JiraIntegrationCard data={data} />;
+		case "linear":
+			return <LinearIntegrationCard data={data} />;
 		case "discord":
 			return <DiscordIntegrationCard data={data} />;
 		case "slack":

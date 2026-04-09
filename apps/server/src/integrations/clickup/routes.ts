@@ -1,6 +1,6 @@
 import { db } from "@padyna/db";
-import { clickupIntegration } from "@padyna/db/schema/index";
-import { and, eq } from "drizzle-orm";
+import { agentAction, clickupIntegration } from "@padyna/db/schema/index";
+import { and, eq, sql } from "drizzle-orm";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -21,6 +21,7 @@ import {
   verifyActiveChatbotAccess,
   type ClickUpAuthContext,
 } from "./utils";
+import { clickupActionConfigSchema } from "../../actions/schema";
 
 type Variables = {
   user: any;
@@ -38,6 +39,12 @@ const createClickUpTaskBodySchema = z.object({
   name: z.string().trim().min(1),
   description: z.string().trim().min(1).optional(),
   markdownDescription: z.string().trim().min(1).optional(),
+});
+
+const createClickUpTaskFromActionBodySchema = z.object({
+  actionId: z.uuid(),
+  name: z.string().trim().min(1),
+  description: z.string().trim().min(1).optional(),
 });
 
 function getClickUpErrorStatusCode(statusCode?: number) {
@@ -327,12 +334,12 @@ securedClickUpRoutes.get("/list", async (c) => {
   }
 });
 
-publicClickUpRoutes.post("/task", async (c) => {
-  const parseResult = createClickUpTaskBodySchema.safeParse(await c.req.json());
+publicClickUpRoutes.post("/action-task", async (c) => {
+  const parseResult = createClickUpTaskFromActionBodySchema.safeParse(await c.req.json());
   if (!parseResult.success) {
     return c.json(
       {
-        message: "Invalid ClickUp task payload",
+        message: "Invalid ClickUp action task payload",
         issues: z.treeifyError(parseResult.error),
       },
       400,
@@ -340,7 +347,24 @@ publicClickUpRoutes.post("/task", async (c) => {
   }
 
   const payload = parseResult.data;
-  const resolved = await resolvePublicClickUpTaskContext(c, payload);
+  const [action] = await db
+    .select()
+    .from(agentAction)
+    .where(and(eq(agentAction.id, payload.actionId), eq(agentAction.provider, "clickup")))
+    .limit(1);
+
+  if (!action) {
+    return c.json({ message: "ClickUp action not found" }, 404);
+  }
+
+  const config = clickupActionConfigSchema.parse(action.config);
+  const resolved = await resolvePublicClickUpTaskContext(c, {
+    chatbotId: action.chatbotId,
+    listId: config.listId,
+    name: payload.name,
+    description: payload.description,
+  });
+
   if ("response" in resolved) {
     return resolved.response;
   }
@@ -348,13 +372,20 @@ publicClickUpRoutes.post("/task", async (c) => {
   try {
     const task = await createClickUpTask({
       accessToken: resolved.integration.accessToken,
-      listId: payload.listId,
+      listId: config.listId,
       name: payload.name,
       description: payload.description,
-      markdownDescription: payload.markdownDescription,
     });
 
-    return c.json(task, 201);
+    await db
+      .update(agentAction)
+      .set({
+        timesUsed: sql`${agentAction.timesUsed} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(agentAction.id, action.id));
+
+    return c.json({ task }, 201);
   } catch (error) {
     if (error instanceof ClickUpApiError) {
       return c.json(

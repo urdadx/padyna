@@ -140,7 +140,10 @@ async function persistTelegramMessage(args: {
     .onConflictDoNothing();
 }
 
-async function updateConversationTitleFromMessage(conversation: ConversationRecord, contentText: string) {
+async function updateConversationTitleFromMessage(
+  conversation: ConversationRecord,
+  contentText: string,
+) {
   const nextTitle = contentText.trim();
 
   if (!nextTitle || conversation.title !== TELEGRAM_DEFAULT_TITLE) {
@@ -220,7 +223,7 @@ async function runAgentAndRespond(args: {
   try {
     await args.thread.startTyping();
 
-    const agent = createSupportChatAgent({
+    const agent = await createSupportChatAgent({
       chatbotId: args.conversation.chatbotId,
       organizationId: args.conversation.organizationId,
       chatbotName: chatbotRecord.name || "AI Assistant",
@@ -277,35 +280,38 @@ async function handleStartCommand(thread: any, message: any, text: string) {
     return;
   }
 
-  const existingConversation = await findConversationByChatAndChatbot(telegramChatId, chatbotRecord.id);
+  const existingConversation = await findConversationByChatAndChatbot(
+    telegramChatId,
+    chatbotRecord.id,
+  );
 
   const conversation =
     existingConversation ??
-    (
-      await db
-        .insert(chatConversation)
-        .values({
+    (await db
+      .insert(chatConversation)
+      .values({
+        chatbotId: chatbotRecord.id,
+        organizationId: chatbotRecord.organizationId,
+        channel: "telegram",
+        title: TELEGRAM_DEFAULT_TITLE,
+        metadata: {
           chatbotId: chatbotRecord.id,
-          organizationId: chatbotRecord.organizationId,
-          channel: "telegram",
-          title: TELEGRAM_DEFAULT_TITLE,
-          metadata: {
-            chatbotId: chatbotRecord.id,
-            telegramChatId,
-            telegramUserId,
-          },
-        })
-        .returning({
-          id: chatConversation.id,
-          chatbotId: chatConversation.chatbotId,
-          organizationId: chatConversation.organizationId,
-          title: chatConversation.title,
-        })
-        .then((rows) => rows[0] ?? null)
-    );
+          telegramChatId,
+          telegramUserId,
+        },
+      })
+      .returning({
+        id: chatConversation.id,
+        chatbotId: chatConversation.chatbotId,
+        organizationId: chatConversation.organizationId,
+        title: chatConversation.title,
+      })
+      .then((rows) => rows[0] ?? null));
 
   if (!conversation) {
-    await thread.post("I couldn't start a Telegram conversation for this chatbot. Please try again.");
+    await thread.post(
+      "I couldn't start a Telegram conversation for this chatbot. Please try again.",
+    );
     return;
   }
 

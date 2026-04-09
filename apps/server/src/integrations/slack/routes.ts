@@ -7,7 +7,13 @@ import { authMiddleware } from "../../middlewares/auth-middleware";
 import { handleSlackOAuthCallback } from "./auth/callback";
 import { createSlackConnectUrl } from "./auth/connect";
 import { initializeSlackBot, slackAdapter, slackBot } from "./bot";
-import { getSlackChannels, joinSlackChannel, postSlackChannelMessage, SlackApiError } from "./client";
+import {
+  getSlackChannels,
+  joinSlackChannel,
+  normalizeSlackNotificationMessage,
+  postSlackChannelMessage,
+  SlackApiError,
+} from "./client";
 import {
   getActiveSlackConnectionByChatbot,
   isSlackConfigured,
@@ -59,38 +65,6 @@ function getBearerToken(value: string | undefined) {
   return token;
 }
 
-function normalizeSlackNotificationMessage(message: string, audience?: string | null) {
-  const trimmedMessage = message.trim();
-
-  if (!trimmedMessage) {
-    return "";
-  }
-
-  const audienceTag =
-    audience === "here"
-      ? "<!here>"
-      : audience === "everyone"
-        ? "<!everyone>"
-        : audience === "channel"
-          ? "<!channel>"
-          : null;
-
-  const normalizedMessage = trimmedMessage
-    .replace(/^@everyone\b/i, "<!channel>")
-    .replace(/^@channel\b/i, "<!channel>")
-    .replace(/^@here\b/i, "<!here>");
-
-  if (!audienceTag) {
-    return normalizedMessage;
-  }
-
-  if (normalizedMessage.startsWith("<!channel>") || normalizedMessage.startsWith("<!here>") || normalizedMessage.startsWith("<!everyone>")) {
-    return normalizedMessage;
-  }
-
-  return `${audienceTag} ${normalizedMessage}`;
-}
-
 async function resolveSlackNotifyRequest(c: Context) {
   const notifySecret = env.SLACK_NOTIFY_SECRET;
 
@@ -128,7 +102,9 @@ async function resolveSlackNotifyRequest(c: Context) {
   }
 
   if (audience && !["channel", "everyone", "here"].includes(audience)) {
-    return { response: c.json({ message: "audience must be one of: channel, everyone, here" }, 400) };
+    return {
+      response: c.json({ message: "audience must be one of: channel, everyone, here" }, 400),
+    };
   }
 
   const connection = await getActiveSlackConnectionByChatbot(chatbotId);
@@ -248,7 +224,10 @@ securedSlackRoutes.get("/channels", async (c) => {
 
   const connection = await getActiveSlackConnectionByChatbot(resolved.access.chatbotId);
   if (!connection) {
-    return c.json({ message: "Slack integration is not enabled yet. Please connect Slack first." }, 404);
+    return c.json(
+      { message: "Slack integration is not enabled yet. Please connect Slack first." },
+      404,
+    );
   }
 
   try {
@@ -294,7 +273,10 @@ securedSlackRoutes.post("/channel", async (c) => {
 
   const connection = await getActiveSlackConnectionByChatbot(resolved.access.chatbotId);
   if (!connection) {
-    return c.json({ message: "Slack integration is not enabled yet. Please connect Slack first." }, 404);
+    return c.json(
+      { message: "Slack integration is not enabled yet. Please connect Slack first." },
+      404,
+    );
   }
 
   const [updated] = await db

@@ -117,9 +117,11 @@ function AgentPreviewPanelContent() {
 						<Conversation className="min-h-0 py-4">
 							<ConversationContent className="gap-4 p-4">
 								{messages.length === 0 ? (
-									<SupportMessage animate={false}>
-										{initialMessage}
-									</SupportMessage>
+									<>
+										<SupportMessage animate={false}>
+											{initialMessage}
+										</SupportMessage>
+									</>
 								) : (
 									<PreviewMessages
 										messages={messages}

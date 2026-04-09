@@ -1,4 +1,5 @@
 import { slackAdapter, initializeSlackBot, slackBot } from "./bot";
+import { getActiveSlackConnectionByChatbot, SLACK_PENDING_CHANNEL_ID } from "./utils";
 
 export class SlackApiError extends Error {
   statusCode: number;
@@ -88,7 +89,11 @@ export async function joinSlackChannel(teamId: string, channelId: string) {
   }
 
   const data = (await response.json()) as SlackJoinResponse;
-  if (!data.ok && data.error !== "already_in_channel" && data.error !== "method_not_supported_for_channel_type") {
+  if (
+    !data.ok &&
+    data.error !== "already_in_channel" &&
+    data.error !== "method_not_supported_for_channel_type"
+  ) {
     throw new SlackApiError("Failed to join Slack channel", 502, data.error);
   }
 }
@@ -103,4 +108,70 @@ export async function postSlackChannelMessage(teamId: string, channelId: string,
   } catch (error) {
     throw new SlackApiError("Failed to post Slack channel message", 502, error);
   }
+}
+
+export function normalizeSlackNotificationMessage(message: string, audience?: string | null) {
+  const trimmedMessage = message.trim();
+
+  if (!trimmedMessage) {
+    return "";
+  }
+
+  const audienceTag =
+    audience === "here"
+      ? "<!here>"
+      : audience === "everyone"
+        ? "<!everyone>"
+        : audience === "channel"
+          ? "<!channel>"
+          : null;
+
+  const normalizedMessage = trimmedMessage
+    .replace(/^@everyone\b/i, "<!channel>")
+    .replace(/^@channel\b/i, "<!channel>")
+    .replace(/^@here\b/i, "<!here>");
+
+  if (!audienceTag) {
+    return normalizedMessage;
+  }
+
+  if (
+    normalizedMessage.startsWith("<!channel>") ||
+    normalizedMessage.startsWith("<!here>") ||
+    normalizedMessage.startsWith("<!everyone>")
+  ) {
+    return normalizedMessage;
+  }
+
+  return `${audienceTag} ${normalizedMessage}`;
+}
+
+export async function postSlackNotification(input: {
+  chatbotId: string;
+  channelId?: string;
+  audience?: "channel" | "here" | "everyone";
+  message: string;
+}) {
+  const connection = await getActiveSlackConnectionByChatbot(input.chatbotId);
+  if (!connection) {
+    throw new SlackApiError("Slack integration is not enabled for this chatbot", 404);
+  }
+
+  const channelId = input.channelId ?? connection.channelId;
+  if (channelId === SLACK_PENDING_CHANNEL_ID) {
+    throw new SlackApiError("Slack integration is pending channel selection", 409);
+  }
+
+  const notificationMessage = normalizeSlackNotificationMessage(input.message, input.audience);
+  if (!notificationMessage) {
+    throw new SlackApiError("message is required", 400);
+  }
+
+  await postSlackChannelMessage(connection.teamId, channelId, notificationMessage);
+
+  return {
+    chatbotId: input.chatbotId,
+    channelId,
+    teamId: connection.teamId,
+  };
 }

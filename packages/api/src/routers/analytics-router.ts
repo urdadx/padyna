@@ -2,7 +2,13 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../index";
 import { db } from "@padyna/db";
 import { eq, and, gte, lte, sql, desc, count, countDistinct, avg } from "drizzle-orm";
-import { visitorSessions, visitorEvents, chatbot, chatConversation } from "@padyna/db/schema/index";
+import {
+  visitorSessions,
+  visitorEvents,
+  chatbot,
+  chatConversation,
+  agentAction,
+} from "@padyna/db/schema/index";
 import { TRPCError } from "@trpc/server";
 import { analyticsEvents } from "../lib/events";
 import { createOrganizationNotification } from "@padyna/db/notifications";
@@ -149,6 +155,27 @@ export function getDateRange(timeRange: z.infer<typeof timeRangeSchema>) {
 const n = (val: unknown) => Number(val ?? 0);
 
 export const analyticsRouter = router({
+  getTopActions: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
+    const chatbotId = getActiveChatbot(ctx);
+
+    const actions = await db
+      .select({
+        id: agentAction.id,
+        name: agentAction.name,
+        value: agentAction.timesUsed,
+      })
+      .from(agentAction)
+      .where(eq(agentAction.chatbotId, chatbotId))
+      .orderBy(desc(agentAction.timesUsed))
+      .limit(input.limit);
+
+    return actions.map((a) => ({
+      title: a.name,
+      value: a.value,
+      linkId: a.id,
+      href: "",
+    }));
+  }),
   getOverview: protectedProcedure
     .input(z.object({ timeRange: timeRangeSchema }))
     .query(async ({ ctx, input }) => {

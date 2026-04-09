@@ -1,10 +1,15 @@
-// import { anthropic } from "@ai-sdk/anthropic";
 import { ToolLoopAgent, stepCountIs } from "ai";
 import { KnowledgeBaseTool } from "./knowledge-base-tool";
 import { EscalateToHumanTool } from "./escalate-tool";
 import { type AgentUseCase, getAgentPrompt } from "./prompt";
 import { createCached } from "@ai-sdk-tools/cache";
 import { openai } from "@ai-sdk/openai";
+import { listEnabledAgentActions } from "../actions/db";
+import { CalendlyActionTool } from "../actions/calendly-action-tool";
+import { ClickUpActionTool } from "../actions/clickup-action-tool";
+import { DiscordActionTool } from "../actions/discord-action-tool";
+import { JiraActionTool } from "../actions/jira-action-tool";
+import { SlackActionTool } from "../actions/slack-action-tool";
 
 const CHAT_MODEL = "gpt-5.4-mini";
 
@@ -20,7 +25,74 @@ interface CreateSupportChatAgentInput {
   allowEscalation?: boolean;
 }
 
-export function createSupportChatAgent(input: CreateSupportChatAgentInput) {
+function toToolKey(name: string, actionId: string, prefix: string) {
+  const normalized = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 40);
+
+  return `${prefix}_${normalized || "tool"}_${actionId.slice(0, 8)}`;
+}
+
+export async function createSupportChatAgent(input: CreateSupportChatAgentInput) {
+  const actions = await listEnabledAgentActions({
+    chatbotId: input.chatbotId,
+    organizationId: input.organizationId,
+  });
+
+  type ActionTool =
+    | ReturnType<typeof CalendlyActionTool>
+    | ReturnType<typeof JiraActionTool>
+    | ReturnType<typeof ClickUpActionTool>
+    | ReturnType<typeof DiscordActionTool>
+    | ReturnType<typeof SlackActionTool>;
+
+  const actionToolEntries: Array<[string, ActionTool]> = [];
+
+  for (const action of actions) {
+    if (action.provider === "calendly") {
+      actionToolEntries.push([
+        toToolKey(action.name, action.id, "calendly_action"),
+        CalendlyActionTool(action),
+      ]);
+      continue;
+    }
+
+    if (action.provider === "jira") {
+      actionToolEntries.push([
+        toToolKey(action.name, action.id, "jira_action"),
+        JiraActionTool(action),
+      ]);
+      continue;
+    }
+
+    if (action.provider === "clickup") {
+      actionToolEntries.push([
+        toToolKey(action.name, action.id, "clickup_action"),
+        ClickUpActionTool(action),
+      ]);
+      continue;
+    }
+
+    if (action.provider === "discord") {
+      actionToolEntries.push([
+        toToolKey(action.name, action.id, "discord_action"),
+        DiscordActionTool(action),
+      ]);
+      continue;
+    }
+
+    if (action.provider === "slack") {
+      actionToolEntries.push([
+        toToolKey(action.name, action.id, "slack_action"),
+        SlackActionTool(action),
+      ]);
+    }
+  }
+
+  const actionTools = Object.fromEntries(actionToolEntries) as Record<string, ActionTool>;
+
   const tools = {
     knowledge_base: cached(
       KnowledgeBaseTool({
@@ -41,6 +113,7 @@ export function createSupportChatAgent(input: CreateSupportChatAgentInput) {
             }),
           ),
         }),
+    ...actionTools,
   };
 
   return new ToolLoopAgent({
