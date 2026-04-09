@@ -35,6 +35,7 @@ import { Route as adminAnalyticsRouteImport } from './routes/(admin)/analytics'
 import { Route as adminActionsRouteImport } from './routes/(admin)/actions'
 import { Route as adminActionsIndexRouteImport } from './routes/(admin)/actions.index'
 import { Route as adminActionsNewRouteImport } from './routes/(admin)/actions.new'
+import { Route as adminActionsActionIdEditRouteImport } from './routes/(admin)/actions.$actionId.edit'
 
 const WidgetRoute = WidgetRouteImport.update({
   id: '/widget',
@@ -166,6 +167,12 @@ const adminActionsNewRoute = adminActionsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => adminActionsRoute,
 } as any)
+const adminActionsActionIdEditRoute =
+  adminActionsActionIdEditRouteImport.update({
+    id: '/$actionId/edit',
+    path: '/$actionId/edit',
+    getParentRoute: () => adminActionsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/': typeof OnboardingIndexRoute
   '/actions/new': typeof adminActionsNewRoute
   '/actions/': typeof adminActionsIndexRoute
+  '/actions/$actionId/edit': typeof adminActionsActionIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -219,6 +227,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingIndexRoute
   '/actions/new': typeof adminActionsNewRoute
   '/actions': typeof adminActionsIndexRoute
+  '/actions/$actionId/edit': typeof adminActionsActionIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -248,6 +257,7 @@ export interface FileRoutesById {
   '/onboarding/': typeof OnboardingIndexRoute
   '/(admin)/actions/new': typeof adminActionsNewRoute
   '/(admin)/actions/': typeof adminActionsIndexRoute
+  '/(admin)/actions/$actionId/edit': typeof adminActionsActionIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/actions/new'
     | '/actions/'
+    | '/actions/$actionId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -303,6 +314,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/actions/new'
     | '/actions'
+    | '/actions/$actionId/edit'
   id:
     | '__root__'
     | '/'
@@ -331,6 +343,7 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/(admin)/actions/new'
     | '/(admin)/actions/'
+    | '/(admin)/actions/$actionId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -533,17 +546,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof adminActionsNewRouteImport
       parentRoute: typeof adminActionsRoute
     }
+    '/(admin)/actions/$actionId/edit': {
+      id: '/(admin)/actions/$actionId/edit'
+      path: '/$actionId/edit'
+      fullPath: '/actions/$actionId/edit'
+      preLoaderRoute: typeof adminActionsActionIdEditRouteImport
+      parentRoute: typeof adminActionsRoute
+    }
   }
 }
 
 interface adminActionsRouteChildren {
   adminActionsNewRoute: typeof adminActionsNewRoute
   adminActionsIndexRoute: typeof adminActionsIndexRoute
+  adminActionsActionIdEditRoute: typeof adminActionsActionIdEditRoute
 }
 
 const adminActionsRouteChildren: adminActionsRouteChildren = {
   adminActionsNewRoute: adminActionsNewRoute,
   adminActionsIndexRoute: adminActionsIndexRoute,
+  adminActionsActionIdEditRoute: adminActionsActionIdEditRoute,
 }
 
 const adminActionsRouteWithChildren = adminActionsRoute._addFileChildren(

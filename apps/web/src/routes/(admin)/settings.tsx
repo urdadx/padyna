@@ -63,11 +63,11 @@ function RouteComponent() {
 									value="billing">
 									Billing
 								</TabsTrigger>
-								<TabsTrigger
+								{/* <TabsTrigger
 									className="shrink-0 data-[state=active]:bg-muted data-[state=active]:shadow-none"
 									value="agent">
 									AI agent
-								</TabsTrigger>
+								</TabsTrigger> */}
 								<TabsTrigger
 									className="shrink-0 data-[state=active]:bg-muted data-[state=active]:shadow-none"
 									value="team">

@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { queryClient } from "@/utils/trpc";
 
 import { ActionFormShell } from "./action-form-shell";
+import type { ActionFormProps, DiscordActionConfig } from "./types";
 
 type DiscordChannel = {
   id: string;
@@ -47,14 +48,19 @@ type CreateDiscordActionResponse = {
   };
 };
 
-export function DiscordActionForm() {
+export function DiscordActionForm({
+  mode = "create",
+  actionId,
+  initialAction,
+}: ActionFormProps<DiscordActionConfig>) {
+  const isEditMode = mode === "edit";
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [channelId, setChannelId] = useState("");
-  const [description, setDescription] = useState("");
-  const [enabled, setEnabled] = useState(true);
+  const [name, setName] = useState(initialAction?.name ?? "");
+  const [channelId, setChannelId] = useState(initialAction?.config.channelId ?? "");
+  const [description, setDescription] = useState(initialAction?.description ?? "");
+  const [enabled, setEnabled] = useState(initialAction?.enabled ?? true);
   const [selectedAudience, setSelectedAudience] = useState<(typeof audienceItems)[number]["value"]>(
-    audienceItems[0].value,
+    initialAction?.config.audience ?? audienceItems[0].value,
   );
 
   const {
@@ -78,9 +84,9 @@ export function DiscordActionForm() {
     value: channel.id,
   }));
 
-  const createActionMutation = useMutation({
+  const saveActionMutation = useMutation({
     mutationFn: async () => {
-      const response = await api.post<CreateDiscordActionResponse>("/api/actions/discord", {
+      const payload = {
         name: name.trim(),
         description: description.trim(),
         enabled,
@@ -90,17 +96,31 @@ export function DiscordActionForm() {
           parentName: selectedChannel!.parentName,
           audience: selectedAudience,
         },
-      });
+      };
+
+      const response = isEditMode
+        ? await api.patch<CreateDiscordActionResponse>(`/api/actions/${actionId}`, payload)
+        : await api.post<CreateDiscordActionResponse>("/api/actions/discord", payload);
 
       return response.data;
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await queryClient.invalidateQueries({ queryKey: ["actions"] });
-      toast.success("Discord action created");
-      navigate({ to: "/actions" });
+      await queryClient.invalidateQueries({ queryKey: ["actions", actionId] });
+      toast.success(isEditMode ? "Discord action updated" : "Discord action created");
+
+      if (!isEditMode) {
+        navigate({
+          to: "/actions/$actionId/edit",
+          params: { actionId: data.action.id },
+        });
+      }
     },
     onError: (mutationError: any) => {
-      toast.error(mutationError.response?.data?.message || "Failed to create Discord action");
+      toast.error(
+        mutationError.response?.data?.message ||
+          (isEditMode ? "Failed to update Discord action" : "Failed to create Discord action"),
+      );
     },
   });
 
@@ -122,17 +142,17 @@ export function DiscordActionForm() {
       return;
     }
 
-    createActionMutation.mutate();
+    saveActionMutation.mutate();
   };
 
   return (
     <ActionFormShell
-      title="Send Discord messages"
+      title={isEditMode ? "Edit Discord action" : "Send Discord messages"}
       enabled={enabled}
       onEnabledChange={setEnabled}
       onSubmit={handleSubmit}
-      isSubmitting={createActionMutation.isPending}
-      submitLabel="Save action"
+      isSubmitting={saveActionMutation.isPending}
+      submitLabel={isEditMode ? "Save changes" : "Save action"}
     >
       <div className="space-y-2">
         <div className="flex flex-col gap-1">

@@ -28,3 +28,23 @@ export async function listEnabledAgentActions(args: { chatbotId: string; organiz
     )
     .orderBy(desc(agentAction.createdAt));
 }
+
+export async function getAgentActionById(args: {
+  actionId: string;
+  chatbotId: string;
+  organizationId: string;
+}) {
+  const [action] = await db
+    .select()
+    .from(agentAction)
+    .where(
+      and(
+        eq(agentAction.id, args.actionId),
+        eq(agentAction.chatbotId, args.chatbotId),
+        eq(agentAction.organizationId, args.organizationId),
+      ),
+    )
+    .limit(1);
+
+  return action ?? null;
+}

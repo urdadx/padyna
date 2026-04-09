@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { ActionFormShell } from "./action-form-shell";
 import { queryClient } from "@/utils/trpc";
+import type { ActionFormProps, SlackActionConfig } from "./types";
 import {
   Select,
   SelectContent,
@@ -46,14 +47,19 @@ type CreateSlackActionResponse = {
   };
 };
 
-export function SlackActionForm() {
+export function SlackActionForm({
+  mode = "create",
+  actionId,
+  initialAction,
+}: ActionFormProps<SlackActionConfig>) {
+  const isEditMode = mode === "edit";
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [channelId, setChannelId] = useState("");
-  const [description, setDescription] = useState("");
-  const [enabled, setEnabled] = useState(true);
+  const [name, setName] = useState(initialAction?.name ?? "");
+  const [channelId, setChannelId] = useState(initialAction?.config.channelId ?? "");
+  const [description, setDescription] = useState(initialAction?.description ?? "");
+  const [enabled, setEnabled] = useState(initialAction?.enabled ?? true);
   const [selectedAudience, setSelectedAudience] = useState<(typeof audienceItems)[number]["value"]>(
-    audienceItems[0].value,
+    initialAction?.config.audience ?? audienceItems[0].value,
   );
 
   const {
@@ -77,9 +83,9 @@ export function SlackActionForm() {
     value: channel.id,
   }));
 
-  const createActionMutation = useMutation({
+  const saveActionMutation = useMutation({
     mutationFn: async () => {
-      const response = await api.post<CreateSlackActionResponse>("/api/actions/slack", {
+      const payload = {
         name: name.trim(),
         description: description.trim(),
         enabled,
@@ -89,17 +95,31 @@ export function SlackActionForm() {
           isPrivate: selectedChannel!.isPrivate,
           audience: selectedAudience,
         },
-      });
+      };
+
+      const response = isEditMode
+        ? await api.patch<CreateSlackActionResponse>(`/api/actions/${actionId}`, payload)
+        : await api.post<CreateSlackActionResponse>("/api/actions/slack", payload);
 
       return response.data;
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await queryClient.invalidateQueries({ queryKey: ["actions"] });
-      toast.success("Slack action created");
-      navigate({ to: "/actions" });
+      await queryClient.invalidateQueries({ queryKey: ["actions", actionId] });
+      toast.success(isEditMode ? "Slack action updated" : "Slack action created");
+
+      if (!isEditMode) {
+        navigate({
+          to: "/actions/$actionId/edit",
+          params: { actionId: data.action.id },
+        });
+      }
     },
     onError: (mutationError: any) => {
-      toast.error(mutationError.response?.data?.message || "Failed to create Slack action");
+      toast.error(
+        mutationError.response?.data?.message ||
+          (isEditMode ? "Failed to update Slack action" : "Failed to create Slack action"),
+      );
     },
   });
 
@@ -121,17 +141,17 @@ export function SlackActionForm() {
       return;
     }
 
-    createActionMutation.mutate();
+    saveActionMutation.mutate();
   };
 
   return (
     <ActionFormShell
-      title="Send Slack message"
+      title={isEditMode ? "Edit Slack action" : "Send Slack message"}
       enabled={enabled}
       onEnabledChange={setEnabled}
       onSubmit={handleSubmit}
-      isSubmitting={createActionMutation.isPending}
-      submitLabel="Save action"
+      isSubmitting={saveActionMutation.isPending}
+      submitLabel={isEditMode ? "Save changes" : "Save action"}
     >
       <div className="space-y-2">
         <div className="flex flex-col gap-1">

@@ -69,9 +69,9 @@ export const ToolHeader = ({ className, type, state, ...props }: ToolHeaderProps
 					: type.includes("calendly_action")
 						? "Initiated a Calendly meeting"
 						: type.includes("jira_action")
-							? "Showed a Jira ticket form"
+							? "Showed a Jira ticket form to user"
 							: type.includes("clickup_action")
-								? "Showed a ClickUp issue form"
+								? "Showed a ClickUp issue form to user"
 								: type.includes("discord_action")
 									? "Sent a Discord message"
 									: type.includes("slack_action")

@@ -11,6 +11,9 @@ import {
 	useReactTable,
 } from "@tanstack/react-table";
 import { useState, useMemo } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 
 import { CalendlyIcon } from "@/assets/icons/calendly-icon";
 import { JiraIcon } from "@/assets/icons/jira-icon";
@@ -31,11 +34,23 @@ import {
 import { Input } from "../ui/input";
 import { SearchLinear } from "@/assets/icons/search-icon";
 import { ActionsPopover } from "./actions-popover";
-import { MultiSelectToolbar } from "../multi-select-toolbar";
 import { CreateActionDialog } from "./create-action-dialog";
 import Spinner from "../ui/spinner";
 import { ClickUpIcon } from "@/assets/icons/clickup-icon";
 import { DiscordBold } from "@/assets/icons/discord-icon";
+import { ActionsMultiSelectToolbar } from "./actions-multi-select-toolbar";
+import api from "@/lib/api";
+import { queryClient } from "@/utils/trpc";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "../ui/alert-dialog";
 
 export type ActionItem = {
 	id: string;
@@ -202,9 +217,19 @@ const columns: ColumnDef<ActionItem>[] = [
 type ActionsTableProps = {
 	data?: ActionRow[];
 	isLoading?: boolean;
+	onDeleteSelected?: (selected: ActionItem[]) => void;
+	onToggleEnabledSelected?: (selected: ActionItem[], nextStatus: ActionItem["status"]) => void;
+	onEditSelected?: (selected: ActionItem) => void;
 };
 
-export function ActionsTable({ data, isLoading }: ActionsTableProps) {
+export function ActionsTable({
+	data,
+	isLoading,
+	onDeleteSelected,
+	onToggleEnabledSelected,
+	onEditSelected,
+}: ActionsTableProps) {
+	const navigate = useNavigate();
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
 		pageSize: 10,
@@ -218,6 +243,7 @@ export function ActionsTable({ data, isLoading }: ActionsTableProps) {
 	]);
 
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+	const [deleteOpen, setDeleteOpen] = useState(false);
 
 	const tableData = useMemo(() => data?.map(mapActionToItem) ?? [], [data]);
 
@@ -243,8 +269,60 @@ export function ActionsTable({ data, isLoading }: ActionsTableProps) {
 	});
 
 	const selectedRows = table.getFilteredSelectedRowModel().rows;
+	const selectedItems = selectedRows.map((row) => row.original);
 	const isAnySelected = selectedRows.length > 0;
+	const isSingleSelection = selectedRows.length === 1;
 	const isAllSelected = table.getIsAllPageRowsSelected();
+	const shouldDisableSelected = selectedItems.every((item) => item.status === "Active");
+	const nextStatusLabel: ActionItem["status"] = shouldDisableSelected ? "Inactive" : "Active";
+	const enableLabel = shouldDisableSelected ? "Disable" : "Enable";
+	const hasSelection = selectedItems.length > 0;
+
+	const toggleSelectedMutation = useMutation({
+		mutationFn: async () => {
+			await Promise.all(
+				selectedItems.map((item) =>
+					api.patch(`/api/actions/${item.id}/enabled`, {
+						enabled: nextStatusLabel === "Active",
+					}),
+				),
+			);
+		},
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({ queryKey: ["actions"] });
+			await Promise.all(
+				selectedItems.map((item) =>
+					queryClient.invalidateQueries({ queryKey: ["actions", item.id] }),
+				),
+			);
+			toast.success(
+				nextStatusLabel === "Active" ? "Actions enabled" : "Actions disabled",
+			);
+			table.resetRowSelection();
+			onToggleEnabledSelected?.(selectedItems, nextStatusLabel);
+		},
+		onError: (error: any) => {
+			toast.error(error.response?.data?.message || "Failed to update actions");
+		},
+	});
+
+	const deleteSelectedMutation = useMutation({
+		mutationFn: async () => {
+			await Promise.all(
+				selectedItems.map((item) => api.delete(`/api/actions/${item.id}`)),
+			);
+		},
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({ queryKey: ["actions"] });
+			toast.success(selectedItems.length === 1 ? "Action deleted" : "Actions deleted");
+			setDeleteOpen(false);
+			table.resetRowSelection();
+			onDeleteSelected?.(selectedItems);
+		},
+		onError: (error: any) => {
+			toast.error(error.response?.data?.message || "Failed to delete actions");
+		},
+	});
 
 	return (
 		<div className="space-y-4">
@@ -379,13 +457,76 @@ export function ActionsTable({ data, isLoading }: ActionsTableProps) {
 			<TablePagination showFileSize={false} table={table} isLoading={isLoading} />
 
 			{isAnySelected && (
-				<MultiSelectToolbar
+				<ActionsMultiSelectToolbar
 					isAllSelected={isAllSelected}
+					isSingleSelection={isSingleSelection}
+					enableLabel={enableLabel}
+					isToggling={toggleSelectedMutation.isPending}
+					isDeleting={deleteSelectedMutation.isPending}
 					onSelectAll={() => table.toggleAllPageRowsSelected(!isAllSelected)}
-					onDelete={() => {}}
+					onToggleEnabled={() => {
+						if (!hasSelection) {
+							return;
+						}
+
+						toggleSelectedMutation.mutate();
+					}}
+					onDelete={() => {
+						if (!hasSelection) {
+							return;
+						}
+
+						setDeleteOpen(true);
+					}}
+					onEdit={() => {
+						if (!isSingleSelection) {
+							return;
+						}
+
+						onEditSelected?.(selectedItems[0]);
+						navigate({
+							to: "/actions/$actionId/edit",
+							params: { actionId: selectedItems[0].id },
+						});
+					}}
 					onClose={() => table.resetRowSelection()}
 				/>
 			)}
+
+			<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle className="text-lg font-semibold">
+							Are you absolutely sure?
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							This will permanently delete{" "}
+							{selectedItems.length === 1
+								? "the selected action"
+								: `${selectedItems.length} selected actions`}{" "}
+							and remove all associated data.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={deleteSelectedMutation.isPending}>
+							Cancel
+						</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() => deleteSelectedMutation.mutate()}
+							disabled={deleteSelectedMutation.isPending}
+							className="bg-red-600 text-white hover:bg-red-700">
+							{deleteSelectedMutation.isPending ? (
+								<>
+									<Spinner className="text-white" />
+									Deleting...
+								</>
+							) : (
+								"Yes, delete"
+							)}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }

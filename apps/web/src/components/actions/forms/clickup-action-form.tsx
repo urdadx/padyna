@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { useNavigate } from "@tanstack/react-router";
@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { queryClient } from "@/utils/trpc";
 
 import { ActionFormShell } from "./action-form-shell";
+import type { ActionFormProps, ClickUpActionConfig } from "./types";
 
 type ClickUpWorkspace = {
   id: string;
@@ -72,14 +73,21 @@ type CreateClickUpActionResponse = {
   };
 };
 
-export function ClickUpActionForm() {
+export function ClickUpActionForm({
+  mode = "create",
+  actionId,
+  initialAction,
+}: ActionFormProps<ClickUpActionConfig>) {
+  const isEditMode = mode === "edit";
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [workspaceId, setWorkspaceId] = useState("");
-  const [spaceId, setSpaceId] = useState("");
-  const [listId, setListId] = useState("");
-  const [description, setDescription] = useState("");
-  const [enabled, setEnabled] = useState(true);
+  const [name, setName] = useState(initialAction?.name ?? "");
+  const [workspaceId, setWorkspaceId] = useState(initialAction?.config.workspaceId ?? "");
+  const [spaceId, setSpaceId] = useState(initialAction?.config.spaceId ?? "");
+  const [listId, setListId] = useState(initialAction?.config.listId ?? "");
+  const [description, setDescription] = useState(initialAction?.description ?? "");
+  const [enabled, setEnabled] = useState(initialAction?.enabled ?? true);
+  const hasMountedWorkspaceRef = useRef(false);
+  const hasMountedSpaceRef = useRef(false);
 
   const {
     data: workspacesData,
@@ -142,11 +150,21 @@ export function ClickUpActionForm() {
   });
 
   useEffect(() => {
+    if (!hasMountedWorkspaceRef.current) {
+      hasMountedWorkspaceRef.current = true;
+      return;
+    }
+
     setSpaceId("");
     setListId("");
   }, [workspaceId]);
 
   useEffect(() => {
+    if (!hasMountedSpaceRef.current) {
+      hasMountedSpaceRef.current = true;
+      return;
+    }
+
     setListId("");
   }, [spaceId]);
 
@@ -197,9 +215,9 @@ export function ClickUpActionForm() {
   const selectedSpace = spaces.find((space) => space.id === spaceId) ?? null;
   const selectedList = listOptions.find((list) => list.id === listId) ?? null;
 
-  const createActionMutation = useMutation({
+  const saveActionMutation = useMutation({
     mutationFn: async () => {
-      const response = await api.post<CreateClickUpActionResponse>("/api/actions/clickup", {
+      const payload = {
         name: name.trim(),
         description: description.trim(),
         enabled,
@@ -211,17 +229,31 @@ export function ClickUpActionForm() {
           listId: selectedList!.id,
           listName: selectedList!.name,
         },
-      });
+      };
+
+      const response = isEditMode
+        ? await api.patch<CreateClickUpActionResponse>(`/api/actions/${actionId}`, payload)
+        : await api.post<CreateClickUpActionResponse>("/api/actions/clickup", payload);
 
       return response.data;
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await queryClient.invalidateQueries({ queryKey: ["actions"] });
-      toast.success("ClickUp action created");
-      navigate({ to: "/actions" });
+      await queryClient.invalidateQueries({ queryKey: ["actions", actionId] });
+      toast.success(isEditMode ? "ClickUp action updated" : "ClickUp action created");
+
+      if (!isEditMode) {
+        navigate({
+          to: "/actions/$actionId/edit",
+          params: { actionId: data.action.id },
+        });
+      }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to create ClickUp action");
+      toast.error(
+        error.response?.data?.message ||
+          (isEditMode ? "Failed to update ClickUp action" : "Failed to create ClickUp action"),
+      );
     },
   });
 
@@ -253,17 +285,17 @@ export function ClickUpActionForm() {
       return;
     }
 
-    createActionMutation.mutate();
+    saveActionMutation.mutate();
   };
 
   return (
     <ActionFormShell
-      title="Create ClickUp tasks"
+      title={isEditMode ? "Edit ClickUp action" : "Create ClickUp tasks"}
       enabled={enabled}
       onEnabledChange={setEnabled}
       onSubmit={handleSubmit}
-      isSubmitting={createActionMutation.isPending}
-      submitLabel="Save action"
+      isSubmitting={saveActionMutation.isPending}
+      submitLabel={isEditMode ? "Save changes" : "Save action"}
     >
       <div className="space-y-2">
         <div className="flex flex-col gap-1">

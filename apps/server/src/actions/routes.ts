@@ -1,6 +1,6 @@
 import { db } from "@padyna/db";
 import { agentAction } from "@padyna/db/schema/index";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { authMiddleware } from "../middlewares/auth-middleware";
 import {
   getActiveCalendlyIntegrationByChatbot,
@@ -14,7 +14,7 @@ import {
 import { getActiveClickUpIntegrationByChatbot } from "../integrations/clickup/utils";
 import { getActiveDiscordConnectionByChatbot } from "../integrations/discord/utils";
 import { getActiveSlackConnectionByChatbot } from "../integrations/slack/utils";
-import { listAgentActions } from "./db";
+import { getAgentActionById, listAgentActions } from "./db";
 import {
   createCalendlyAgentActionBodySchema,
   createClickUpAgentActionBodySchema,
@@ -23,6 +23,8 @@ import {
   createSlackAgentActionBodySchema,
 } from "./schema";
 import { z } from "zod";
+import type { AgentActionProvider } from "@padyna/db/schema/index";
+import { and, eq } from "drizzle-orm";
 
 type Variables = {
   user: any;
@@ -33,22 +35,298 @@ export const actionRoutes = new Hono<{ Variables: Variables }>();
 
 actionRoutes.use(authMiddleware);
 
-actionRoutes.get("/", async (c) => {
+const actionIdParamSchema = z.object({
+  actionId: z.uuid(),
+});
+
+const updateActionEnabledBodySchema = z.object({
+  enabled: z.boolean(),
+});
+
+function getActionSchemaForProvider(provider: AgentActionProvider) {
+  switch (provider) {
+    case "jira":
+      return createJiraAgentActionBodySchema;
+    case "calendly":
+      return createCalendlyAgentActionBodySchema;
+    case "clickup":
+      return createClickUpAgentActionBodySchema;
+    case "discord":
+      return createDiscordAgentActionBodySchema;
+    case "slack":
+      return createSlackAgentActionBodySchema;
+  }
+
+  throw new Error(`Unsupported action provider: ${provider}`);
+}
+
+async function ensureActionProviderConnection(provider: AgentActionProvider, chatbotId: string) {
+  switch (provider) {
+    case "jira":
+      return Boolean(await getActiveJiraIntegrationByChatbot(chatbotId));
+    case "calendly":
+      return Boolean(await getActiveCalendlyIntegrationByChatbot(chatbotId));
+    case "clickup":
+      return Boolean(await getActiveClickUpIntegrationByChatbot(chatbotId));
+    case "discord":
+      return Boolean(await getActiveDiscordConnectionByChatbot(chatbotId));
+    case "slack":
+      return Boolean(await getActiveSlackConnectionByChatbot(chatbotId));
+  }
+
+  throw new Error(`Unsupported action provider: ${provider}`);
+}
+
+function getMissingProviderConnectionMessage(provider: AgentActionProvider) {
+  switch (provider) {
+    case "jira":
+      return "Jira is not connected for this chatbot";
+    case "calendly":
+      return "Calendly is not connected for this chatbot";
+    case "clickup":
+      return "ClickUp is not connected for this chatbot";
+    case "discord":
+      return "Discord is not connected for this chatbot";
+    case "slack":
+      return "Slack is not connected for this chatbot";
+  }
+
+  throw new Error(`Unsupported action provider: ${provider}`);
+}
+
+async function resolveActionRouteContext(c: Context<{ Variables: Variables }>) {
   const user = c.get("user") as JiraAuthContext["user"];
   const session = c.get("session") as JiraAuthContext["session"];
 
   if (!user?.id) {
-    return c.json({ message: "Unauthorized" }, 401);
+    return { response: c.json({ message: "Unauthorized" }, 401) };
   }
 
   const access = await verifyActiveChatbotAccess({ user, session });
   if (!access) {
-    return c.json({ message: "No active chatbot in your current organization" }, 400);
+    return { response: c.json({ message: "No active chatbot in your current organization" }, 400) };
   }
 
-  const actions = await listAgentActions(access);
+  return { access };
+}
+
+actionRoutes.get("/", async (c) => {
+  const resolved = await resolveActionRouteContext(c);
+  if ("response" in resolved) {
+    return resolved.response;
+  }
+
+  const actions = await listAgentActions(resolved.access);
 
   return c.json({ actions });
+});
+
+actionRoutes.get("/:actionId", async (c) => {
+  const resolved = await resolveActionRouteContext(c);
+  if ("response" in resolved) {
+    return resolved.response;
+  }
+
+  const paramsResult = actionIdParamSchema.safeParse(c.req.param());
+  if (!paramsResult.success) {
+    return c.json(
+      {
+        message: "Invalid action id",
+        issues: z.treeifyError(paramsResult.error),
+      },
+      400,
+    );
+  }
+
+  const action = await getAgentActionById({
+    actionId: paramsResult.data.actionId,
+    chatbotId: resolved.access.chatbotId,
+    organizationId: resolved.access.organizationId,
+  });
+
+  if (!action) {
+    return c.json({ message: "Action not found" }, 404);
+  }
+
+  return c.json({ action });
+});
+
+actionRoutes.patch("/:actionId", async (c) => {
+  const resolved = await resolveActionRouteContext(c);
+  if ("response" in resolved) {
+    return resolved.response;
+  }
+
+  const paramsResult = actionIdParamSchema.safeParse(c.req.param());
+  if (!paramsResult.success) {
+    return c.json(
+      {
+        message: "Invalid action id",
+        issues: z.treeifyError(paramsResult.error),
+      },
+      400,
+    );
+  }
+
+  const existingAction = await getAgentActionById({
+    actionId: paramsResult.data.actionId,
+    chatbotId: resolved.access.chatbotId,
+    organizationId: resolved.access.organizationId,
+  });
+
+  if (!existingAction) {
+    return c.json({ message: "Action not found" }, 404);
+  }
+
+  const schema = getActionSchemaForProvider(existingAction.provider);
+  const parseResult = schema.safeParse(await c.req.json());
+  if (!parseResult.success) {
+    return c.json(
+      {
+        message: `Invalid ${existingAction.provider} action payload`,
+        issues: z.treeifyError(parseResult.error),
+      },
+      400,
+    );
+  }
+
+  const hasConnection = await ensureActionProviderConnection(
+    existingAction.provider,
+    resolved.access.chatbotId,
+  );
+  if (!hasConnection) {
+    return c.json({ message: getMissingProviderConnectionMessage(existingAction.provider) }, 404);
+  }
+
+  const payload = parseResult.data;
+  const [updated] = await db
+    .update(agentAction)
+    .set({
+      name: payload.name,
+      description: payload.description,
+      enabled: payload.enabled,
+      config: payload.config,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(agentAction.id, existingAction.id),
+        eq(agentAction.chatbotId, resolved.access.chatbotId),
+        eq(agentAction.organizationId, resolved.access.organizationId),
+      ),
+    )
+    .returning();
+
+  if (!updated) {
+    return c.json({ message: "Action could not be updated" }, 404);
+  }
+
+  return c.json({ action: updated });
+});
+
+actionRoutes.patch("/:actionId/enabled", async (c) => {
+  const resolved = await resolveActionRouteContext(c);
+  if ("response" in resolved) {
+    return resolved.response;
+  }
+
+  const paramsResult = actionIdParamSchema.safeParse(c.req.param());
+  if (!paramsResult.success) {
+    return c.json(
+      {
+        message: "Invalid action id",
+        issues: z.treeifyError(paramsResult.error),
+      },
+      400,
+    );
+  }
+
+  const bodyResult = updateActionEnabledBodySchema.safeParse(await c.req.json());
+  if (!bodyResult.success) {
+    return c.json(
+      {
+        message: "Invalid action status payload",
+        issues: z.treeifyError(bodyResult.error),
+      },
+      400,
+    );
+  }
+
+  const existingAction = await getAgentActionById({
+    actionId: paramsResult.data.actionId,
+    chatbotId: resolved.access.chatbotId,
+    organizationId: resolved.access.organizationId,
+  });
+
+  if (!existingAction) {
+    return c.json({ message: "Action not found" }, 404);
+  }
+
+  const [updated] = await db
+    .update(agentAction)
+    .set({
+      enabled: bodyResult.data.enabled,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(agentAction.id, existingAction.id),
+        eq(agentAction.chatbotId, resolved.access.chatbotId),
+        eq(agentAction.organizationId, resolved.access.organizationId),
+      ),
+    )
+    .returning();
+
+  if (!updated) {
+    return c.json({ message: "Action could not be updated" }, 404);
+  }
+
+  return c.json({ action: updated });
+});
+
+actionRoutes.delete("/:actionId", async (c) => {
+  const resolved = await resolveActionRouteContext(c);
+  if ("response" in resolved) {
+    return resolved.response;
+  }
+
+  const paramsResult = actionIdParamSchema.safeParse(c.req.param());
+  if (!paramsResult.success) {
+    return c.json(
+      {
+        message: "Invalid action id",
+        issues: z.treeifyError(paramsResult.error),
+      },
+      400,
+    );
+  }
+
+  const existingAction = await getAgentActionById({
+    actionId: paramsResult.data.actionId,
+    chatbotId: resolved.access.chatbotId,
+    organizationId: resolved.access.organizationId,
+  });
+
+  if (!existingAction) {
+    return c.json({ message: "Action not found" }, 404);
+  }
+
+  const [deleted] = await db
+    .delete(agentAction)
+    .where(
+      and(
+        eq(agentAction.id, existingAction.id),
+        eq(agentAction.chatbotId, resolved.access.chatbotId),
+        eq(agentAction.organizationId, resolved.access.organizationId),
+      ),
+    )
+    .returning({ id: agentAction.id });
+
+  if (!deleted) {
+    return c.json({ message: "Action could not be deleted" }, 404);
+  }
+
+  return c.json({ deleted: true, actionId: existingAction.id });
 });
 
 actionRoutes.post("/jira", async (c) => {

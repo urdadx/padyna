@@ -1,6 +1,12 @@
-import { RestartLinear } from "@/assets/icons/restart-icon";
 import { TrashBinLinear } from "@/assets/icons/trash-icon";
-import { MoreHorizontal } from "lucide-react";
+import { PlayLinear } from "@/assets/icons/play-icon";
+import { Ban, MoreHorizontal } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import api from "@/lib/api";
+import { queryClient } from "@/utils/trpc";
 
 import type { ActionItem } from "./actions-table";
 import { PenLinear } from "@/assets/icons/pen-icon";
@@ -11,6 +17,7 @@ import {
 	DropdownMenuItem,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
+import { DeleteAction } from "./delete-action";
 
 type ActionsPopoverProps = {
 	item: ActionItem;
@@ -20,6 +27,29 @@ type ActionsPopoverProps = {
 };
 
 export const ActionsPopover = ({ item, onEdit, onToggleEnable, onDelete }: ActionsPopoverProps) => {
+	const navigate = useNavigate();
+	const [deleteOpen, setDeleteOpen] = useState(false);
+	const isActive = item.status === "Active";
+
+	const toggleEnabledMutation = useMutation({
+		mutationFn: async () => {
+			const response = await api.patch(`/api/actions/${item.id}/enabled`, {
+				enabled: !isActive,
+			});
+
+			return response.data;
+		},
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({ queryKey: ["actions"] });
+			await queryClient.invalidateQueries({ queryKey: ["actions", item.id] });
+			toast.success(isActive ? "Action disabled" : "Action enabled");
+			onToggleEnable?.();
+		},
+		onError: (error: any) => {
+			toast.error(error.response?.data?.message || "Failed to update action status");
+		},
+	});
+
 	return (
 		<>
 			<DropdownMenu>
@@ -30,16 +60,33 @@ export const ActionsPopover = ({ item, onEdit, onToggleEnable, onDelete }: Actio
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
-					<DropdownMenuItem onClick={onEdit}>
+					<DropdownMenuItem
+						onClick={() => {
+							onEdit?.();
+							navigate({
+								to: "/actions/$actionId/edit",
+								params: { actionId: item.id },
+							});
+						}}>
 						<PenLinear className="size-4" />
 						Edit
 					</DropdownMenuItem>
-					<DropdownMenuItem onClick={onToggleEnable}>
-						<RestartLinear className="size-4" />
-						{item.status === "Active" ? "Disable" : "Enable"}
+					<DropdownMenuItem onClick={() => toggleEnabledMutation.mutate()}>
+						{isActive ? (
+							<Ban className="size-4 text-gray-400" />
+						) : (
+							<PlayLinear className="size-4" />
+						)}
+						{toggleEnabledMutation.isPending
+							? isActive
+								? "Disabling..."
+								: "Enabling..."
+							: isActive
+								? "Disable"
+								: "Enable"}
 					</DropdownMenuItem>
 
-					<DropdownMenuItem onClick={onDelete}>
+					<DropdownMenuItem onClick={() => setDeleteOpen(true)}>
 						<TrashBinLinear color="red" />
 						<span className="text-red-500 hover:text-red-500/80">
 							Delete
@@ -47,6 +94,12 @@ export const ActionsPopover = ({ item, onEdit, onToggleEnable, onDelete }: Actio
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
+			<DeleteAction
+				item={item}
+				open={deleteOpen}
+				onOpenChange={setDeleteOpen}
+				onDeleted={onDelete}
+			/>
 		</>
 	);
 };

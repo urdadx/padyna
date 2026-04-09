@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { queryClient } from "@/utils/trpc";
 
 import { ActionFormShell } from "./action-form-shell";
+import type { ActionFormProps, CalendlyActionConfig } from "./types";
 
 type CalendlyEventType = {
   uri: string;
@@ -40,12 +41,17 @@ type CreateCalendlyActionResponse = {
   };
 };
 
-export function CalendlyActionForm() {
+export function CalendlyActionForm({
+  mode = "create",
+  actionId,
+  initialAction,
+}: ActionFormProps<CalendlyActionConfig>) {
+  const isEditMode = mode === "edit";
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [eventType, setEventType] = useState("");
-  const [description, setDescription] = useState("");
-  const [enabled, setEnabled] = useState(true);
+  const [name, setName] = useState(initialAction?.name ?? "");
+  const [eventType, setEventType] = useState(initialAction?.config.eventTypeUri ?? "");
+  const [description, setDescription] = useState(initialAction?.description ?? "");
+  const [enabled, setEnabled] = useState(initialAction?.enabled ?? true);
 
   const {
     data,
@@ -71,9 +77,9 @@ export function CalendlyActionForm() {
     (error as AxiosError<{ message: string }>)?.response?.data?.message ?? null;
   const selectedEventType = eventTypes.find((item) => item.uri === eventType) ?? null;
 
-  const createActionMutation = useMutation({
+  const saveActionMutation = useMutation({
     mutationFn: async () => {
-      const response = await api.post<CreateCalendlyActionResponse>("/api/actions/calendly", {
+      const payload = {
         name: name.trim(),
         description: description.trim(),
         enabled,
@@ -83,17 +89,31 @@ export function CalendlyActionForm() {
           schedulingUrl: selectedEventType!.scheduling_url ?? null,
           duration: selectedEventType!.duration ?? null,
         },
-      });
+      };
+
+      const response = isEditMode
+        ? await api.patch<CreateCalendlyActionResponse>(`/api/actions/${actionId}`, payload)
+        : await api.post<CreateCalendlyActionResponse>("/api/actions/calendly", payload);
 
       return response.data;
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await queryClient.invalidateQueries({ queryKey: ["actions"] });
-      toast.success("Calendly action created");
-      navigate({ to: "/actions" });
+      await queryClient.invalidateQueries({ queryKey: ["actions", actionId] });
+      toast.success(isEditMode ? "Calendly action updated" : "Calendly action created");
+
+      if (!isEditMode) {
+        navigate({
+          to: "/actions/$actionId/edit",
+          params: { actionId: data.action.id },
+        });
+      }
     },
     onError: (mutationError: any) => {
-      toast.error(mutationError.response?.data?.message || "Failed to create Calendly action");
+      toast.error(
+        mutationError.response?.data?.message ||
+          (isEditMode ? "Failed to update Calendly action" : "Failed to create Calendly action"),
+      );
     },
   });
 
@@ -120,17 +140,17 @@ export function CalendlyActionForm() {
       return;
     }
 
-    createActionMutation.mutate();
+    saveActionMutation.mutate();
   };
 
   return (
     <ActionFormShell
-      title="Book Calendly slots"
+      title={isEditMode ? "Edit Calendly action" : "Book Calendly slots"}
       enabled={enabled}
       onEnabledChange={setEnabled}
       onSubmit={handleSubmit}
-      isSubmitting={createActionMutation.isPending}
-      submitLabel="Save action"
+      isSubmitting={saveActionMutation.isPending}
+      submitLabel={isEditMode ? "Save changes" : "Save action"}
     >
       <div className="space-y-2">
         <div className="flex flex-col gap-1">
