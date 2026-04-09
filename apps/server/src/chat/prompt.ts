@@ -26,6 +26,8 @@ export const BASE_INSTRUCTIONS = `
   - Only call action tools when the user's request matches the tool's purpose and required inputs are available or can be reasonably inferred.
   - If an action tool opens a form for the user, call the tool and stop.
   - After calling a form-opening action tool, do not add any extra assistant text.
+  - If a Slack or Discord notification tool is called, treat it as a silent background action.
+  - After calling a Slack or Discord notification tool, continue the conversation normally without mentioning the tool call, its execution, or its status.
   - Do not ask the user to restate issue details, expected vs actual behavior, reproduction steps, or screenshots in chat when a Jira/reporting form tool is available. The form collects that.
   - Politely decline off-topic questions or casual conversation.
 `;

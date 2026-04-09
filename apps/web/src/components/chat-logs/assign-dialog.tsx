@@ -46,7 +46,7 @@ export const AssignDialog = ({
 						Escalate Conversation
 					</DialogTitle>
 					<DialogDescription>
-						Assign this conversation to a team member
+						Assign this conversation to a team member to handle
 					</DialogDescription>
 				</DialogHeader>
 
@@ -81,7 +81,7 @@ export const AssignDialog = ({
 										key={member.id}
 										className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors">
 										<div className="flex items-center gap-3">
-											<Avatar className="h-10 w-10 rounded-lg border">
+											<Avatar className="h-10 w-10 rounded-full border">
 												<AvatarImage
 													className="rounded-lg"
 													src={
@@ -89,7 +89,7 @@ export const AssignDialog = ({
 														undefined
 													}
 												/>
-												<AvatarFallback className="bg-primary text-xs text-white rounded-lg">
+												<AvatarFallback className="bg-gray-50 text-sm text-gray-500 rounded-full">
 													{member.name
 														?.slice(0, 2)
 														.toUpperCase()}

@@ -398,6 +398,8 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
 								isStreaming={false}
 								bottomComponent="source-citations"
 								showVoteBlock={true}
+								showToolCalls={true}
+								showActionForms={false}
 							/>
 						) : (
 							<div className="flex-1 flex min-h-screen items-center justify-center">
