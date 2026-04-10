@@ -328,9 +328,9 @@ export function DataSourceTable() {
 					<AddSource />
 				</div>
 			</div>
-			<div className="rounded-xl border bg-background overflow-x-auto">
+			<div className="rounded-xl border max-w-sm md:max-w-full overflow-hidden">
 				<Table className="">
-					<TableHeader className="bg-gray-50 w-full">
+					<TableHeader className="bg-gray-50">
 						{table.getHeaderGroups().map((headerGroup) => (
 							<TableRow
 								className="hover:bg-transparent text-center  "
@@ -338,7 +338,7 @@ export function DataSourceTable() {
 								{headerGroup.headers.map((header) => {
 									return (
 										<TableHead
-											className="h-11"
+											className="h-11 "
 											key={header.id}
 											style={{
 												width: `${header.getSize()}px`,

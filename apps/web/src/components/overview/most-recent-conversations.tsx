@@ -93,7 +93,7 @@ function ConversationsTable({
 			accessorKey: "date",
 			header: "Date & Time",
 			cell: ({ row }) => (
-				<span className="font-medium truncate capitalize max-w-24 md:max-w-52 block text-xs md:text-sm">
+				<span className="font-medium truncate capitalize max-w-24 md:max-w-52 block">
 					{row.getValue("date")}
 				</span>
 			),
@@ -118,7 +118,7 @@ function ConversationsTable({
 			cell: ({ row }) => (
 				<DropdownMenu>
 					<DropdownMenuTrigger>
-						<Button variant="ghost" className="h-8 w-8 p-0">
+						<Button variant="outline" className="h-8 w-8 p-0">
 							<MoreHorizontal className="h-4 w-4" />
 						</Button>
 					</DropdownMenuTrigger>
@@ -149,7 +149,7 @@ function ConversationsTable({
 	});
 
 	return (
-		<div className="rounded-xl border bg-background overflow-x-auto">
+		<div className="rounded-xl max-w-sm md:max-w-full border bg-background overflow-hidden">
 			<Table>
 				<TableHeader className="bg-gray-50">
 					{table.getHeaderGroups().map((headerGroup) => (

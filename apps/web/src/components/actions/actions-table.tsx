@@ -348,7 +348,7 @@ export function ActionsTable({
 				</div>
 				<CreateActionDialog />
 			</div>
-			<div className="rounded-xl border bg-background overflow-x-auto">
+			<div className="rounded-xl border bg-background overflow-hidden max-w-sm md:max-w-full">
 				<Table className="">
 					<TableHeader className="bg-gray-50 w-full">
 						{table.getHeaderGroups().map((headerGroup) => (

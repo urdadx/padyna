@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { AssignDialog } from "./assign-dialog";
 import { useRouteContext } from "@tanstack/react-router";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ChatHeaderProps {
 	conversationId?: string;
@@ -29,6 +30,8 @@ export const ChatHeader = ({
 	const newStatus = isClosed ? "opened" : "closed";
 	const isEscalated = status === "escalated" || status === "assigned";
 	const isAssignedStatus = status === "assigned";
+
+	const isMobile = useIsMobile();
 
 	const { session } = useRouteContext({ from: "/(admin)" });
 
@@ -169,16 +172,14 @@ export const ChatHeader = ({
 				: "Mark chat as closed";
 
 	return (
-		<div className="px-2 sticky rounded-t-2xl top-0 flex justify-between h-14 shrink-0 items-center bg-background/50 backdrop-blur-lg border-b transition-[width,height] ease-linear z-10 group-has-data/[collapsible=icon]/sidebar-wrapper:h-12">
-			<div></div>
-
+		<div className="px-2 sticky rounded-t-2xl top-0 flex justify-center sm:justify-end h-14 shrink-0 items-center bg-background/50 backdrop-blur-lg border-b transition-[width,height] ease-linear z-10 group-has-data/[collapsible=icon]/sidebar-wrapper:h-12">
 			<div className="flex items-center gap-2">
 				<Tooltip>
 					<TooltipContent>{priorityTooltipText}</TooltipContent>
 					<TooltipTrigger>
 						<Button
 							variant="outline"
-							size="icon"
+							size={isMobile ? "default" : "icon"}
 							className="rounded-full"
 							onClick={() =>
 								conversationId &&
@@ -196,7 +197,12 @@ export const ChatHeader = ({
 									className="h-4 w-4"
 								/>
 							) : (
-								<SolarStarLinear className="h-4 w-4" />
+								<>
+									<SolarStarLinear className="h-4 w-4" />
+									<span className="flex sm:hidden text-muted-foreground">
+										Star
+									</span>
+								</>
 							)}
 						</Button>
 					</TooltipTrigger>
@@ -254,8 +260,14 @@ export const ChatHeader = ({
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger>
-						<Button variant="outline" size="icon" className="rounded-full">
+						<Button
+							variant="outline"
+							size={isMobile ? "default" : "icon"}
+							className="rounded-full">
 							<SiderbarLinear className="h-4 w-4" />
+							<span className="flex sm:hidden text-muted-foreground">
+								View details
+							</span>
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent>View chat details</TooltipContent>

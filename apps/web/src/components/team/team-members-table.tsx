@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { MoreHorizontal } from "lucide-react";
 import { Button } from "../ui/button";
-import { authClient, useSession } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { PenLinear } from "@/assets/icons/pen-icon";
@@ -17,9 +17,10 @@ import { useState } from "react";
 import { EditMemberDetails } from "./edit-member-details";
 import { RemoveMember } from "./remove-member";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { useRouteContext } from "@tanstack/react-router";
 
 export function TeamMembersTable() {
-	const { data: session } = useSession();
+	const { session } = useRouteContext({ from: "/(admin)" });
 	const activeOrganizationId = session?.session.activeOrganization;
 	const isAdmin = session?.user.role === "admin";
 
@@ -40,14 +41,13 @@ export function TeamMembersTable() {
 	});
 
 	return (
-		<>
+		<div className="max-w-sm md:max-w-full">
 			<Table className=" ">
 				<TableHeader className="w-full text-muted-foreground ">
 					<TableRow className="hover:bg-transparent text-muted-foreground text-xs">
 						<TableHead>Name</TableHead>
 						<TableHead>Email</TableHead>
 						<TableHead>Role</TableHead>
-						<TableHead>Status</TableHead>
 						<TableHead>Action</TableHead>
 					</TableRow>
 				</TableHeader>
@@ -71,7 +71,6 @@ export function TeamMembersTable() {
 							</TableCell>
 							<TableCell>{member.user.email}</TableCell>
 							<TableCell>{member.role}</TableCell>
-							<TableCell>{"active"}</TableCell>
 							<TableCell>
 								<Popover>
 									<PopoverTrigger>
@@ -158,6 +157,6 @@ export function TeamMembersTable() {
 				onOpenChange={(open) => !open && setRemovingMember(null)}
 				member={removingMember}
 			/>
-		</>
+		</div>
 	);
 }

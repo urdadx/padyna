@@ -99,15 +99,15 @@ export const ChatHistorySidebar = ({
 						/>
 					</Button>
 				</div>
-				<div className="flex gap-2 items-center">
+				<div className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
 					<DropdownMenu>
 						<DropdownMenuTrigger
 							render={
-								<Button variant="outline">
+								<Button variant="outline" size="sm" className="h-8">
 									{currentFilter?.label}
 								</Button>
 							}></DropdownMenuTrigger>
-						<DropdownMenuContent className="w-full max-w-md" align="end">
+						<DropdownMenuContent className="w-full max-w-50" align="end">
 							<DropdownMenuRadioGroup
 								value={filter}
 								onValueChange={(v) =>
@@ -146,11 +146,11 @@ export const ChatHistorySidebar = ({
 					<DropdownMenu>
 						<DropdownMenuTrigger
 							render={
-								<Button variant="outline">
+								<Button variant="outline" size="sm" className="h-8">
 									{currentSort?.label}
 								</Button>
 							}></DropdownMenuTrigger>
-						<DropdownMenuContent className="w-full max-w-md" align="end">
+						<DropdownMenuContent className="w-full max-w-50" align="end">
 							<DropdownMenuRadioGroup
 								value={sort}
 								onValueChange={(v) =>

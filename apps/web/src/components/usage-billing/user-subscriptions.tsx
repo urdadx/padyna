@@ -12,10 +12,12 @@ import { useState } from "react";
 import { CancelSubscription } from "./cancel-subscription-dialog";
 import { EndTrial } from "./end-trial-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const PAGE_SIZE = 5;
 
 export function UserSubscriptions() {
+	const isMobile = useIsMobile();
 	const [page, setPage] = useState(0);
 	const { session } = useRouteContext({ from: "/(admin)" });
 	const isAdmin = session?.user.role === "admin";
@@ -63,64 +65,108 @@ export function UserSubscriptions() {
 							{paginatedSubscriptions.map((sub, index) => (
 								<div
 									key={sub.id}
-									className={`flex flex-col gap-3 py-3 sm:flex-row sm:items-center ${
+									className={cn(
+										"flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:gap-3 sm:py-3",
 										index !==
-										paginatedSubscriptions.length - 1
-											? "border-b border-border/50"
-											: ""
-									}`}>
-									<div className="flex w-full max-w-48 truncate items-center gap-2 text-sm text-muted-foreground">
-										<CuteIconWrapper
-											color="green"
-											icon={WalletLinear}
-										/>
-										<span>
-											{planNameMap[
-												sub.productId ?? ""
-											] ??
-												((
-													sub.metadata as Record<
-														string,
-														unknown
-													>
-												)?.planName as string) ??
-												"Plan"}
-										</span>
-									</div>
-									<div className="flex-1" />
-									<div className="flex items-center gap-2 text-sm capitalize text-muted-foreground w-28 justify-center">
-										<div
-											className={cn(
-												"rounded-full w-2 h-2 shrink-0",
-												sub.status === "active"
-													? "bg-green-500"
-													: sub.status ===
-														  "trialing"
-														? "bg-blue-800"
-														: sub.status ===
-															  "canceled"
-															? "bg-red-800"
-															: "bg-green-800",
-											)}
-										/>
-										<span className="w-16">
-											{sub.status}
-										</span>
-									</div>
-									<div className="flex-1" />
-									<div className="flex items-center gap-4 sm:gap-10">
-										<div className="text-sm text-foreground w-32">
-											Ends{" "}
-											{formatDate(sub.currentPeriodEnd)}
+											paginatedSubscriptions.length -
+												1 &&
+											"border-b border-border/50",
+									)}>
+									<div className="flex items-center justify-between w-full sm:contents text-sm text-muted-foreground">
+										<div className="flex items-center gap-2 max-w-[200px] truncate">
+											<CuteIconWrapper
+												color="green"
+												icon={WalletLinear}
+											/>
+											<span className="font-medium text-foreground sm:text-muted-foreground sm:font-normal">
+												{planNameMap[
+													sub.productId ?? ""
+												] ??
+													((
+														sub.metadata as Record<
+															string,
+															unknown
+														>
+													)
+														?.planName as string) ??
+													"Plan"}
+											</span>
 										</div>
-										<div className="text-sm text-foreground w-16">
-											{formatCurrency(sub.amount / 100)}
+
+										{isMobile && (
+											<div className="flex items-center gap-2 capitalize">
+												<div
+													className={cn(
+														"rounded-full w-2 h-2 shrink-0",
+														sub.status ===
+															"active"
+															? "bg-green-500"
+															: sub.status ===
+																  "trialing"
+																? "bg-blue-800"
+																: sub.status ===
+																	  "canceled"
+																	? "bg-red-800"
+																	: "bg-green-800",
+													)}
+												/>
+												<span className="text-xs">
+													{sub.status}
+												</span>
+											</div>
+										)}
+									</div>
+
+									{!isMobile && (
+										<>
+											<div className="flex-1" />
+											<div className="flex items-center gap-2 text-sm capitalize text-muted-foreground w-28 justify-center">
+												<div
+													className={cn(
+														"rounded-full w-2 h-2 shrink-0",
+														sub.status ===
+															"active"
+															? "bg-green-500"
+															: sub.status ===
+																  "trialing"
+																? "bg-blue-800"
+																: sub.status ===
+																	  "canceled"
+																	? "bg-red-800"
+																	: "bg-green-800",
+													)}
+												/>
+												<span className="w-16">
+													{sub.status}
+												</span>
+											</div>
+											<div className="flex-1" />
+										</>
+									)}
+
+									<div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-10 w-full sm:w-auto">
+										<div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-10">
+											<div className="text-xs sm:text-sm text-muted-foreground sm:text-foreground sm:w-32">
+												{isMobile
+													? "Renews "
+													: "Ends "}
+												{formatDate(
+													sub.currentPeriodEnd,
+												)}
+											</div>
+											<div className="text-sm font-semibold sm:font-normal text-foreground sm:w-16">
+												{formatCurrency(
+													sub.amount / 100,
+												)}
+											</div>
 										</div>
+
 										<Popover>
-											<PopoverTrigger>
+											<PopoverTrigger asChild>
 												{!isAdmin ? (
 													<Tooltip>
-														<TooltipTrigger>
+														<TooltipTrigger
+															asChild>
 															<Button
 																variant="outline"
 																size="icon"
@@ -145,9 +191,6 @@ export function UserSubscriptions() {
 													<Button
 														variant="outline"
 														size="icon"
-														disabled={
-															!isAdmin
-														}
 														className="rounded-lg shrink-0">
 														<MoreHorizontal className="w-4 h-4" />
 													</Button>
