@@ -54,7 +54,7 @@ export const TelegramInstructions = ({ chatbot, onClose }: TelegramInstructionsP
 						<div className=" min-w-0 shrink-0">
 							<div className=" flex items-start justify-between">
 								<h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-									Share your agent as a Telegram bot
+									Share as a Telegram bot
 								</h3>
 								<Button
 									size="icon"
@@ -70,7 +70,7 @@ export const TelegramInstructions = ({ chatbot, onClose }: TelegramInstructionsP
 							</p>
 						</div>
 						<div className="pt-5 pb-2">
-							<div className="mb-2 flex items-center justify-between">
+							<div className="mb-2 gap-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
 								<div className="flex items-center gap-3">
 									<TelegramIcon color="#0088CC" />
 									<p className="text-sm font-medium text-gray-900 dark:text-gray-100">

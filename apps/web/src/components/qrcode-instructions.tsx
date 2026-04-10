@@ -1,4 +1,4 @@
-import { XIcon, QrCodeIcon } from "lucide-react";
+import { XIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { QrCodeIcon as QrIcon } from "@/assets/icons/qrcode-icon";
 import { env } from "@padyna/env/web";
@@ -40,7 +40,7 @@ export const QRCodeInstructions = ({ chatbot, onClose }: QRCodeInstructionsProps
 						<div className=" min-w-0 shrink-0">
 							<div className=" flex items-start justify-between">
 								<h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-									Download QR Code
+									Share via a QR code{" "}
 								</h3>
 								<Button
 									size="icon"
@@ -60,7 +60,7 @@ export const QRCodeInstructions = ({ chatbot, onClose }: QRCodeInstructionsProps
 								<div className="flex items-center gap-3">
 									<QrIcon color="red" />
 									<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-										Share your agent using a QR code
+										Download QR code
 									</p>
 								</div>
 								<div className="flex gap-2">
@@ -80,19 +80,21 @@ export const QRCodeInstructions = ({ chatbot, onClose }: QRCodeInstructionsProps
 						</div>
 
 						<div className="flex flex-col items-center justify-center py-6 space-y-4">
-							<div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
+							<div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
 								{websiteUrl ? (
 									<QRCodeCanvas
 										id="qr-code"
 										value={websiteUrl}
 										size={250}
 										level="H"
-										marginSize={5}
+										marginSize={3}
 										className="rounded-lg shadow-sm"
 									/>
 								) : (
 									<div className="w-50 h-50 flex items-center justify-center">
-										<QrCodeIcon className="w-12 h-12 text-gray-300" />
+										<p className="text-sm text-gray-500 dark:text-gray-400">
+											Unable to generate QR code
+										</p>
 									</div>
 								)}
 							</div>

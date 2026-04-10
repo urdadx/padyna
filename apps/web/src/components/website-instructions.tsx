@@ -54,7 +54,7 @@ export const WebsiteInstructions = ({ chatbot, onClose }: WebsiteInstructionsPro
 						<div className=" min-w-0 shrink-0">
 							<div className=" flex items-start justify-between">
 								<h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-									Share your agent using a link
+									Share using a link
 								</h3>
 								<Button
 									size="icon"
@@ -70,7 +70,7 @@ export const WebsiteInstructions = ({ chatbot, onClose }: WebsiteInstructionsPro
 							</p>
 						</div>
 						<div className="pt-5 pb-2">
-							<div className="mb-2 flex items-center justify-between">
+							<div className="mb-2 gap-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
 								<div className="flex items-center gap-3">
 									<WebsiteIcon color="green" />
 									<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
