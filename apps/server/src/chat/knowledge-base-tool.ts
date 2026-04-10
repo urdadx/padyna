@@ -1,12 +1,11 @@
 import { tool } from "ai";
-import { db } from "@padyna/db";
-import { datasources } from "@padyna/db/schema/index";
-import { and, eq, sql } from "drizzle-orm";
+import { getPgPool } from "@padyna/db";
 import { z } from "zod";
 import { retrieveHybridChunks } from "../search/hybrid-retrieval";
 
 const DEFAULT_RESULTS = 6;
 const MAX_RESULTS = 10;
+const MAX_WEIGHT_PER_SOURCE = 3;
 
 function clampResults(limit?: number) {
   if (!limit || Number.isNaN(limit)) {
@@ -19,6 +18,53 @@ function clampResults(limit?: number) {
 interface CreateKnowledgeBaseToolInput {
   chatbotId: string;
   organizationId: string;
+}
+
+async function incrementReferencedDatasources(
+  chatbotId: string,
+  organizationId: string,
+  rows: Array<{ datasourceId: string }>,
+) {
+  if (rows.length === 0) {
+    return;
+  }
+
+  const datasourceChunkCounts = new Map<string, number>();
+
+  for (const row of rows) {
+    datasourceChunkCounts.set(
+      row.datasourceId,
+      (datasourceChunkCounts.get(row.datasourceId) ?? 0) + 1,
+    );
+  }
+
+  const updates = Array.from(datasourceChunkCounts.entries()).map(([datasourceId, count]) => ({
+    datasourceId,
+    increment: Math.min(count, MAX_WEIGHT_PER_SOURCE),
+  }));
+
+  if (updates.length === 0) {
+    return;
+  }
+
+  const valuesClause = updates
+    .map((_, index) => `($${index * 2 + 1}::uuid, $${index * 2 + 2}::integer)`)
+    .join(", ");
+  const params = updates.flatMap(({ datasourceId, increment }) => [datasourceId, increment]);
+  const chatbotParam = `$${params.length + 1}`;
+  const organizationParam = `$${params.length + 2}`;
+
+  await getPgPool().query(
+    `
+      update datasources as d
+      set times_referenced = d.times_referenced + v.increment
+      from (values ${valuesClause}) as v(id, increment)
+      where d.id = v.id
+        and d.chatbot_id = ${chatbotParam}::uuid
+        and d.organization_id = ${organizationParam}::text
+    `,
+    [...params, chatbotId, organizationId],
+  );
 }
 
 export function KnowledgeBaseTool(input: CreateKnowledgeBaseToolInput) {
@@ -37,41 +83,12 @@ export function KnowledgeBaseTool(input: CreateKnowledgeBaseToolInput) {
         limit: clampResults(maxResults),
       });
 
-      const datasourceChunkCounts = new Map<string, number>();
-
-      for (const row of rows) {
-        if (row.datasourceId) {
-          datasourceChunkCounts.set(
-            row.datasourceId,
-            (datasourceChunkCounts.get(row.datasourceId) ?? 0) + 1,
-          );
-        }
-      }
-
-      const MAX_WEIGHT_PER_SOURCE = 3;
-
-      if (datasourceChunkCounts.size > 0) {
-        const updates = Array.from(datasourceChunkCounts.entries()).map(
-          ([datasourceId, count]) => ({
-            datasourceId,
-            increment: Math.min(count, MAX_WEIGHT_PER_SOURCE),
-          }),
+      if (rows.length > 0) {
+        void incrementReferencedDatasources(input.chatbotId, input.organizationId, rows).catch(
+          (error) => {
+            console.error("Failed to increment referenced datasources", error);
+          },
         );
-
-        for (const { datasourceId, increment } of updates) {
-          await db
-            .update(datasources)
-            .set({
-              timesReferenced: sql`${datasources.timesReferenced} + ${increment}`,
-            })
-            .where(
-              and(
-                eq(datasources.id, datasourceId),
-                eq(datasources.chatbotId, input.chatbotId),
-                eq(datasources.organizationId, input.organizationId),
-              ),
-            );
-        }
       }
 
       return {

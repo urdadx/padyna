@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { Checkout } from "@polar-sh/hono";
 import { env } from "@padyna/env/server";
+
 export const checkout = new Hono();
 
 checkout.get(

@@ -149,6 +149,13 @@ export const datasourceChunks = pgTable(
     index("datasource_chunks_datasource_id_idx").on(table.datasourceId),
     index("datasource_chunks_chatbot_id_idx").on(table.chatbotId),
     index("datasource_chunks_organization_id_idx").on(table.organizationId),
+    index("datasource_chunks_fulltext_search_idx").using(
+      "gin",
+      sql`(
+        setweight(to_tsvector('simple', coalesce(${table.title}, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(${table.content}, '')), 'B')
+      )`,
+    ),
     index("datasource_chunks_embedding_cosine_idx").using(
       "ivfflat",
       sql`${table.embedding} vector_cosine_ops`,
