@@ -12,7 +12,14 @@ import {
 import { chatbot } from "./chatbot";
 import { organization } from "./organization";
 
-export const AGENT_ACTION_PROVIDERS = ["jira", "clickup", "discord", "slack", "calendly"] as const;
+export const AGENT_ACTION_PROVIDERS = [
+  "jira",
+  "clickup",
+  "discord",
+  "slack",
+  "calendly",
+  "cal",
+] as const;
 
 export type AgentActionProvider = (typeof AGENT_ACTION_PROVIDERS)[number];
 
@@ -54,8 +61,13 @@ export type SlackAgentActionConfig = {
   audience?: "channel" | "here" | "everyone";
 };
 
+export type CalAgentActionConfig = {
+  calUrl: string;
+};
+
 export type AgentActionConfig =
   | CalendlyAgentActionConfig
+  | CalAgentActionConfig
   | JiraAgentActionConfig
   | ClickUpAgentActionConfig
   | DiscordAgentActionConfig

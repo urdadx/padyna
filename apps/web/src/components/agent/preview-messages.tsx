@@ -13,6 +13,10 @@ import {
 	CalendlyAppointmentForm,
 	getCalendlyAppointmentFormPayloads,
 } from "../actions/forms/calendly-appointment-form";
+import {
+	CalAppointmentForm,
+	getCalAppointmentFormPayloads,
+} from "../actions/forms/cal-appointment-form";
 import { getJiraIssueFormPayloads, JiraIssueForm } from "../actions/forms/jira-issue-form";
 import { ClickUpIssueForm, getClickUpIssueFormPayloads } from "../actions/forms/clickup-issue-form";
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "../ai-elements/tool";
@@ -108,12 +112,16 @@ export const PreviewMessages = memo(
 			const calendlyAppointmentForms = showActionForms
 				? getCalendlyAppointmentFormPayloads(parts)
 				: [];
+			const calAppointmentForms = showActionForms
+				? getCalAppointmentFormPayloads(parts)
+				: [];
 			const jiraIssueForms = showActionForms ? getJiraIssueFormPayloads(parts) : [];
 			const clickUpIssueForms = showActionForms
 				? getClickUpIssueFormPayloads(parts)
 				: [];
 			const formCount =
 				calendlyAppointmentForms.length +
+				calAppointmentForms.length +
 				jiraIssueForms.length +
 				clickUpIssueForms.length;
 
@@ -219,6 +227,12 @@ export const PreviewMessages = memo(
 					{calendlyAppointmentForms.map((payload, formIndex) => (
 						<CalendlyAppointmentForm
 							key={`${message.id}-calendly-form-${formIndex}`}
+							payload={payload}
+						/>
+					))}
+					{calAppointmentForms.map((payload, formIndex) => (
+						<CalAppointmentForm
+							key={`${message.id}-cal-form-${formIndex}`}
 							payload={payload}
 						/>
 					))}

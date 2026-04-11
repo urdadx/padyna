@@ -1,5 +1,32 @@
 import { z } from "zod";
 
+export const calActionConfigSchema = z.object({
+  calUrl: z.string().trim().url(),
+});
+
+export function parseCalUrl(calUrl: string) {
+  try {
+    const url = new URL(calUrl);
+    const pathParts = url.pathname.split("/").filter(Boolean);
+    if (pathParts.length < 2) {
+      return null;
+    }
+    return {
+      username: pathParts[0],
+      eventSlug: pathParts[1],
+    };
+  } catch {
+    return null;
+  }
+}
+
+export const createCalAgentActionBodySchema = z.object({
+  name: z.string().trim().min(1),
+  description: z.string().trim().min(1),
+  enabled: z.boolean().optional().default(true),
+  config: calActionConfigSchema,
+});
+
 export const jiraActionConfigSchema = z.object({
   projectId: z.string().trim().min(1),
   projectKey: z.string().trim().min(1),
@@ -118,4 +145,19 @@ export const calendlyActionToolInputSchema = z.object({
     .min(1)
     .optional()
     .describe("Name to prefill on the Calendly booking page"),
+});
+
+export const calActionToolInputSchema = z.object({
+  inviteeEmail: z
+    .string()
+    .trim()
+    .email()
+    .optional()
+    .describe("Email of the person booking the meeting"),
+  inviteeName: z
+    .string()
+    .trim()
+    .min(1)
+    .optional()
+    .describe("Name of the person booking the meeting"),
 });

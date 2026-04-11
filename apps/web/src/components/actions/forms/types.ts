@@ -1,4 +1,4 @@
-export type WebActionProvider = "jira" | "calendly" | "clickup" | "discord" | "slack";
+export type WebActionProvider = "jira" | "calendly" | "cal" | "clickup" | "discord" | "slack";
 
 export type JiraActionConfig = {
   projectId: string;
@@ -13,6 +13,10 @@ export type CalendlyActionConfig = {
   eventTypeName: string;
   schedulingUrl: string | null;
   duration: number | null;
+};
+
+export type CalActionConfig = {
+  calUrl: string;
 };
 
 export type ClickUpActionConfig = {
@@ -41,6 +45,7 @@ export type SlackActionConfig = {
 export type WebActionConfig =
   | JiraActionConfig
   | CalendlyActionConfig
+  | CalActionConfig
   | ClickUpActionConfig
   | DiscordActionConfig
   | SlackActionConfig;

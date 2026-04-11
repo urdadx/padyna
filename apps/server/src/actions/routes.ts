@@ -17,6 +17,7 @@ import { getActiveSlackConnectionByChatbot } from "../integrations/slack/utils";
 import { getAgentActionById, listAgentActions } from "./db";
 import {
   createCalendlyAgentActionBodySchema,
+  createCalAgentActionBodySchema,
   createClickUpAgentActionBodySchema,
   createDiscordAgentActionBodySchema,
   createJiraAgentActionBodySchema,
@@ -49,6 +50,8 @@ function getActionSchemaForProvider(provider: AgentActionProvider) {
       return createJiraAgentActionBodySchema;
     case "calendly":
       return createCalendlyAgentActionBodySchema;
+    case "cal":
+      return createCalAgentActionBodySchema;
     case "clickup":
       return createClickUpAgentActionBodySchema;
     case "discord":
@@ -66,6 +69,8 @@ async function ensureActionProviderConnection(provider: AgentActionProvider, cha
       return Boolean(await getActiveJiraIntegrationByChatbot(chatbotId));
     case "calendly":
       return Boolean(await getActiveCalendlyIntegrationByChatbot(chatbotId));
+    case "cal":
+      return Boolean(process.env.CAL_API_KEY);
     case "clickup":
       return Boolean(await getActiveClickUpIntegrationByChatbot(chatbotId));
     case "discord":
@@ -83,6 +88,8 @@ function getMissingProviderConnectionMessage(provider: AgentActionProvider) {
       return "Jira is not connected for this chatbot";
     case "calendly":
       return "Calendly is not connected for this chatbot";
+    case "cal":
+      return "Cal.com API key not configured";
     case "clickup":
       return "ClickUp is not connected for this chatbot";
     case "discord":
@@ -411,6 +418,51 @@ actionRoutes.post("/calendly", async (c) => {
       chatbotId: access.chatbotId,
       organizationId: access.organizationId,
       provider: "calendly",
+      name: payload.name,
+      description: payload.description,
+      enabled: payload.enabled,
+      config: payload.config,
+    })
+    .returning();
+
+  return c.json({ action: created }, 201);
+});
+
+actionRoutes.post("/cal", async (c) => {
+  const user = c.get("user") as JiraAuthContext["user"];
+  const session = c.get("session") as JiraAuthContext["session"];
+
+  if (!user?.id) {
+    return c.json({ message: "Unauthorized" }, 401);
+  }
+
+  const access = await verifyActiveChatbotAccess({ user, session });
+  if (!access) {
+    return c.json({ message: "No active chatbot in your current organization" }, 400);
+  }
+
+  const parseResult = createCalAgentActionBodySchema.safeParse(await c.req.json());
+  if (!parseResult.success) {
+    return c.json(
+      {
+        message: "Invalid Cal action payload",
+        issues: z.treeifyError(parseResult.error),
+      },
+      400,
+    );
+  }
+
+  if (!process.env.CAL_API_KEY) {
+    return c.json({ message: "Cal.com API key not configured" }, 404);
+  }
+
+  const payload = parseResult.data;
+  const [created] = await db
+    .insert(agentAction)
+    .values({
+      chatbotId: access.chatbotId,
+      organizationId: access.organizationId,
+      provider: "cal",
       name: payload.name,
       description: payload.description,
       enabled: payload.enabled,

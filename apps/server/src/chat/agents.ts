@@ -5,6 +5,7 @@ import { type AgentUseCase, getAgentPrompt } from "./prompt";
 import { createCached } from "@ai-sdk-tools/cache";
 import { openai } from "@ai-sdk/openai";
 import { listEnabledAgentActions } from "../actions/db";
+import { CalActionTool } from "../actions/cal-action-tool";
 import { CalendlyActionTool } from "../actions/calendly-action-tool";
 import { ClickUpActionTool } from "../actions/clickup-action-tool";
 import { DiscordActionTool } from "../actions/discord-action-tool";
@@ -42,6 +43,7 @@ export async function createSupportChatAgent(input: CreateSupportChatAgentInput)
   });
 
   type ActionTool =
+    | ReturnType<typeof CalActionTool>
     | ReturnType<typeof CalendlyActionTool>
     | ReturnType<typeof JiraActionTool>
     | ReturnType<typeof ClickUpActionTool>
@@ -51,6 +53,14 @@ export async function createSupportChatAgent(input: CreateSupportChatAgentInput)
   const actionToolEntries: Array<[string, ActionTool]> = [];
 
   for (const action of actions) {
+    if (action.provider === "cal") {
+      actionToolEntries.push([
+        toToolKey(action.name, action.id, "cal_action"),
+        CalActionTool(action),
+      ]);
+      continue;
+    }
+
     if (action.provider === "calendly") {
       actionToolEntries.push([
         toToolKey(action.name, action.id, "calendly_action"),

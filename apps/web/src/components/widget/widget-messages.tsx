@@ -12,6 +12,10 @@ import {
   CalendlyAppointmentForm,
   getCalendlyAppointmentFormPayloads,
 } from "../actions/forms/calendly-appointment-form";
+import {
+  CalAppointmentForm,
+  getCalAppointmentFormPayloads,
+} from "../actions/forms/cal-appointment-form";
 import { getJiraIssueFormPayloads, JiraIssueForm } from "../actions/forms/jira-issue-form";
 import { ClickUpIssueForm, getClickUpIssueFormPayloads } from "../actions/forms/clickup-issue-form";
 
@@ -66,10 +70,14 @@ export const WidgetMessages = ({
     const hasTextContent = textParts.length > 0;
     const hasContentText = Boolean(message.contentText);
     const calendlyAppointmentForms = getCalendlyAppointmentFormPayloads(parts);
+    const calAppointmentForms = getCalAppointmentFormPayloads(parts);
     const jiraIssueForms = getJiraIssueFormPayloads(parts);
     const clickUpIssueForms = getClickUpIssueFormPayloads(parts);
     const formCount =
-      calendlyAppointmentForms.length + jiraIssueForms.length + clickUpIssueForms.length;
+      calendlyAppointmentForms.length +
+      calAppointmentForms.length +
+      jiraIssueForms.length +
+      clickUpIssueForms.length;
 
     const hasVisibleContent = hasTextContent || hasContentText || parts.length === 0;
 
@@ -151,6 +159,12 @@ export const WidgetMessages = ({
         {calendlyAppointmentForms.map((payload, formIndex) => (
           <CalendlyAppointmentForm
             key={`${message.id}-calendly-form-${formIndex}`}
+            payload={payload}
+          />
+        ))}
+        {calAppointmentForms.map((payload, formIndex) => (
+          <CalAppointmentForm
+            key={`${message.id}-cal-form-${formIndex}`}
             payload={payload}
           />
         ))}

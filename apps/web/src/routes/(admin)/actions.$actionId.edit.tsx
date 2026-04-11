@@ -1,11 +1,13 @@
 import { AgentPreviewPanel } from "@/components/agent/agent-preview";
 import { CalendlyActionForm } from "@/components/actions/forms/calendly-action-form";
+import { CalActionForm } from "@/components/actions/forms/cal-action-form";
 import { ClickUpActionForm } from "@/components/actions/forms/clickup-action-form";
 import { DiscordActionForm } from "@/components/actions/forms/discord-action-form";
 import { JiraActionForm } from "@/components/actions/forms/jira-action-form";
 import { SlackActionForm } from "@/components/actions/forms/slack-action-form";
 import type {
 	ActionFormInitialData,
+	CalActionConfig,
 	CalendlyActionConfig,
 	ClickUpActionConfig,
 	DiscordActionConfig,
@@ -43,6 +45,14 @@ function renderActionForm(action: WebActionRecord) {
 					mode="edit"
 					actionId={action.id}
 					initialAction={action as ActionFormInitialData<CalendlyActionConfig>}
+				/>
+			);
+		case "cal":
+			return (
+				<CalActionForm
+					mode="edit"
+					actionId={action.id}
+					initialAction={action as ActionFormInitialData<CalActionConfig>}
 				/>
 			);
 		case "clickup":

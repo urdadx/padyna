@@ -58,6 +58,7 @@ export const env = createEnv({
     SLACK_ENCRYPTION_KEY: z.string().min(1).optional(),
     SLACK_REDIRECT_URI: z.url().optional(),
     SLACK_NOTIFY_SECRET: z.string().min(1).optional(),
+    CAL_API_KEY: z.string().min(1).optional(),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
