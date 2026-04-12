@@ -1,10 +1,25 @@
 ---
 import Layout from "../layouts/Layout.astro";
-
-
-
+import GridSeparator from "@/components/GridSeparator.astro";
+import SetupSection from "@/components/SetupSection.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Header from "@/components/Header.astro";
+import FeatureOverview from "@/components/FeatureOverview.astro";
+import ScrollAnimation from "@/components/ScrollAnimation.astro";
+import SalesText from "@/components/SalesText.astro";
+import Integrations from "@/components/Integrations.astro";
 ---
 
-<Layout>
-	<h2 class="text-2xl font-semibold text-green-500  mb-4">Welcome to Astro!</h2>
-</Layout>
+<>
+  <Header />
+  <CtaSection />
+  <Layout>
+    <FeatureOverview />
+    <ScrollAnimation />
+    <SetupSection />
+    <GridSeparator />
+    <SalesText />
+    <GridSeparator />
+    <Integrations />
+  </Layout>
+</>

@@ -1,0 +1,38 @@
+---
+import { Image } from "astro:assets";
+import logo from "../assets/padyna-official-logo.ico";
+---
+
+<div
+  class="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-stone-100 bg-white px-6 backdrop-blur-lg"
+>
+  <a href="/" class="flex items-center gap-2 py-4">
+    <Image
+      src={logo}
+      alt="Padyna logo"
+      class="h-8 w-auto"
+      width={24}
+      height={24}
+      loading="eager"
+      fetchpriority="high"
+    />
+  </a>
+
+  <div class="flex items-center gap-3">
+    <a
+      type="button"
+      class="bg-stone-0 box-border flex h-8 cursor-pointer items-center justify-center gap-x-2 rounded-md border border-stone-200 px-4 py-1.5 text-center font-mono text-sm leading-5 font-semibold whitespace-nowrap uppercase transition-all duration-75 ease-in select-none hover:border-stone-300 hover:bg-stone-100 active:scale-95 active:shadow-none disabled:cursor-not-allowed disabled:border-stone-200 disabled:bg-stone-100 disabled:opacity-50 disabled:shadow-none dark:border-stone-200 dark:bg-stone-100 dark:hover:border-stone-300 dark:hover:bg-stone-200 disabled:dark:bg-stone-200"
+      translate="no"
+      href="/book-a-demo"
+      ><div class="flex items-center gap-x-2">Book a demo</div></a
+    >
+    <a
+      type="button"
+      class="bg-primary box-border flex h-8 cursor-pointer items-center justify-center gap-x-2 rounded-md px-4 py-1.5 text-center font-mono text-sm leading-5 font-semibold whitespace-nowrap text-white uppercase transition-all duration-75 ease-in select-none active:scale-95 active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+      translate="no"
+      href="/signup"
+    >
+      <div class="flex items-center gap-x-2">Get started</div>
+    </a>
+  </div>
+</div>

@@ -1,0 +1,32 @@
+---
+import AISupportAnimation from "@/components/AISupportAnimation.astro";
+import CardAnimation from "@/components/CardAnimation.astro";
+import TrainingAnimation from "@/components/TrainingAnimation.astro";
+---
+
+<section class="flex flex-col items-center border-t bg-white">
+  <div
+    class="flex w-full max-w-2xl flex-col items-center gap-2 px-4 pt-16 pb-12 text-center"
+  >
+    <p
+      class="text-primary font-mono text-xs font-medium tracking-[0.56px] uppercase"
+    >
+      Super Fast Setup
+    </p>
+    <h2 class="text-2xl font-medium tracking-tight text-stone-900 sm:text-3xl">
+      The hardest part about switching to AutoSend is deciding when to do it.
+    </h2>
+    <p class="max-w-lg text-sm font-normal text-stone-600">
+      Quick and simple setup, no matter if you're integrating from scratch or
+      switching from another email service. Go from setup to sending before
+      lunch.
+    </p>
+  </div>
+  <div
+    class="flex w-full flex-col divide-y divide-stone-200 border-t border-stone-200 bg-stone-100 md:flex-row md:divide-x"
+  >
+    <CardAnimation />
+    <TrainingAnimation />
+    <AISupportAnimation />
+  </div>
+</section>

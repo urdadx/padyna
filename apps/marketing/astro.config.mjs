@@ -8,10 +8,10 @@ import mdx from "@astrojs/mdx";
 
 // https://astro.build/config
 export default defineConfig({
-	vite: {
-		// @ts-ignore
-		plugins: [tailwindcss()],
-	},
+  vite: {
+    // @ts-ignore
+    plugins: [tailwindcss()],
+  },
 
-	integrations: [react(), mdx()],
+  integrations: [react(), mdx()],
 });

@@ -1,0 +1,36 @@
+---
+import { Image } from "astro:assets";
+import logo from "../assets/padyna-official-logo.ico";
+---
+
+<section>
+  <div
+    class="mx-auto max-w-7xl border-y border-neutral-200 px-10 py-18 sm:font-light"
+  >
+    <div class="body-text text-left sm:text-2xl">
+      <p class="leading-relaxed text-balance">
+        Your customers want to help themselves, but <b
+          >your help center is out-of-date or doesn't exist.</b
+        > Outdated articles frustrate them, flood your inbox, and rack up costs.
+      </p>
+      <p class="mt-4 leading-relaxed"></p>
+      <div class="mt-4 flex items-start gap-2 sm:items-center">
+        <p class="leading-relaxed">
+          <Image
+            src={logo}
+            alt="Padyna logo"
+            class="h-8 w-auto"
+            width={24}
+            height={24}
+            loading="eager"
+            fetchpriority="high"
+            class="inline rotate-3 rounded-lg shadow-sm sm:-mt-1.5 sm:mr-2"
+            style="width: 28px; height: 28px;"
+          /><b>Ferndesk</b> is the first help center that helps you <b
+            >spend less time on docs and support</b
+          >, and <b>more time growing your business.</b>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>

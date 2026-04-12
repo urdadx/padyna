@@ -1,0 +1,85 @@
+---
+import Slack from "@/assets/integrations/slack-1.png";
+import Discord from "@/assets/integrations/discord.png";
+import WhatsApp from "@/assets/integrations/whatsapp.png";
+import Jira from "@/assets/integrations/jira.png";
+import ClickUp from "@/assets/integrations/clickup.png";
+import Calendly from "@/assets/integrations/calendly.png";
+
+const integrations = [
+  {
+    id: "slack",
+    name: "Slack",
+    logo: Slack,
+    url: "https://docs.autosend.com/ai/integrations/slack",
+  },
+  {
+    id: "discord",
+    name: "Discord",
+    logo: Discord,
+    url: "https://docs.autosend.com/ai/integrations/discord",
+  },
+  {
+    id: "whatsapp",
+    name: "WhatsApp",
+    logo: WhatsApp,
+    url: "https://docs.autosend.com/ai/integrations/whatsapp",
+  },
+  {
+    id: "jira",
+    name: "Jira",
+    logo: Jira,
+    url: "https://docs.autosend.com/ai/integrations/jira",
+  },
+  {
+    id: "clickup",
+    name: "ClickUp",
+    logo: ClickUp,
+    url: "https://docs.autosend.com/ai/integrations/clickup",
+  },
+  {
+    id: "calendly",
+    name: "Calendly",
+    logo: Calendly,
+    url: "https://docs.autosend.com/ai/integrations/calendly",
+  },
+];
+---
+
+<div class="grid w-full grid-cols-1 border-y border-stone-200 lg:grid-cols-2">
+  <div
+    class="flex flex-col justify-between gap-2 border-b border-stone-200 px-4 py-6 md:gap-4 md:px-6 lg:border-r lg:border-b-0"
+  >
+    <p class="text-primary font-mono text-sm leading-4 font-medium uppercase">
+      Integrations
+    </p>
+    <p class="font-heading text-[32px] leading-tight md:text-[40px]">
+      Works with your<br />favorite tools.
+    </p>
+  </div>
+  <ul class="grid grid-cols-2">
+    {
+      integrations.map((integration) => (
+        <li class="h-full border-b border-stone-200 odd:border-r nth-last-[-n+2]:border-b-0">
+          <a
+            target="_blank"
+            class="group ease flex h-full justify-between gap-4 p-4 transition-colors duration-100 hover:bg-stone-100 md:p-6"
+            href={integration.url}
+          >
+            <div class="flex flex-col justify-between gap-4">
+              <img
+                src={integration.logo.src}
+                alt={integration.name}
+                class="size-6"
+                loading="lazy"
+              />
+              <p class="font-mono text-sm font-medium text-stone-800 uppercase">
+                {integration.name}
+              </p>
+            </div>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</div>
