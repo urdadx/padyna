@@ -147,7 +147,7 @@ const columns: ColumnDef<Item>[] = [
 											: "purple"
 						}
 					/>
-					<span className="truncate max-w-xs">{row.getValue("name")}</span>
+					<span className="truncate w-40 sm:w-75">{row.getValue("name")}</span>
 				</div>
 			);
 		},

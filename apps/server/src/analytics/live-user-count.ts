@@ -8,7 +8,13 @@ type LiveCountUpdatePayload = {
   updatedAt: string;
 };
 
+type PresenceConnectionPayload = {
+  chatbotId: string;
+  lastSeenAt: string;
+};
+
 const redisUrl = env.REDIS_URL ?? "redis://localhost:6379";
+const PRESENCE_TTL_SECONDS = 45;
 
 const redis = new RedisClient(redisUrl);
 
@@ -29,6 +35,95 @@ function updateChannel(chatbotId: string) {
   return `presence:update:${chatbotId}`;
 }
 
+function serializeConnectionPayload(chatbotId: string): string {
+  const payload: PresenceConnectionPayload = {
+    chatbotId,
+    lastSeenAt: new Date().toISOString(),
+  };
+
+  return JSON.stringify(payload);
+}
+
+function parseConnectionPayload(value: string | null): PresenceConnectionPayload | null {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as Partial<PresenceConnectionPayload>;
+
+    if (typeof parsed.chatbotId !== "string" || typeof parsed.lastSeenAt !== "string") {
+      return null;
+    }
+
+    return {
+      chatbotId: parsed.chatbotId,
+      lastSeenAt: parsed.lastSeenAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function writePresenceConnection(chatbotId: string, connectionId: string) {
+  await Promise.all([
+    redis.sadd(presenceSetKey(chatbotId), connectionId),
+    redis.set(connectionKey(connectionId), serializeConnectionPayload(chatbotId)),
+  ]);
+
+  await redis.expire(connectionKey(connectionId), PRESENCE_TTL_SECONDS);
+}
+
+async function pruneStalePresenceConnections(chatbotId: string): Promise<number> {
+  const connectionIds = (await redis.smembers(presenceSetKey(chatbotId))) ?? [];
+
+  if (connectionIds.length === 0) {
+    return 0;
+  }
+
+  const now = Date.now();
+  const entries = await Promise.all(
+    connectionIds.map(async (connectionId) => {
+      const key = connectionKey(connectionId);
+      const rawValue = await redis.get(key);
+      const payload = parseConnectionPayload(rawValue);
+      const lastSeenAt = payload ? Date.parse(payload.lastSeenAt) : Number.NaN;
+      const isExpired = !Number.isFinite(lastSeenAt) || now - lastSeenAt > PRESENCE_TTL_SECONDS * 1000;
+      const isStale = !payload || payload.chatbotId !== chatbotId || isExpired;
+
+      return { connectionId, key, isStale };
+    }),
+  );
+
+  const staleEntries = entries.filter((entry) => entry.isStale);
+
+  if (staleEntries.length > 0) {
+    await Promise.allSettled([
+      ...staleEntries.map((entry) => redis.srem(presenceSetKey(chatbotId), entry.connectionId)),
+      ...staleEntries.map((entry) => redis.del(entry.key)),
+    ]);
+  }
+
+  return connectionIds.length - staleEntries.length;
+}
+
+async function resolveConnectionChatbotId(connectionId: string): Promise<string | null> {
+  const mappedChatbotId = connectionToChatbot.get(connectionId);
+
+  if (mappedChatbotId) {
+    return mappedChatbotId;
+  }
+
+  const storedValue = await redis.get(connectionKey(connectionId));
+  const payload = parseConnectionPayload(storedValue);
+
+  if (payload?.chatbotId) {
+    return payload.chatbotId;
+  }
+
+  return storedValue ?? null;
+}
+
 async function publishPresenceCount(chatbotId: string, count: number) {
   const payload: LiveCountUpdatePayload = {
     chatbotId,
@@ -40,8 +135,7 @@ async function publishPresenceCount(chatbotId: string, count: number) {
 }
 
 export async function getLivePresenceCount(chatbotId: string): Promise<number> {
-  const count = await redis.scard(presenceSetKey(chatbotId));
-  return Number(count ?? 0);
+  return pruneStalePresenceConnections(chatbotId);
 }
 
 async function publishCurrentPresenceCount(chatbotId: string): Promise<number> {
@@ -52,9 +146,7 @@ async function publishCurrentPresenceCount(chatbotId: string): Promise<number> {
 }
 
 async function cleanupConnection(connectionId: string) {
-  const mappedChatbotId = connectionToChatbot.get(connectionId);
-  const reverseValue = await redis.get(connectionKey(connectionId));
-  const chatbotId = mappedChatbotId ?? reverseValue ?? null;
+  const chatbotId = await resolveConnectionChatbotId(connectionId);
 
   connectionToChatbot.delete(connectionId);
   managedConnections.delete(connectionId);
@@ -99,12 +191,16 @@ export async function registerPresenceConnection(chatbotId: string, connectionId
   connectionToChatbot.set(connectionId, chatbotId);
   managedConnections.add(connectionId);
 
-  await Promise.all([
-    redis.sadd(presenceSetKey(chatbotId), connectionId),
-    redis.set(connectionKey(connectionId), chatbotId),
-  ]);
+  await writePresenceConnection(chatbotId, connectionId);
 
   await publishCurrentPresenceCount(chatbotId);
+}
+
+export async function refreshPresenceConnection(chatbotId: string, connectionId: string) {
+  connectionToChatbot.set(connectionId, chatbotId);
+  managedConnections.add(connectionId);
+
+  await writePresenceConnection(chatbotId, connectionId);
 }
 
 export async function unregisterPresenceConnection(connectionId: string) {

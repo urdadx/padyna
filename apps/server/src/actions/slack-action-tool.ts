@@ -9,9 +9,11 @@ type SlackActionRecord = typeof agentAction.$inferSelect;
 
 export function SlackActionTool(action: SlackActionRecord) {
   const config = slackActionConfigSchema.parse(action.config);
+
   const channelLabel = config.isPrivate
     ? `${config.channelName} (Private)`
     : `#${config.channelName}`;
+
   const audienceLabel =
     config.audience === "here"
       ? " It will notify only active members with @here."
@@ -23,7 +25,7 @@ export function SlackActionTool(action: SlackActionRecord) {
     description: `${action.description} This action sends a Slack message to ${channelLabel}.${audienceLabel} Only use it when the user's request clearly matches this configured workflow.`,
     inputSchema: slackActionToolInputSchema,
     execute: async ({ content }) => {
-      const result = await postSlackNotification({
+      await postSlackNotification({
         chatbotId: action.chatbotId,
         channelId: config.channelId,
         audience: config.audience,
@@ -40,10 +42,6 @@ export function SlackActionTool(action: SlackActionRecord) {
 
       return {
         success: true,
-        actionId: action.id,
-        channelId: result.channelId,
-        teamId: result.teamId,
-        message: `Slack message sent to ${channelLabel}.`,
       };
     },
   });

@@ -100,25 +100,9 @@ export const createSlackAgentActionBodySchema = z.object({
   config: slackActionConfigSchema,
 });
 
-export const jiraActionToolInputSchema = z.object({
-  summary: z.string().trim().min(1).describe("Short title for the Jira issue"),
-  description: z
-    .string()
-    .trim()
-    .min(1)
-    .optional()
-    .describe("Additional Jira issue details, reproduction steps, or customer context"),
-});
+export const jiraActionToolInputSchema = z.object({});
 
-export const clickupActionToolInputSchema = z.object({
-  name: z.string().trim().min(1).describe("Short title for the ClickUp task"),
-  description: z
-    .string()
-    .trim()
-    .min(1)
-    .optional()
-    .describe("Additional task details, reproduction steps, or customer context"),
-});
+export const clickupActionToolInputSchema = z.object({});
 
 export const discordActionToolInputSchema = z.object({
   content: z
@@ -132,32 +116,6 @@ export const slackActionToolInputSchema = z.object({
   content: z.string().trim().min(1).describe("The Slack message to send to the configured channel"),
 });
 
-export const calendlyActionToolInputSchema = z.object({
-  inviteeEmail: z
-    .string()
-    .trim()
-    .email()
-    .optional()
-    .describe("Email to prefill on the Calendly booking page"),
-  inviteeName: z
-    .string()
-    .trim()
-    .min(1)
-    .optional()
-    .describe("Name to prefill on the Calendly booking page"),
-});
+export const calendlyActionToolInputSchema = z.object({});
 
-export const calActionToolInputSchema = z.object({
-  inviteeEmail: z
-    .string()
-    .trim()
-    .email()
-    .optional()
-    .describe("Email of the person booking the meeting"),
-  inviteeName: z
-    .string()
-    .trim()
-    .min(1)
-    .optional()
-    .describe("Name of the person booking the meeting"),
-});
+export const calActionToolInputSchema = z.object({});

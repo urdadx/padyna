@@ -252,7 +252,7 @@ export const ChatHeader = ({
 									color={isClosed ? "green" : "white"}
 									className="h-4 w-4"
 								/>
-								{isClosed ? "Re-open" : "Close"}
+								{isClosed ? "Reopen" : "Close"}
 							</>
 						</Button>
 					</TooltipTrigger>

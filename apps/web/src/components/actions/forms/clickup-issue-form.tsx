@@ -7,19 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import Spinner from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import {
+	clickupIssueFormOutputSchema,
+	collectToolOutputs,
+	type ClickUpIssueFormOutput,
+} from "@padyna/api/actions/contracts";
 
-export type ClickUpIssueFormPayload = {
-	kind: "clickup_issue_form";
-	actionId: string;
-	chatbotId: string;
-	title?: string;
-	helperText?: string;
-	workspaceName?: string;
-	spaceName?: string;
-	listName?: string;
-	name?: string;
-	description?: string;
-};
+export type ClickUpIssueFormPayload = ClickUpIssueFormOutput;
 
 type ClickUpActionTaskResponse = {
 	task: {
@@ -31,28 +25,8 @@ type ClickUpIssueFormProps = {
 	payload: ClickUpIssueFormPayload;
 };
 
-function isClickUpIssueFormPayload(value: unknown): value is ClickUpIssueFormPayload {
-	if (!value || typeof value !== "object") {
-		return false;
-	}
-
-	const payload = value as Record<string, unknown>;
-
-	return (
-		payload.kind === "clickup_issue_form" &&
-		typeof payload.actionId === "string" &&
-		typeof payload.chatbotId === "string"
-	);
-}
-
 export function getClickUpIssueFormPayloads(parts: Array<{ output?: unknown; state?: string }>) {
-	return parts.flatMap((part) => {
-		if (part.state !== "output-available") {
-			return [];
-		}
-
-		return isClickUpIssueFormPayload(part.output) ? [part.output] : [];
-	});
+	return collectToolOutputs(parts, clickupIssueFormOutputSchema);
 }
 
 export const ClickUpIssueForm = ({ payload }: ClickUpIssueFormProps) => {

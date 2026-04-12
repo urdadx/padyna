@@ -23,7 +23,7 @@ export function DiscordActionTool(action: DiscordActionRecord) {
     description: `${action.description} This action sends a Discord message to ${channelLabel}.${audienceLabel} Only use it when the user's request clearly matches this configured workflow.`,
     inputSchema: discordActionToolInputSchema,
     execute: async ({ content }) => {
-      const message = await sendDiscordChannelMessage({
+      await sendDiscordChannelMessage({
         chatbotId: action.chatbotId,
         channelId: config.channelId,
         content,
@@ -40,11 +40,6 @@ export function DiscordActionTool(action: DiscordActionRecord) {
 
       return {
         success: true,
-        actionId: action.id,
-        channelId: message.channelId,
-        guildId: message.guildId,
-        messageId: message.id,
-        message: `Discord message sent to ${channelLabel}.`,
       };
     },
   });

@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Skeleton } from "../ui/skeleton";
 import { RestartLinear } from "@/assets/icons/restart-icon";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
+import { XIcon } from "lucide-react";
 
 interface WidgetChatbot {
 	name: string | null;
@@ -14,9 +15,10 @@ interface WidgetHeaderProps {
 	chatbot?: WidgetChatbot | null;
 	isLoading?: boolean;
 	onReset?: () => void;
+	onClose?: () => void;
 }
 
-export const WidgetHeader = ({ chatbot, isLoading, onReset }: WidgetHeaderProps) => {
+export const WidgetHeader = ({ chatbot, isLoading, onReset, onClose }: WidgetHeaderProps) => {
 	return (
 		<div className="flex h-16 items-center justify-between border-b px-5">
 			<div className="flex items-center gap-3">
@@ -53,19 +55,36 @@ export const WidgetHeader = ({ chatbot, isLoading, onReset }: WidgetHeaderProps)
 					)}
 				</div>
 			</div>
-			<Tooltip>
-				<TooltipTrigger>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="rounded-full"
-						onClick={onReset}
-						disabled={isLoading}>
-						<RestartLinear color="black" className="size-5" />
-					</Button>
-				</TooltipTrigger>
-				<TooltipContent>Restart conversation</TooltipContent>
-			</Tooltip>
+			<div className="flex items-center gap-1">
+				<Tooltip>
+					<TooltipTrigger>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="rounded-full"
+							onClick={onReset}
+							disabled={isLoading}>
+							<RestartLinear color="black" className="size-5" />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Restart conversation</TooltipContent>
+				</Tooltip>
+				{onClose ? (
+					<Tooltip>
+						<TooltipTrigger>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="rounded-full hidden sm:flex"
+								onClick={onClose}
+								aria-label="Close widget">
+								<XIcon className="size-5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Close widget</TooltipContent>
+					</Tooltip>
+				) : null}
+			</div>
 		</div>
 	);
 };

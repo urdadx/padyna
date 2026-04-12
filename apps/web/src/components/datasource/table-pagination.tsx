@@ -25,9 +25,9 @@ export function TablePagination<TData>({
 	const to = rowCount === 0 ? 0 : Math.min(pageIndex * pageSize + pageSize, rowCount);
 
 	return (
-		<div className="flex  flex-wrap sm:flex-nowrap items-center justify-between gap-4 sm:gap-8">
+		<div className="flex flex-row gap-10 items-center sm:justify-between">
 			{showFileSize && totalSize ? (
-				<div className="flex items-center gap-1 order-2 sm:order-0 w-full sm:w-auto mt-2 sm:mt-0">
+				<div className="flex items-center gap-1 order-2 sm:order-0 w-full sm:w-auto sm:mt-0">
 					<Label className="max-sm:sr-only">Total size:</Label>
 					<span className="font-medium text-sm text-foreground sm:text-foreground">
 						{isLoading ? "Loading..." : totalSize}
@@ -50,7 +50,8 @@ export function TablePagination<TData>({
 						<PaginationItem>
 							<Button
 								aria-label="Go to previous page"
-								className="disabled:pointer-events-none h-9 disabled:opacity-50"
+								size="sm"
+								className="disabled:pointer-events-none disabled:opacity-50"
 								disabled={!table.getCanPreviousPage()}
 								onClick={() => table.previousPage()}
 								variant="outline">
@@ -61,7 +62,8 @@ export function TablePagination<TData>({
 						<PaginationItem>
 							<Button
 								aria-label="Go to next page"
-								className="disabled:pointer-events-none h-9 disabled:opacity-50"
+								size="sm"
+								className="disabled:pointer-events-none disabled:opacity-50"
 								disabled={!table.getCanNextPage()}
 								onClick={() => table.nextPage()}
 								variant="outline">

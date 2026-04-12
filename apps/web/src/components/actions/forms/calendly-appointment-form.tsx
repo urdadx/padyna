@@ -4,20 +4,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { addHours, format, setHours, setMinutes } from "date-fns";
 import { ArrowLeft } from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+	calendlyAppointmentFormOutputSchema,
+	collectToolOutputs,
+	type CalendlyAppointmentFormOutput,
+} from "@padyna/api/actions/contracts";
 
-export type CalendlyAppointmentFormPayload = {
-	kind: "calendly_appointment_form";
-	actionId: string;
-	chatbotId: string;
-	title?: string;
-	helperText?: string;
-	eventTypeUri: string;
-	eventTypeName: string;
-	schedulingUrl: string | null;
-	duration: number | null;
-	inviteeEmail?: string;
-	inviteeName?: string;
-};
+export type CalendlyAppointmentFormPayload = CalendlyAppointmentFormOutput;
 
 interface AppointmentPickerProps {
 	schedulingUrl?: string | null;
@@ -30,32 +23,10 @@ interface AppointmentPickerProps {
 	}) => void;
 }
 
-function isCalendlyAppointmentFormPayload(value: unknown): value is CalendlyAppointmentFormPayload {
-	if (!value || typeof value !== "object") {
-		return false;
-	}
-
-	const payload = value as Record<string, unknown>;
-
-	return (
-		payload.kind === "calendly_appointment_form" &&
-		typeof payload.actionId === "string" &&
-		typeof payload.chatbotId === "string" &&
-		typeof payload.eventTypeUri === "string" &&
-		typeof payload.eventTypeName === "string"
-	);
-}
-
 export function getCalendlyAppointmentFormPayloads(
 	parts: Array<{ output?: unknown; state?: string }>,
 ) {
-	return parts.flatMap((part) => {
-		if (part.state !== "output-available") {
-			return [];
-		}
-
-		return isCalendlyAppointmentFormPayload(part.output) ? [part.output] : [];
-	});
+	return collectToolOutputs(parts, calendlyAppointmentFormOutputSchema);
 }
 
 function buildCalendlyUrl(args: {

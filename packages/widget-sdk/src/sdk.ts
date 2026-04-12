@@ -7,6 +7,7 @@ const PANEL_ID = "padyna-widget-panel";
 const IFRAME_ID = "padyna-widget-iframe";
 const LOADER_ID = "padyna-widget-loader";
 const MIN_LOADER_VISIBLE_MS = 10;
+const MOBILE_BREAKPOINT_PX = 640;
 
 const WIDGET_CLOSED_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="#FFFFFF" fill-rule="evenodd" d="M22 12c0 5.523-4.477 10-10 10c-1.6 0-3.112-.376-4.452-1.044a1.63 1.63 0 0 0-1.149-.133l-2.226.596a1.3 1.3 0 0 1-1.591-1.592l.595-2.226a1.63 1.63 0 0 0-.134-1.148A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10M12 7.25a.75.75 0 0 1 .75.75v8a.75.75 0 0 1-1.5 0V8a.75.75 0 0 1 .75-.75M8.75 10a.75.75 0 0 0-1.5 0v4a.75.75 0 0 0 1.5 0zM16 9.25a.75.75 0 0 1 .75.75v4a.75.75 0 0 1-1.5 0v-4a.75.75 0 0 1 .75-.75" clip-rule="evenodd"/></svg>`;
 
@@ -30,6 +31,8 @@ type PadynaState = {
   defaultServerUrl: string;
   dom: PadynaDom | null;
   onKeydown: ((event: KeyboardEvent) => void) | null;
+  onMessage: ((event: MessageEvent) => void) | null;
+  onResize: (() => void) | null;
   isIframeLoaded: boolean;
   isIframeBootstrapped: boolean;
   loaderShownAt: number;
@@ -87,7 +90,33 @@ function buildWidgetUrl(options: PadynaInitOptions, defaultServerUrl: string) {
   return url.toString();
 }
 
+function isMobileViewport() {
+  return typeof window !== "undefined" && window.innerWidth <= MOBILE_BREAKPOINT_PX;
+}
+
+function applyLayoutState(dom: PadynaDom, isOpen: boolean) {
+  const isMobileFullscreen = isOpen && isMobileViewport();
+
+  dom.root.style.top = isMobileFullscreen ? "0" : "auto";
+  dom.root.style.left = isMobileFullscreen ? "0" : "auto";
+  dom.root.style.right = isMobileFullscreen ? "0" : "20px";
+  dom.root.style.bottom = isMobileFullscreen ? "0" : "20px";
+  dom.root.style.width = isMobileFullscreen ? "100vw" : "auto";
+  dom.root.style.height = isMobileFullscreen ? "100dvh" : "auto";
+  dom.root.style.alignItems = isMobileFullscreen ? "stretch" : "flex-end";
+
+  dom.panel.style.width = isMobileFullscreen ? "100vw" : "min(400px, calc(100vw - 24px))";
+  dom.panel.style.height = isMobileFullscreen ? "100dvh" : "min(680px, calc(100vh - 96px))";
+  dom.panel.style.maxHeight = isMobileFullscreen ? "none" : "680px";
+  dom.panel.style.marginBottom = isMobileFullscreen ? "0" : "12px";
+  dom.panel.style.borderRadius = isMobileFullscreen ? "0" : "16px";
+  dom.panel.style.transformOrigin = isMobileFullscreen ? "center center" : "bottom right";
+
+  dom.button.style.display = isMobileFullscreen ? "none" : "grid";
+}
+
 function applyOpenState(dom: PadynaDom, isOpen: boolean) {
+  applyLayoutState(dom, isOpen);
   dom.panel.style.display = isOpen ? "block" : "none";
   dom.panel.style.opacity = isOpen ? "1" : "0";
   dom.panel.style.transform = isOpen ? "translateY(0) scale(1)" : "translateY(12px) scale(0.98)";
@@ -277,6 +306,8 @@ const state: PadynaState = {
   defaultServerUrl: typeof window !== "undefined" ? inferDefaultServerUrl() : "",
   dom: null,
   onKeydown: null,
+  onMessage: null,
+  onResize: null,
   isIframeLoaded: false,
   isIframeBootstrapped: false,
   loaderShownAt: 0,
@@ -340,6 +371,28 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
       document.addEventListener("keydown", state.onKeydown);
     }
 
+    if (!state.onMessage) {
+      state.onMessage = (event: MessageEvent) => {
+        if (event.source !== state.dom?.iframe.contentWindow) {
+          return;
+        }
+
+        if ((event.data as { type?: string } | null)?.type === "padyna:widget_request_close") {
+          runCommand("close");
+        }
+      };
+      window.addEventListener("message", state.onMessage);
+    }
+
+    if (!state.onResize) {
+      state.onResize = () => {
+        if (state.dom) {
+          applyOpenState(state.dom, state.isOpen);
+        }
+      };
+      window.addEventListener("resize", state.onResize);
+    }
+
     applyOpenState(dom, false);
     return;
   }
@@ -390,6 +443,16 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
   if (state.onKeydown) {
     document.removeEventListener("keydown", state.onKeydown);
     state.onKeydown = null;
+  }
+
+  if (state.onMessage) {
+    window.removeEventListener("message", state.onMessage);
+    state.onMessage = null;
+  }
+
+  if (state.onResize) {
+    window.removeEventListener("resize", state.onResize);
+    state.onResize = null;
   }
 
   if (state.dom?.root.isConnected) {

@@ -63,7 +63,7 @@ export const ToolHeader = ({ className, type, state, ...props }: ToolHeaderProps
 		className={cn("flex w-full items-center justify-between gap-4 p-3", className)}
 		{...props}>
 		<div className="flex items-center gap-2">
-			<span className="font-medium text-sm">
+			<span className="font-medium text-sm truncate w-60">
 				{type.includes("escalate_to_human")
 					? "Escalated conversation to a human agent"
 					: type.includes("calendly_action")

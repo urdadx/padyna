@@ -214,7 +214,7 @@ export function MostRecentConversations({
 	return (
 		<div className="space-y-4 w-full">
 			<div className="flex items-center justify-between">
-				<h2 className="text-xl font-semibold">Most recent conversations</h2>
+				<h2 className="text-xl font-semibold">Recent conversations</h2>
 				<Link to="/chat-logs">
 					<Button
 						variant="ghost"

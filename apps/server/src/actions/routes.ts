@@ -24,7 +24,7 @@ import {
   createSlackAgentActionBodySchema,
 } from "./schema";
 import { z } from "zod";
-import type { AgentActionProvider } from "@padyna/db/schema/index";
+import type { ActionProvider } from "@padyna/api/actions/contracts";
 import { and, eq } from "drizzle-orm";
 
 type Variables = {
@@ -44,7 +44,7 @@ const updateActionEnabledBodySchema = z.object({
   enabled: z.boolean(),
 });
 
-function getActionSchemaForProvider(provider: AgentActionProvider) {
+function getActionSchemaForProvider(provider: ActionProvider) {
   switch (provider) {
     case "jira":
       return createJiraAgentActionBodySchema;
@@ -63,7 +63,7 @@ function getActionSchemaForProvider(provider: AgentActionProvider) {
   throw new Error(`Unsupported action provider: ${provider}`);
 }
 
-async function ensureActionProviderConnection(provider: AgentActionProvider, chatbotId: string) {
+async function ensureActionProviderConnection(provider: ActionProvider, chatbotId: string) {
   switch (provider) {
     case "jira":
       return Boolean(await getActiveJiraIntegrationByChatbot(chatbotId));
@@ -82,7 +82,7 @@ async function ensureActionProviderConnection(provider: AgentActionProvider, cha
   throw new Error(`Unsupported action provider: ${provider}`);
 }
 
-function getMissingProviderConnectionMessage(provider: AgentActionProvider) {
+function getMissingProviderConnectionMessage(provider: ActionProvider) {
   switch (provider) {
     case "jira":
       return "Jira is not connected for this chatbot";

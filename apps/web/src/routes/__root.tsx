@@ -23,7 +23,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 	head: () => ({
 		meta: [
 			{
-				title: "Padyna",
+				title: "Padyna | AI customer support for your business",
 			},
 			{
 				name: "description",
@@ -33,7 +33,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 		links: [
 			{
 				rel: "icon",
-				href: "/favicon.ico",
+				href: "/padyna-official-logo.ico",
 			},
 		],
 	}),

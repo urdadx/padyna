@@ -127,6 +127,7 @@ function WidgetPreviewContent({
 	const { messages, setMessages, sendMessage, status } = useChat({ id: chatId, transport });
 
 	const messageIdsRef = useRef(new Set<string>());
+	const hydratedChatIdRef = useRef<string | undefined>(undefined);
 
 	const { sessionId, visitorId, chatStarted, resetChatStarted } = useWidgetSession({
 		chatbotId,
@@ -144,6 +145,17 @@ function WidgetPreviewContent({
 	const isError = status === "error";
 	const isEscalated = ESCALATED_STATUSES.has(initData?.conversationStatus ?? "");
 	const isClosed = initData?.conversationStatus === "closed";
+
+	useEffect(() => {
+		if (!chatId || !initData || hydratedChatIdRef.current === chatId) {
+			return;
+		}
+
+		const hydratedMessages = (initData.messages ?? []) as any[];
+		setMessages(hydratedMessages);
+		messageIdsRef.current = new Set(hydratedMessages.map((message) => message.id));
+		hydratedChatIdRef.current = chatId;
+	}, [chatId, initData, setMessages]);
 
 	const liveChat = useLiveChatSocket({
 		conversationId: chatId,
@@ -216,9 +228,22 @@ function WidgetPreviewContent({
 
 	const resetConversation = () => {
 		resetChatStarted();
+		hydratedChatIdRef.current = undefined;
+		messageIdsRef.current = new Set();
 		resetChatId?.();
 		setInput("");
 		setMessages([]);
+	};
+
+	const requestCloseWidget = () => {
+		if (platform !== "widget" || window.parent === window) {
+			return;
+		}
+
+		window.parent.postMessage(
+			{ type: "padyna:widget_request_close" },
+			hostOrigin || "*",
+		);
 	};
 
 	const showVoteBlock =
@@ -254,6 +279,7 @@ function WidgetPreviewContent({
 				chatbot={widgetConfig}
 				isLoading={isLoading}
 				onReset={resetConversation}
+				onClose={platform === "widget" ? requestCloseWidget : undefined}
 			/>
 
 			{isEscalated ? (

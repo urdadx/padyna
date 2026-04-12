@@ -4,6 +4,7 @@ import { EscalateToHumanTool } from "./escalate-tool";
 import { type AgentUseCase, getAgentPrompt } from "./prompt";
 import { createCached } from "@ai-sdk-tools/cache";
 import { openai } from "@ai-sdk/openai";
+import type { ActionProvider } from "@padyna/api/actions/contracts";
 import { listEnabledAgentActions } from "../actions/db";
 import { CalActionTool } from "../actions/cal-action-tool";
 import { CalendlyActionTool } from "../actions/calendly-action-tool";
@@ -26,15 +27,28 @@ interface CreateSupportChatAgentInput {
   allowEscalation?: boolean;
 }
 
-function toToolKey(name: string, actionId: string, prefix: string) {
-  const normalized = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 40);
-
-  return `${prefix}_${normalized || "tool"}_${actionId.slice(0, 8)}`;
+function toToolKey(actionId: string, provider: string) {
+  return `action_${provider}_${actionId.slice(0, 8)}`;
 }
+
+type AgentActionRecord = Awaited<ReturnType<typeof listEnabledAgentActions>>[number];
+
+type ActionTool =
+  | ReturnType<typeof CalActionTool>
+  | ReturnType<typeof CalendlyActionTool>
+  | ReturnType<typeof JiraActionTool>
+  | ReturnType<typeof ClickUpActionTool>
+  | ReturnType<typeof DiscordActionTool>
+  | ReturnType<typeof SlackActionTool>;
+
+const providerToolFactories = {
+  cal: CalActionTool,
+  calendly: CalendlyActionTool,
+  jira: JiraActionTool,
+  clickup: ClickUpActionTool,
+  discord: DiscordActionTool,
+  slack: SlackActionTool,
+} satisfies Record<ActionProvider, (action: AgentActionRecord) => ActionTool>;
 
 export async function createSupportChatAgent(input: CreateSupportChatAgentInput) {
   const actions = await listEnabledAgentActions({
@@ -42,63 +56,11 @@ export async function createSupportChatAgent(input: CreateSupportChatAgentInput)
     organizationId: input.organizationId,
   });
 
-  type ActionTool =
-    | ReturnType<typeof CalActionTool>
-    | ReturnType<typeof CalendlyActionTool>
-    | ReturnType<typeof JiraActionTool>
-    | ReturnType<typeof ClickUpActionTool>
-    | ReturnType<typeof DiscordActionTool>
-    | ReturnType<typeof SlackActionTool>;
-
   const actionToolEntries: Array<[string, ActionTool]> = [];
 
   for (const action of actions) {
-    if (action.provider === "cal") {
-      actionToolEntries.push([
-        toToolKey(action.name, action.id, "cal_action"),
-        CalActionTool(action),
-      ]);
-      continue;
-    }
-
-    if (action.provider === "calendly") {
-      actionToolEntries.push([
-        toToolKey(action.name, action.id, "calendly_action"),
-        CalendlyActionTool(action),
-      ]);
-      continue;
-    }
-
-    if (action.provider === "jira") {
-      actionToolEntries.push([
-        toToolKey(action.name, action.id, "jira_action"),
-        JiraActionTool(action),
-      ]);
-      continue;
-    }
-
-    if (action.provider === "clickup") {
-      actionToolEntries.push([
-        toToolKey(action.name, action.id, "clickup_action"),
-        ClickUpActionTool(action),
-      ]);
-      continue;
-    }
-
-    if (action.provider === "discord") {
-      actionToolEntries.push([
-        toToolKey(action.name, action.id, "discord_action"),
-        DiscordActionTool(action),
-      ]);
-      continue;
-    }
-
-    if (action.provider === "slack") {
-      actionToolEntries.push([
-        toToolKey(action.name, action.id, "slack_action"),
-        SlackActionTool(action),
-      ]);
-    }
+    const createTool = providerToolFactories[action.provider];
+    actionToolEntries.push([toToolKey(action.id, action.provider), createTool(action)]);
   }
 
   const actionTools = Object.fromEntries(actionToolEntries) as Record<string, ActionTool>;

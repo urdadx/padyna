@@ -10,47 +10,18 @@ import { isAxiosError } from "axios";
 import { endOfDay, format, startOfDay } from "date-fns";
 import { ArrowLeft } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 import Spinner from "@/components/ui/spinner";
 import { CheckMarkIcon } from "@/assets/icons/checkmark-icon";
+import {
+	calAppointmentFormOutputSchema,
+	collectToolOutputs,
+	type CalAppointmentFormOutput,
+} from "@padyna/api/actions/contracts";
 
-export type CalAppointmentFormPayload = {
-	kind: "cal_appointment_form";
-	actionId: string;
-	chatbotId: string;
-	title?: string;
-	helperText?: string;
-	username: string;
-	eventSlug: string;
-	duration?: number;
-	inviteeEmail?: string;
-	inviteeName?: string;
-};
-
-function isCalAppointmentFormPayload(value: unknown): value is CalAppointmentFormPayload {
-	if (!value || typeof value !== "object") {
-		return false;
-	}
-
-	const payload = value as Record<string, unknown>;
-
-	return (
-		payload.kind === "cal_appointment_form" &&
-		typeof payload.actionId === "string" &&
-		typeof payload.chatbotId === "string" &&
-		typeof payload.username === "string" &&
-		typeof payload.eventSlug === "string"
-	);
-}
+export type CalAppointmentFormPayload = CalAppointmentFormOutput;
 
 export function getCalAppointmentFormPayloads(parts: Array<{ output?: unknown; state?: string }>) {
-	return parts.flatMap((part) => {
-		if (part.state !== "output-available") {
-			return [];
-		}
-
-		return isCalAppointmentFormPayload(part.output) ? [part.output] : [];
-	});
+	return collectToolOutputs(parts, calAppointmentFormOutputSchema);
 }
 
 interface CalAppointmentPickerProps {
@@ -153,18 +124,6 @@ export function CalAppointmentPicker({
 		() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
 		[],
 	);
-
-	const resetBookingFlow = () => {
-		setDate(undefined);
-		setSelectedSlot(null);
-		setShowTimePicker(false);
-		setShowAttendeeForm(false);
-		setAttendeeName("");
-		setAttendeeEmail("");
-		setNotes("");
-		setConfirmError(null);
-		setBookingResult(null);
-	};
 
 	const handleConfirm = async () => {
 		if (

@@ -92,24 +92,11 @@ export function KnowledgeBaseTool(input: CreateKnowledgeBaseToolInput) {
       }
 
       return {
-        query,
-        resultCount: rows.length,
         results: rows.map((row) => ({
-          chunkId: row.chunkId,
-          datasourceId: row.datasourceId,
           sourceName: row.sourceName,
           sourceType: row.sourceType,
           url: row.url,
           content: row.content,
-          scores: {
-            fused: row.fusedScore,
-            semantic: row.semanticScore,
-            fullText: row.fullTextScore,
-          },
-          ranks: {
-            semantic: row.semanticRank,
-            fullText: row.fullTextRank,
-          },
         })),
       };
     },

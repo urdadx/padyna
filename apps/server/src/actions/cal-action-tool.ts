@@ -2,6 +2,7 @@ import { db } from "@padyna/db";
 import { tool } from "ai";
 import { agentAction } from "@padyna/db/schema/index";
 import { eq, sql } from "drizzle-orm";
+import { calAppointmentFormOutputSchema } from "@padyna/api/actions/contracts";
 import { calActionConfigSchema, calActionToolInputSchema, parseCalUrl } from "./schema";
 
 type CalActionRecord = typeof agentAction.$inferSelect;
@@ -15,9 +16,9 @@ export function CalActionTool(action: CalActionRecord) {
   }
 
   return tool({
-    description: `${action.description}. This action lets users book a meeting via Cal.com. Only use it when the user wants to schedule a meeting that matches this workflow.`,
+    description: `${action.description}. Opens the Cal.com booking form for this workflow. The form collects the attendee details.`,
     inputSchema: calActionToolInputSchema,
-    execute: async ({ inviteeEmail, inviteeName }) => {
+    execute: async () => {
       await db
         .update(agentAction)
         .set({
@@ -26,17 +27,13 @@ export function CalActionTool(action: CalActionRecord) {
         })
         .where(eq(agentAction.id, action.id));
 
-      return {
+      return calAppointmentFormOutputSchema.parse({
         kind: "cal_appointment_form",
         actionId: action.id,
         chatbotId: action.chatbotId,
-        title: action.name,
-        helperText: action.description,
         username: parsed.username,
         eventSlug: parsed.eventSlug,
-        inviteeEmail: inviteeEmail ?? "",
-        inviteeName: inviteeName ?? "",
-      };
+      });
     },
   });
 }

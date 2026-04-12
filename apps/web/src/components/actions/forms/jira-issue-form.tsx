@@ -7,19 +7,13 @@ import { IssueSubmittedBanner } from "@/components/chat-logs/banners";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Spinner from "@/components/ui/spinner";
+import {
+	collectToolOutputs,
+	jiraIssueFormOutputSchema,
+	type JiraIssueFormOutput,
+} from "@padyna/api/actions/contracts";
 
-export type JiraIssueFormPayload = {
-	kind: "jira_issue_form";
-	actionId: string;
-	chatbotId: string;
-	title?: string;
-	helperText?: string;
-	projectName?: string;
-	projectKey?: string;
-	issueTypeName?: string;
-	summary?: string;
-	description?: string;
-};
+export type JiraIssueFormPayload = JiraIssueFormOutput;
 
 type JiraActionIssueResponse = {
 	issue: {
@@ -33,29 +27,8 @@ type JiraIssueFormProps = {
 	payload: JiraIssueFormPayload;
 };
 
-function isJiraIssueFormPayload(value: unknown): value is JiraIssueFormPayload {
-	if (!value || typeof value !== "object") {
-		return false;
-	}
-
-	const payload = value as Record<string, unknown>;
-
-	return (
-		payload.kind === "jira_issue_form" &&
-		typeof payload.actionId === "string" &&
-		typeof payload.chatbotId === "string" &&
-		(payload.title === undefined || typeof payload.title === "string")
-	);
-}
-
 export function getJiraIssueFormPayloads(parts: Array<{ output?: unknown; state?: string }>) {
-	return parts.flatMap((part) => {
-		if (part.state !== "output-available") {
-			return [];
-		}
-
-		return isJiraIssueFormPayload(part.output) ? [part.output] : [];
-	});
+	return collectToolOutputs(parts, jiraIssueFormOutputSchema);
 }
 
 export const JiraIssueForm = ({ payload }: JiraIssueFormProps) => {

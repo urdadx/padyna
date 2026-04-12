@@ -15,6 +15,7 @@ import { useRouteContext } from "@tanstack/react-router";
 import { useChat, Provider } from "@padyna/store";
 import { env } from "@padyna/env/web";
 import { queryClient, trpc } from "@/utils/trpc";
+import { generateUUID } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { DefaultChatTransport } from "ai";
 import { useMemo, useState } from "react";
@@ -33,6 +34,7 @@ function AgentPreviewPanelContent() {
 	);
 
 	const [input, setInput] = useState("");
+	const [chatId, setChatId] = useState(() => generateUUID());
 	const { session } = useRouteContext({ from: "/(admin)" });
 	const chatbotId = session?.session.activeChatbot;
 
@@ -56,7 +58,7 @@ function AgentPreviewPanelContent() {
 	const suggestedMessages = chatbot?.suggestedMessages || [];
 	const isEnabled = chatbot?.isEnabled ?? false;
 
-	const { messages, setMessages, sendMessage, status } = useChat({ transport });
+	const { messages, setMessages, sendMessage, status } = useChat({ id: chatId, transport });
 
 	const isStreaming = status === "streaming";
 	const isError = status === "error";
@@ -64,16 +66,14 @@ function AgentPreviewPanelContent() {
 
 	const showVoteBlock =
 		messages.length > 0 && messages[messages.length - 1].role === "assistant" && isReady;
-	const activeConversationId = conversations?.[0]?.id;
+	const activeConversation = conversations?.find((conversation) => conversation.id === chatId);
+	const activeConversationId = activeConversation?.id;
 
-	const isEscalated = activeConversationId
-		? conversations?.find((c) => c.id === activeConversationId)?.status === "escalated"
-		: false;
-	const isClosed = activeConversationId
-		? conversations?.find((c) => c.id === activeConversationId)?.status === "closed"
-		: false;
+	const isEscalated = activeConversation?.status === "escalated";
+	const isClosed = activeConversation?.status === "closed";
 
 	const resetConversation = () => {
+		setChatId(generateUUID());
 		setInput("");
 		setMessages([]);
 	};

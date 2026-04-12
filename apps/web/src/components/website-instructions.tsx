@@ -65,7 +65,7 @@ export const WebsiteInstructions = ({ chatbot, onClose }: WebsiteInstructionsPro
 								</Button>
 							</div>
 							<p className="max-w-md text-pretty text-sm text-gray-600 dark:text-gray-400">
-								Share a direct link to your agent with your
+								Share a telegram link to your agent with your
 								customers or team members.
 							</p>
 						</div>

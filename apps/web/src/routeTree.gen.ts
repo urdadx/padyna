@@ -31,6 +31,7 @@ import { Route as adminIntegrationsRouteImport } from './routes/(admin)/integrat
 import { Route as adminFilesRouteImport } from './routes/(admin)/files'
 import { Route as adminDataSourcesRouteImport } from './routes/(admin)/data-sources'
 import { Route as adminChatLogsRouteImport } from './routes/(admin)/chat-logs'
+import { Route as adminAnimationRouteImport } from './routes/(admin)/animation'
 import { Route as adminAnalyticsRouteImport } from './routes/(admin)/analytics'
 import { Route as adminActionsRouteImport } from './routes/(admin)/actions'
 import { Route as adminActionsIndexRouteImport } from './routes/(admin)/actions.index'
@@ -147,6 +148,11 @@ const adminChatLogsRoute = adminChatLogsRouteImport.update({
   path: '/chat-logs',
   getParentRoute: () => adminRouteRoute,
 } as any)
+const adminAnimationRoute = adminAnimationRouteImport.update({
+  id: '/animation',
+  path: '/animation',
+  getParentRoute: () => adminRouteRoute,
+} as any)
 const adminAnalyticsRoute = adminAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -182,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/widget': typeof WidgetRoute
   '/actions': typeof adminActionsRouteWithChildren
   '/analytics': typeof adminAnalyticsRoute
+  '/animation': typeof adminAnimationRoute
   '/chat-logs': typeof adminChatLogsRoute
   '/data-sources': typeof adminDataSourcesRoute
   '/files': typeof adminFilesRoute
@@ -209,6 +216,7 @@ export interface FileRoutesByTo {
   '/success': typeof SuccessRoute
   '/widget': typeof WidgetRoute
   '/analytics': typeof adminAnalyticsRoute
+  '/animation': typeof adminAnimationRoute
   '/chat-logs': typeof adminChatLogsRoute
   '/data-sources': typeof adminDataSourcesRoute
   '/files': typeof adminFilesRoute
@@ -239,6 +247,7 @@ export interface FileRoutesById {
   '/widget': typeof WidgetRoute
   '/(admin)/actions': typeof adminActionsRouteWithChildren
   '/(admin)/analytics': typeof adminAnalyticsRoute
+  '/(admin)/animation': typeof adminAnimationRoute
   '/(admin)/chat-logs': typeof adminChatLogsRoute
   '/(admin)/data-sources': typeof adminDataSourcesRoute
   '/(admin)/files': typeof adminFilesRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/widget'
     | '/actions'
     | '/analytics'
+    | '/animation'
     | '/chat-logs'
     | '/data-sources'
     | '/files'
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/success'
     | '/widget'
     | '/analytics'
+    | '/animation'
     | '/chat-logs'
     | '/data-sources'
     | '/files'
@@ -325,6 +336,7 @@ export interface FileRouteTypes {
     | '/widget'
     | '/(admin)/actions'
     | '/(admin)/analytics'
+    | '/(admin)/animation'
     | '/(admin)/chat-logs'
     | '/(admin)/data-sources'
     | '/(admin)/files'
@@ -518,6 +530,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof adminChatLogsRouteImport
       parentRoute: typeof adminRouteRoute
     }
+    '/(admin)/animation': {
+      id: '/(admin)/animation'
+      path: '/animation'
+      fullPath: '/animation'
+      preLoaderRoute: typeof adminAnimationRouteImport
+      parentRoute: typeof adminRouteRoute
+    }
     '/(admin)/analytics': {
       id: '/(admin)/analytics'
       path: '/analytics'
@@ -575,6 +594,7 @@ const adminActionsRouteWithChildren = adminActionsRoute._addFileChildren(
 interface adminRouteRouteChildren {
   adminActionsRoute: typeof adminActionsRouteWithChildren
   adminAnalyticsRoute: typeof adminAnalyticsRoute
+  adminAnimationRoute: typeof adminAnimationRoute
   adminChatLogsRoute: typeof adminChatLogsRoute
   adminDataSourcesRoute: typeof adminDataSourcesRoute
   adminFilesRoute: typeof adminFilesRoute
@@ -589,6 +609,7 @@ interface adminRouteRouteChildren {
 const adminRouteRouteChildren: adminRouteRouteChildren = {
   adminActionsRoute: adminActionsRouteWithChildren,
   adminAnalyticsRoute: adminAnalyticsRoute,
+  adminAnimationRoute: adminAnimationRoute,
   adminChatLogsRoute: adminChatLogsRoute,
   adminDataSourcesRoute: adminDataSourcesRoute,
   adminFilesRoute: adminFilesRoute,
