@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { type ReactNode, useState, useEffect } from "react";
+import { type ReactNode, useState } from "react";
 
 type Tab = {
   id: string;
@@ -14,28 +14,13 @@ type TabsProps = {
 
 export function Tabs({ tabs, children }: TabsProps) {
   const [activeTab, setActiveTab] = useState<number>(0);
-  const [isPaused, setIsPaused] = useState(false);
-
-  useEffect(() => {
-    if (isPaused) return;
-
-    const timer = setInterval(() => {
-      setActiveTab((prev) => (prev + 1) % tabs.length);
-    }, 5000);
-
-    return () => clearInterval(timer);
-  }, [isPaused, tabs.length]);
 
   const toggleTab = (index: number) => {
     setActiveTab(index);
   };
 
   return (
-    <div
-      className="w-full border-t border-stone-200"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
+    <div className="w-full border-t border-stone-200">
       <div className="hidden w-full md:flex" role="tablist">
         {tabs.map((tab, index) => {
           const isActive = activeTab === index;
@@ -63,19 +48,12 @@ export function Tabs({ tabs, children }: TabsProps) {
                 {tab.label}
               </span>
 
-              {isActive ? (
+              {isActive && (
                 <motion.div
-                  key={`progress-${index}`}
-                  className="bg-primary absolute bottom-0 left-0 h-0.5 w-full origin-left"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: isPaused ? 0 : 1 }}
-                  transition={{
-                    duration: isPaused ? 0 : 5,
-                    ease: "linear",
-                  }}
+                  className="bg-primary absolute bottom-0 left-0 h-0.5 w-full"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 />
-              ) : (
-                <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-stone-200" />
               )}
             </button>
           );

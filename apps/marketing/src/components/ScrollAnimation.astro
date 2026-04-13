@@ -1,5 +1,7 @@
 ---
+import { Image } from "astro:assets";
 import { ScrollText } from "./ScrollText";
+import sheriff from "@/assets/sheriff.jpg";
 ---
 
 <div class="relative w-full">
@@ -32,4 +34,22 @@ import { ScrollText } from "./ScrollText";
     </svg>
   </div>
   <ScrollText client:load />
+  <div class="sticky bottom-20 flex justify-center py-12">
+    <div class="flex flex-col items-center gap-3">
+      <Image
+        src={sheriff}
+        loading="lazy"
+        alt="Sherif Adedokun"
+        class="h-12 w-12 rounded-full border border-stone-200"
+      />
+      <div class="text-center">
+        <p class="font-display text-xl font-medium text-stone-900">
+          Sherif Adedokun
+        </p>
+        <p class="font-mono text-xs tracking-wider text-stone-500 uppercase">
+          Founder at Pushbio Inc
+        </p>
+      </div>
+    </div>
+  </div>
 </div>

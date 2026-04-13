@@ -16,7 +16,7 @@ export function ScrollText() {
   return (
     <div ref={containerRef} className="relative h-[150vh] w-full">
       <div className="sticky top-(--site-header-height) flex h-[calc(100vh-var(--site-header-height))] items-center justify-center px-6">
-        <p className="font-display lg:text-heading-lg max-w-[18em] text-center text-[55px] leading-tight tracking-tight">
+        <p className="font-display lg:text-heading-lg max-w-[18em] text-center text-[35px] leading-tight tracking-tight sm:text-[55px]">
           {words.map((word, i) => {
             const start = i / words.length;
             const end = (i + 1) / words.length;
@@ -46,13 +46,15 @@ function Word({
   const color = useTransform(progress, range, ["#CAD0D9", "#1C1D1F"]);
 
   return (
-    <span className="relative mr-1.5 inline-block">
-      <motion.span
-        style={{ opacity, color }}
-        className="transition-colors duration-100"
-      >
-        {children}
-      </motion.span>
-    </span>
+    <>
+      <span className="relative mr-1.5 inline-block">
+        <motion.span
+          style={{ opacity, color }}
+          className="transition-colors duration-100"
+        >
+          {children}
+        </motion.span>
+      </span>
+    </>
   );
 }
