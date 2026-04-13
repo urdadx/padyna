@@ -6,6 +6,10 @@ import { chatbot, organization } from "@padyna/db/schema/index";
 import { setActiveSessionContext } from "@padyna/db/set-active-session-context";
 import { createOrganizationNotification } from "@padyna/db/notifications";
 import { nanoid } from "nanoid";
+import {
+  organizationHasBrandingAddon,
+  resolveHidePoweredBy,
+} from "../lib/subscription-entitlements";
 
 export const agentsettingsRouter = router({
   getAllChatbots: protectedProcedure.query(async ({ ctx }) => {
@@ -45,7 +49,16 @@ export const agentsettingsRouter = router({
         throw new Error("Chatbot not found");
       }
 
-      return result;
+      const canHidePoweredBy = await organizationHasBrandingAddon(organizationId);
+
+      return {
+        ...result,
+        hidePoweredBy: resolveHidePoweredBy({
+          hasBrandingAddon: canHidePoweredBy,
+          hidePoweredBy: result.hidePoweredBy,
+        }),
+        canHidePoweredBy,
+      };
     }),
 
   createChatbot: protectedProcedure
@@ -73,6 +86,13 @@ export const agentsettingsRouter = router({
 
       if (!org) {
         throw new Error("Organization not found");
+      }
+
+      if (input.hidePoweredBy === true) {
+        const canHidePoweredBy = await organizationHasBrandingAddon(organizationId);
+        if (!canHidePoweredBy) {
+          throw new Error("The Remove Padyna branding add-on is required to hide Padyna branding.");
+        }
       }
 
       const [chatbotCountResult] = await db
@@ -156,6 +176,13 @@ export const agentsettingsRouter = router({
       const record = existing[0];
       if (!record || record.organizationId !== organizationId) {
         throw new Error("Chatbot not found");
+      }
+
+      if (input.hidePoweredBy === true) {
+        const canHidePoweredBy = await organizationHasBrandingAddon(organizationId);
+        if (!canHidePoweredBy) {
+          throw new Error("The Remove Padyna branding add-on is required to hide Padyna branding.");
+        }
       }
 
       const [updated] = await db

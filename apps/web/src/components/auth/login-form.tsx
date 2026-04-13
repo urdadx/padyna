@@ -1,6 +1,7 @@
 import { useNavigate, Link, useSearch } from "@tanstack/react-router";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Badge } from "../ui/badge";
 import {
 	Field,
 	FieldDescription,
@@ -26,6 +27,8 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
 	const { invitationId } = useSearch({
 		from: "/login",
 	});
+
+	const lastMethod = authClient.getLastUsedLoginMethod();
 
 	const form = useForm({
 		defaultValues: {
@@ -171,16 +174,35 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
 										"Sign in"
 									)}
 								</Button>
+								{lastMethod === "email" && (
+									<Badge
+										variant="secondary"
+										className="absolute -top-3 -right-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm">
+										Last used
+									</Badge>
+								)}
 							</motion.div>
 						)}
 					</form.Subscribe>
 				</Field>
 				<FieldSeparator>Or continue with</FieldSeparator>
 				<Field>
-					<Button variant="outline" type="button">
-						<GoogleSVG />
-						Sign in with Google
-					</Button>
+					<motion.div
+						whileHover={{ scale: 1.02 }}
+						whileTap={{ scale: 0.98 }}
+						className="relative w-full">
+						<Button variant="outline" type="button" className="w-full">
+							<GoogleSVG />
+							Sign in with Google
+						</Button>
+						{lastMethod === "google" && (
+							<Badge
+								variant="secondary"
+								className="absolute -top-3 -right-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm">
+								Last used
+							</Badge>
+						)}
+					</motion.div>
 					<FieldDescription className="px-6 text-center">
 						Don't have an account?{" "}
 						<Link

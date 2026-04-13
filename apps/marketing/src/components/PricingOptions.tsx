@@ -59,7 +59,7 @@ const plans: Plan[] = [
   {
     id: 3,
     name: "Professional",
-    tagline: "For scaling businesses and agencies",
+    tagline: "For scaling businesses and support agencies",
     monthlyPrice: 399,
     yearlyPrice: 329,
     features: [

@@ -16,6 +16,10 @@ import {
 import { initializeLiveChatConversation } from "../chat/live-chat-service";
 import { broadcastConversationStatusUpdate } from "../chat/live-chat-service";
 import { createRateLimitMiddleware, getClientIp } from "../lib/ratelimiter";
+import {
+  organizationHasBrandingAddon,
+  resolveHidePoweredBy,
+} from "@padyna/api/lib/subscription-entitlements";
 
 function getLiveChatToken(metadata: Record<string, unknown> | null | undefined): string | null {
   if (!metadata) {
@@ -69,13 +73,16 @@ const widgetChatRateLimitMiddleware = createRateLimitMiddleware({
   },
 });
 
-function buildWidgetConfig(chatbotRecord: PublicWidgetChatbot) {
+function buildWidgetConfig(chatbotRecord: PublicWidgetChatbot, hasBrandingAddon: boolean) {
   return {
     id: chatbotRecord.id,
     name: chatbotRecord.name,
     image: chatbotRecord.image,
     primaryColor: chatbotRecord.primaryColor,
-    hidePoweredBy: chatbotRecord.hidePoweredBy,
+    hidePoweredBy: resolveHidePoweredBy({
+      hasBrandingAddon,
+      hidePoweredBy: chatbotRecord.hidePoweredBy,
+    }),
     suggestedMessages: chatbotRecord.suggestedMessages ?? [],
     initialMessage: chatbotRecord.initialMessage,
     isEnabled: chatbotRecord.isEnabled,
@@ -171,7 +178,14 @@ async function getWidgetChatbot(widgetId: string) {
 async function resolveWidgetRequest(
   c: any,
   options: { requireEnabled?: boolean } = {},
-): Promise<{ chatbotRecord: PublicWidgetChatbot; requestOrigin: string | null } | Response> {
+): Promise<
+  | {
+      chatbotRecord: PublicWidgetChatbot;
+      requestOrigin: string | null;
+      hasBrandingAddon: boolean;
+    }
+  | Response
+> {
   const widgetId = c.req.param("widgetId");
   const chatbotRecord = await getWidgetChatbot(widgetId);
 
@@ -188,7 +202,9 @@ async function resolveWidgetRequest(
     return c.json({ message: "Domain not allowed" }, 403);
   }
 
-  return { chatbotRecord, requestOrigin };
+  const hasBrandingAddon = await organizationHasBrandingAddon(chatbotRecord.organizationId);
+
+  return { chatbotRecord, requestOrigin, hasBrandingAddon };
 }
 
 widgetRoutes.get("/:widgetId/config", async (c) => {
@@ -197,9 +213,9 @@ widgetRoutes.get("/:widgetId/config", async (c) => {
     return resolved;
   }
 
-  const { chatbotRecord } = resolved;
+  const { chatbotRecord, hasBrandingAddon } = resolved;
 
-  return c.json(buildWidgetConfig(chatbotRecord));
+  return c.json(buildWidgetConfig(chatbotRecord, hasBrandingAddon));
 });
 
 widgetRoutes.post("/:widgetId/init", async (c) => {
@@ -208,7 +224,7 @@ widgetRoutes.post("/:widgetId/init", async (c) => {
     return resolved;
   }
 
-  const { chatbotRecord } = resolved;
+  const { chatbotRecord, hasBrandingAddon } = resolved;
 
   const { conversationId } = await c.req.json();
 
@@ -247,7 +263,7 @@ widgetRoutes.post("/:widgetId/init", async (c) => {
   }
 
   return c.json({
-    config: buildWidgetConfig(chatbotRecord),
+    config: buildWidgetConfig(chatbotRecord, hasBrandingAddon),
     messages,
     conversationStatus,
     liveChatToken,
