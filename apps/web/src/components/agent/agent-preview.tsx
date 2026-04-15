@@ -10,8 +10,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { PlaneBold } from "@/assets/icons/plane-icon";
 import { AgentHeader } from "./agent-header";
-import { useRouteContext } from "@tanstack/react-router";
-
+import { useSession } from "@/lib/auth-client";
 import { useChat, Provider } from "@padyna/store";
 import { env } from "@padyna/env/web";
 import { queryClient, trpc } from "@/utils/trpc";
@@ -35,7 +34,7 @@ function AgentPreviewPanelContent() {
 
 	const [input, setInput] = useState("");
 	const [chatId, setChatId] = useState(() => generateUUID());
-	const { session } = useRouteContext({ from: "/(admin)" });
+	const { data: session } = useSession();
 	const chatbotId = session?.session.activeChatbot;
 
 	const {

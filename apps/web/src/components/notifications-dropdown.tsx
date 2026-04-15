@@ -28,7 +28,7 @@ export function NotificationsDropdown() {
 
 	const { data: notificationsData } = useQuery(
 		trpc.notifications.list.queryOptions({
-			limit: 12,
+			limit: 100,
 		}),
 	);
 

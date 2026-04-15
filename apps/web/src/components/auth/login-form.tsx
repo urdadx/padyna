@@ -3,16 +3,16 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import {
-	Field,
-	FieldDescription,
-	FieldError,
-	FieldGroup,
-	FieldLabel,
-	FieldSeparator,
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldSeparator,
 } from "../ui/field";
 import { GoogleSVG } from "../google-svg";
 import { cn } from "@/lib/utils";
-import { authClient } from "@/lib/auth-client";
+import { authClient, useSession } from "@/lib/auth-client";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -20,200 +20,251 @@ import { motion } from "motion/react";
 import Spinner from "../ui/spinner";
 import { queryClient, trpc } from "@/utils/trpc";
 import { env } from "@padyna/env/web";
+import { useEffect, useRef, useState } from "react";
 
 export default function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
-	const navigate = useNavigate();
+  const navigate = useNavigate();
+  const { data: session } = useSession();
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+  const hasHandledInvitationRef = useRef(false);
 
-	const { invitationId } = useSearch({
-		from: "/login",
-	});
+  const { invitationId } = useSearch({
+    from: "/login",
+  });
 
-	const lastMethod = authClient.getLastUsedLoginMethod();
+  const lastMethod = authClient.getLastUsedLoginMethod();
+  const invitationCallbackURL = invitationId
+    ? `${env.VITE_FRONTEND_ORIGIN}/login?invitationId=${encodeURIComponent(invitationId)}`
+    : undefined;
 
-	const form = useForm({
-		defaultValues: {
-			email: "",
-			password: "",
-		},
-		onSubmit: async ({ value }) => {
-			await authClient.signIn.email(
-				{
-					email: value.email,
-					password: value.password,
-				},
-				{
-					onSuccess: async () => {
-						if (invitationId) {
-							try {
-								const response = await fetch(
-									`${env.VITE_SERVER_URL}/api/accept-invitation/${invitationId}`,
-									{
-										method: "POST",
-										credentials: "include",
-									},
-								);
-								if (response.ok) {
-									await queryClient.invalidateQueries(
-										trpc.auth.getSession.queryOptions(),
-									);
-									window.location.href = `${env.VITE_FRONTEND_ORIGIN}/playground?invitation=accepted`;
-								} else {
-									const data = await response.json();
-									if (
-										data.code ===
-										"YOU_ARE_NOT_THE_RECIPIENT_OF_THE_INVITATION"
-									) {
-										toast.error(
-											"The invitation was sent to a different email address. Please use the invited email to sign in.",
-										);
-										return;
-									}
-									toast.error(
-										data.error ||
-											"Failed to accept invitation. Please try again.",
-									);
-								}
-							} catch {
-								toast.error(
-									"Failed to accept invitation. Please try again.",
-								);
-							}
-						} else {
-							await queryClient.invalidateQueries(
-								trpc.auth.getSession.queryOptions(),
-							);
+  useEffect(() => {
+    if (!session || !invitationId || hasHandledInvitationRef.current) {
+      return;
+    }
 
-							navigate({ to: "/playground" });
-							toast.success("Signed In");
-						}
-					},
-					onError: (error) => {
-						toast.error(error.error.message || error.error.statusText);
-					},
-				},
-			);
-		},
-		validators: {
-			onSubmit: z.object({
-				email: z.email("Invalid email address"),
-				password: z.string().min(8, "Password must be at least 8 characters"),
-			}),
-		},
-	});
+    hasHandledInvitationRef.current = true;
 
-	return (
-		<form
-			onSubmit={(e) => {
-				e.preventDefault();
-				e.stopPropagation();
-				form.handleSubmit();
-			}}
-			className={cn("flex flex-col gap-4", className)}
-			{...props}>
-			<FieldGroup className="">
-				<div className="flex flex-col items-center gap-1 text-center">
-					<h1 className="text-3xl font-semibold">Sign in to your account</h1>
-					<p className="text-sm text-balance text-muted-foreground">
-						Fill in the form below to sign in to your account
-					</p>
-				</div>
+    void (async () => {
+      try {
+        const response = await fetch(
+          `${env.VITE_SERVER_URL}/api/accept-invitation/${invitationId}`,
+          {
+            method: "POST",
+            credentials: "include",
+          },
+        );
 
-				<form.Field name="email">
-					{(field) => (
-						<Field>
-							<FieldLabel htmlFor={field.name}>Email</FieldLabel>
-							<Input
-								id={field.name}
-								name={field.name}
-								type="email"
-								placeholder="brett@example.com"
-								value={field.state.value}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-								required
-							/>
-							<FieldError>
-								{field.state.meta.errors.join(", ")}
-							</FieldError>
-						</Field>
-					)}
-				</form.Field>
+        if (response.ok) {
+          await queryClient.invalidateQueries(trpc.auth.getSession.queryOptions());
+          window.location.href = `${env.VITE_FRONTEND_ORIGIN}/playground?invitation=accepted`;
+          return;
+        }
 
-				<form.Field name="password">
-					{(field) => (
-						<Field>
-							<FieldLabel htmlFor={field.name}>Password</FieldLabel>
-							<Input
-								placeholder="********"
-								id={field.name}
-								name={field.name}
-								type="password"
-								value={field.state.value}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-								required
-							/>
-							<FieldError>
-								{field.state.meta.errors.join(", ")}
-							</FieldError>
-						</Field>
-					)}
-				</form.Field>
+        const data = await response.json();
+        if (data.code === "YOU_ARE_NOT_THE_RECIPIENT_OF_THE_INVITATION") {
+          toast.error(
+            "The invitation was sent to a different email address. Please use the invited email to sign in.",
+          );
+          return;
+        }
 
-				<Field>
-					<form.Subscribe>
-						{(state) => (
-							<motion.div
-								whileHover={{ scale: 1.02 }}
-								whileTap={{ scale: 0.98 }}
-								className="relative w-full">
-								<Button className="w-full" type="submit">
-									{state.isSubmitting ? (
-										<Spinner className="text-white" />
-									) : (
-										"Sign in"
-									)}
-								</Button>
-								{lastMethod === "email" && (
-									<Badge
-										variant="secondary"
-										className="absolute -top-3 -right-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm">
-										Last used
-									</Badge>
-								)}
-							</motion.div>
-						)}
-					</form.Subscribe>
-				</Field>
-				<FieldSeparator>Or continue with</FieldSeparator>
-				<Field>
-					<motion.div
-						whileHover={{ scale: 1.02 }}
-						whileTap={{ scale: 0.98 }}
-						className="relative w-full">
-						<Button variant="outline" type="button" className="w-full">
-							<GoogleSVG />
-							Sign in with Google
-						</Button>
-						{lastMethod === "google" && (
-							<Badge
-								variant="secondary"
-								className="absolute -top-3 -right-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm">
-								Last used
-							</Badge>
-						)}
-					</motion.div>
-					<FieldDescription className="px-6 text-center">
-						Don't have an account?{" "}
-						<Link
-							to="/register"
-							search={{ invitationId }}
-							className="text-primary underline-offset-4 hover:underline">
-							Create an account
-						</Link>
-					</FieldDescription>
-				</Field>
-			</FieldGroup>
-		</form>
-	);
+        toast.error(data.error || "Failed to accept invitation. Please try again.");
+      } catch {
+        toast.error("Failed to accept invitation. Please try again.");
+      }
+    })();
+  }, [invitationId, session]);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsGoogleSubmitting(true);
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: invitationCallbackURL ?? `${env.VITE_FRONTEND_ORIGIN}/playground`,
+        newUserCallbackURL: invitationCallbackURL ?? `${env.VITE_FRONTEND_ORIGIN}/onboarding`,
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to sign in with Google.");
+      setIsGoogleSubmitting(false);
+    }
+  };
+
+  const form = useForm({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+    onSubmit: async ({ value }) => {
+      await authClient.signIn.email(
+        {
+          email: value.email,
+          password: value.password,
+        },
+        {
+          onSuccess: async () => {
+            if (invitationId) {
+              try {
+                const response = await fetch(
+                  `${env.VITE_SERVER_URL}/api/accept-invitation/${invitationId}`,
+                  {
+                    method: "POST",
+                    credentials: "include",
+                  },
+                );
+                if (response.ok) {
+                  await queryClient.invalidateQueries(trpc.auth.getSession.queryOptions());
+                  window.location.href = `${env.VITE_FRONTEND_ORIGIN}/playground?invitation=accepted`;
+                } else {
+                  const data = await response.json();
+                  if (data.code === "YOU_ARE_NOT_THE_RECIPIENT_OF_THE_INVITATION") {
+                    toast.error(
+                      "The invitation was sent to a different email address. Please use the invited email to sign in.",
+                    );
+                    return;
+                  }
+                  toast.error(data.error || "Failed to accept invitation. Please try again.");
+                }
+              } catch {
+                toast.error("Failed to accept invitation. Please try again.");
+              }
+            } else {
+              await queryClient.invalidateQueries(trpc.auth.getSession.queryOptions());
+
+              navigate({ to: "/playground" });
+              toast.success("Signed In");
+            }
+          },
+          onError: (error) => {
+            toast.error(error.error.message || error.error.statusText);
+          },
+        },
+      );
+    },
+    validators: {
+      onSubmit: z.object({
+        email: z.email("Invalid email address"),
+        password: z.string().min(8, "Password must be at least 8 characters"),
+      }),
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+      }}
+      className={cn("flex flex-col gap-4", className)}
+      {...props}
+    >
+      <FieldGroup className="">
+        <div className="flex flex-col items-center gap-1 text-center">
+          <h1 className="text-3xl font-semibold">Sign in to your account</h1>
+          <p className="text-sm text-balance text-muted-foreground">
+            Fill in the form below to sign in to your account
+          </p>
+        </div>
+
+        <form.Field name="email">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="email"
+                placeholder="brett@example.com"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                required
+              />
+              <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+            </Field>
+          )}
+        </form.Field>
+
+        <form.Field name="password">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+              <Input
+                placeholder="********"
+                id={field.name}
+                name={field.name}
+                type="password"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                required
+              />
+              <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+            </Field>
+          )}
+        </form.Field>
+
+        <Field>
+          <form.Subscribe>
+            {(state) => (
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="relative w-full"
+              >
+                <Button className="w-full" type="submit">
+                  {state.isSubmitting ? <Spinner className="text-white" /> : "Sign in"}
+                </Button>
+                {lastMethod === "email" && (
+                  <Badge
+                    variant="secondary"
+                    className="absolute -top-3 -right-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm"
+                  >
+                    Last used
+                  </Badge>
+                )}
+              </motion.div>
+            )}
+          </form.Subscribe>
+        </Field>
+        <FieldSeparator>Or continue with</FieldSeparator>
+        <Field>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="relative w-full"
+          >
+            <Button
+              variant="outline"
+              type="button"
+              className="w-full"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleSubmitting}
+            >
+              <GoogleSVG />
+              {isGoogleSubmitting ? "Redirecting..." : "Sign in with Google"}
+            </Button>
+            {lastMethod === "google" && (
+              <Badge
+                variant="secondary"
+                className="absolute -top-3 -right-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm"
+              >
+                Last used
+              </Badge>
+            )}
+          </motion.div>
+          <FieldDescription className="px-6 text-center">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              search={{ invitationId }}
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              Create an account
+            </Link>
+          </FieldDescription>
+        </Field>
+      </FieldGroup>
+    </form>
+  );
 }

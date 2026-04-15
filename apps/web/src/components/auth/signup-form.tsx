@@ -20,13 +20,34 @@ import Spinner from "../ui/spinner";
 import { AlertCircleIcon } from "lucide-react";
 import { env } from "@padyna/env/web";
 import { queryClient, trpc } from "@/utils/trpc";
+import { useState } from "react";
 
 export function SignupForm({ className, ...props }: React.ComponentProps<"form">) {
   const navigate = useNavigate();
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   const { invitationId } = useSearch({
     from: "/register",
   });
+
+  const invitationCallbackURL = invitationId
+    ? `${env.VITE_FRONTEND_ORIGIN}/login?invitationId=${encodeURIComponent(invitationId)}`
+    : undefined;
+
+  const handleGoogleSignUp = async () => {
+    try {
+      setIsGoogleSubmitting(true);
+      await authClient.signIn.social({
+        provider: "google",
+        requestSignUp: true,
+        callbackURL: invitationCallbackURL ?? `${env.VITE_FRONTEND_ORIGIN}/playground`,
+        newUserCallbackURL: invitationCallbackURL ?? `${env.VITE_FRONTEND_ORIGIN}/onboarding`,
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to sign up with Google.");
+      setIsGoogleSubmitting(false);
+    }
+  };
 
   const form = useForm({
     defaultValues: {
@@ -199,9 +220,14 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"form">
         </Field>
         <FieldSeparator>Or continue with</FieldSeparator>
         <Field>
-          <Button variant="outline" type="button">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={handleGoogleSignUp}
+            disabled={isGoogleSubmitting}
+          >
             <GoogleSVG />
-            Sign up with Google
+            {isGoogleSubmitting ? "Redirecting..." : "Sign up with Google"}
           </Button>
           <FieldDescription className="px-6 text-center">
             Already have an account?{" "}

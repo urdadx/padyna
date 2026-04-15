@@ -13,7 +13,7 @@ export const notificationsRouter = router({
     .input(
       z
         .object({
-          limit: z.number().min(1).max(50).default(20),
+          limit: z.number().min(1).max(100).default(20),
           cursor: z.iso.datetime().optional(),
           unreadOnly: z.boolean().optional(),
         })
@@ -28,7 +28,7 @@ export const notificationsRouter = router({
       return getNotificationsForUser({
         userId: ctx.session.user.id,
         organizationId,
-        limit: input?.limit ?? 20,
+        limit: input?.limit ?? 100,
         cursor: input?.cursor,
         unreadOnly: input?.unreadOnly,
       });

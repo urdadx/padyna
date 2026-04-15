@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -14,17 +14,14 @@ const numberFormatter = new Intl.NumberFormat("en-US");
 export function PlanUsage() {
 	const isMobile = useIsMobile();
 
-	const { data: orgLimits } = useSuspenseQuery(
-		trpc.subscription.getOrganizationLimits.queryOptions(),
-	);
-
-	const { data: customerState } = useSuspenseQuery(
-		trpc.subscription.getCustomerState.queryOptions(),
-	);
-
-	const { data: totalDatasourceSize = 0 } = useSuspenseQuery(
-		trpc.datasource.getTotalSize.queryOptions(),
-	);
+	const [{ data: orgLimits }, { data: customerState }, { data: totalDatasourceSize = 0 }] =
+		useSuspenseQueries({
+			queries: [
+				trpc.subscription.getOrganizationLimits.queryOptions(),
+				trpc.subscription.getCustomerState.queryOptions(),
+				trpc.datasource.getTotalSize.queryOptions(),
+			],
+		});
 
 	const activeSubscription = customerState?.activeSubscriptions?.[0];
 	const planName = activeSubscription

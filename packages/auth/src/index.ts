@@ -18,11 +18,68 @@ import { OrganizationInvitationEmail } from "@padyna/email-templates";
 
 const resend = new Resend(env.RESEND_API_KEY!);
 
+async function ensurePolarCustomerExternalId({
+  userId,
+  email,
+  name,
+}: {
+  userId: string;
+  email?: string | null;
+  name?: string | null;
+}) {
+  if (!email) {
+    return null;
+  }
+
+  try {
+    await polarClient.customers.getExternal({
+      externalId: userId,
+    });
+
+    return userId;
+  } catch {
+    const { result: existingCustomers } = await polarClient.customers.list({
+      email,
+    });
+
+    let customer = existingCustomers.items[0];
+
+    if (!customer) {
+      customer = await polarClient.customers.create({
+        email,
+        name: name ?? undefined,
+      });
+    }
+
+    if (customer.externalId !== userId) {
+      await polarClient.customers.update({
+        id: customer.id,
+        customerUpdate: {
+          externalId: userId,
+        },
+      });
+    }
+
+    return userId;
+  }
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: schema,
   }),
+  socialProviders: {
+    ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+            prompt: "select_account",
+          },
+        }
+      : {}),
+  },
 
   user: {
     additionalFields: {
@@ -130,14 +187,16 @@ export const auth = betterAuth({
             const activeChatbotId = createdChatbot?.id || null;
 
             try {
-              const customer = await polarClient.customers.getExternal({
-                externalId: user.id,
+              const externalCustomerId = await ensurePolarCustomerExternalId({
+                userId: user.id,
+                email: user.email,
+                name: user.name,
               });
 
-              if (customer) {
+              if (externalCustomerId) {
                 await db
                   .update(schema.organization)
-                  .set({ externalCustomerId: user.id })
+                  .set({ externalCustomerId })
                   .where(eq(schema.organization.id, organization.id));
               }
             } catch (error) {
