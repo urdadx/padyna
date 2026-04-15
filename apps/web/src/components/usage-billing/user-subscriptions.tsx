@@ -73,7 +73,7 @@ export function UserSubscriptions() {
 											"border-b border-border/50",
 									)}>
 									<div className="flex items-center justify-between w-full sm:contents text-sm text-muted-foreground">
-										<div className="flex items-center gap-2 max-w-[200px] truncate">
+										<div className="flex items-center gap-2 max-w-50 truncate">
 											<CuteIconWrapper
 												color="green"
 												icon={WalletLinear}
@@ -94,7 +94,7 @@ export function UserSubscriptions() {
 										</div>
 
 										{isMobile && (
-											<div className="flex items-center gap-2 capitalize">
+											<div className="flex justify-center items-center gap-2 capitalize">
 												<div
 													className={cn(
 														"rounded-full w-2 h-2 shrink-0",
@@ -110,7 +110,7 @@ export function UserSubscriptions() {
 																	: "bg-green-800",
 													)}
 												/>
-												<span className="text-xs">
+												<span className="text-xs text-center">
 													{sub.status}
 												</span>
 											</div>
@@ -162,11 +162,10 @@ export function UserSubscriptions() {
 										</div>
 
 										<Popover>
-											<PopoverTrigger asChild>
+											<PopoverTrigger>
 												{!isAdmin ? (
 													<Tooltip>
-														<TooltipTrigger
-															asChild>
+														<TooltipTrigger>
 															<Button
 																variant="outline"
 																size="icon"
