@@ -59,7 +59,7 @@ export const TelegramInstructions = ({ chatbot, onClose }: TelegramInstructionsP
 								<Button
 									size="icon"
 									variant="outline"
-									className="text-gray-400 hover:text-gray-500 rounded-full"
+									className="text-gray-400 hidden sm:flex hover:text-gray-500 rounded-full"
 									onClick={onClose}>
 									<XIcon />
 								</Button>

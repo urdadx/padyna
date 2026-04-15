@@ -12,6 +12,8 @@ import { MobilePhoneLinear } from "@/assets/icons/mobilephone-icon";
 import { LocationLinear } from "@/assets/icons/location-icon";
 import { SolarBoxMinimalisticLinear } from "@/assets/icons/box-icon";
 import { Badge } from "../ui/badge";
+import { XIcon } from "lucide-react";
+import { Button } from "../ui/button";
 
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 type ConversationDetails = RouterOutputs["conversations"]["getById"];
@@ -86,16 +88,25 @@ export const ChatDetails = ({
 			direction={isMobile ? "bottom" : "right"}>
 			<DrawerContent
 				className={cn(
-					"bg-background rounded-none fixed outline-none max-w-107.5! flex",
+					"bg-background rounded-none! h-[90vh] sm:h-full fixed outline-none max-w-107.5! flex",
 				)}>
-				<DrawerHeader className="pb-2 text-left ">
-					<DrawerTitle className="text-xl font-semibold">
-						Chat details
-					</DrawerTitle>
-					<DrawerDescription>
-						View detailed information about this conversation
-					</DrawerDescription>
-				</DrawerHeader>
+				<div className="flex items-center justify-between p-4">
+					<DrawerHeader className="p-0 text-left! ">
+						<DrawerTitle className="text-xl font-semibold">
+							Chat details
+						</DrawerTitle>
+						<DrawerDescription>
+							View detailed information about this conversation
+						</DrawerDescription>
+					</DrawerHeader>
+					<Button
+						onClick={() => onOpenChange(false)}
+						size="icon"
+						className="rounded-full hidden sm:flex"
+						variant="outline">
+						<XIcon />
+					</Button>
+				</div>
 
 				{conversation ? (
 					<div className="flex-1 space-y-6 smooth-div px-4 pt-6">

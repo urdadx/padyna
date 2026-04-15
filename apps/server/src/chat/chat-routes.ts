@@ -1,7 +1,8 @@
 import {
-  createAgentUIStreamResponse,
   createUIMessageStream,
   createUIMessageStreamResponse,
+  convertToModelMessages,
+  validateUIMessages,
 } from "ai";
 import { Hono } from "hono";
 import { authMiddleware } from "../middlewares/auth-middleware";
@@ -12,10 +13,11 @@ import {
   persistConversationMessages,
 } from "./chat-utils";
 import { db } from "@padyna/db";
-import { chatbot } from "@padyna/db/schema/index";
+import { chatbot, organization } from "@padyna/db/schema/index";
 import { eq, and } from "drizzle-orm";
 import { broadcastConversationStatusUpdate } from "./live-chat-service";
 import { createRateLimitMiddleware } from "../lib/ratelimiter";
+import { polarClient } from "@padyna/auth/lib/payments";
 
 type Variables = {
   user: any;
@@ -26,6 +28,7 @@ export const chatRoutes = new Hono<{ Variables: Variables }>();
 
 const AUTH_CHAT_RATE_LIMIT_MAX_REQUESTS = 30;
 const AUTH_CHAT_RATE_LIMIT_WINDOW_SECONDS = 60;
+
 const authChatRateLimitMiddleware = createRateLimitMiddleware({
   namespace: "chat-auth-generation",
   maxRequests: AUTH_CHAT_RATE_LIMIT_MAX_REQUESTS,
@@ -74,8 +77,16 @@ chatRoutes.post("/", authChatRateLimitMiddleware, async (c) => {
     return c.json({ message: "Chatbot not found" }, 404);
   }
 
+  const [organizationData] = await db
+    .select({ externalCustomerId: organization.externalCustomerId })
+    .from(organization)
+    .where(eq(organization.id, activeOrganization))
+    .limit(1);
+
   const chatbotName = chatbotData.name || "AI Assistant";
   const chatbotUseCase = chatbotData.usecase || "support";
+  const externalCustomerId = organizationData?.externalCustomerId;
+
   const body = await c.req.json();
   const uiMessages = body.messages;
   const conversationId = body.conversationId;
@@ -131,10 +142,42 @@ chatRoutes.post("/", authChatRateLimitMiddleware, async (c) => {
     userId,
   });
 
-  return createAgentUIStreamResponse({
-    agent,
-    uiMessages,
-    originalMessages: uiMessages,
+  const agentTools = agent.tools as Record<string, any>;
+
+  const validatedMessages = await validateUIMessages({
+    messages: uiMessages,
+    tools: agentTools,
+  });
+
+  const modelMessages = await convertToModelMessages(validatedMessages, {
+    tools: agentTools,
+  });
+
+  const result = await agent.stream({
+    messages: modelMessages,
+    onFinish: async ({ totalUsage }) => {
+      if (!externalCustomerId) {
+        return;
+      }
+
+      await polarClient.events.ingest({
+        events: [
+          {
+            name: "llm_usage",
+            externalCustomerId,
+            metadata: {
+              totalTokens: totalUsage.totalTokens ?? 0,
+              promptTokens: totalUsage.inputTokens ?? 0,
+              completionTokens: totalUsage.outputTokens ?? 0,
+            },
+          },
+        ],
+      });
+    },
+  });
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: validatedMessages,
     onFinish: async ({ messages }) => {
       await persistConversationMessages({
         chatbotId: activeChatbot,

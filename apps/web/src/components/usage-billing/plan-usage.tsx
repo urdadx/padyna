@@ -35,12 +35,14 @@ export function PlanUsage() {
 		(meter) => (meter?.creditedUnits ?? 0) > 0,
 	);
 	const messageCreditsUsed = messageMeter?.consumedUnits ?? 0;
-	const messageCreditsFromMeter = messageMeter?.creditedUnits ?? 0;
+	const totalMessageCredits = messageMeter?.creditedUnits ?? 0;
+
+	console.log("message meter", messageMeter);
 
 	const usageLimits = [
 		{
 			label: "Message credits",
-			max: messageCreditsFromMeter || 2000,
+			max: totalMessageCredits || 2000,
 			used: messageCreditsUsed,
 			format: (n: number) => numberFormatter.format(n),
 		},
