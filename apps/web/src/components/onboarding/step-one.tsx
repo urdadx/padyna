@@ -117,6 +117,8 @@ export const StepOne = ({ onContinue }: { onContinue: () => void }) => {
           organizationSlug: orgData.slug,
         });
 
+        await queryClient.invalidateQueries(trpc.auth.getSession.queryOptions());
+
         if (websiteDomain) {
           const rawUrl = value.websiteUrl.trim();
           const fullUrl = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
