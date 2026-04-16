@@ -1,8 +1,8 @@
 import { access } from "node:fs/promises";
 import path from "node:path";
-import { getPgPool } from "@padyna/db";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { Pool } from "pg";
 
 async function resolveMigrationsFolder() {
   const candidates = [
@@ -22,7 +22,13 @@ async function resolveMigrationsFolder() {
   throw new Error("Could not find the database migrations folder.");
 }
 
-const pool = getPgPool();
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required to run database migrations.");
+}
+
+const pool = new Pool({ connectionString: databaseUrl });
 
 try {
   const migrationsFolder = await resolveMigrationsFolder();
