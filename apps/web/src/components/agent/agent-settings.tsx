@@ -27,7 +27,7 @@ export const AGENT_USECASES = [
 	{ label: "Customer Support", value: "support" },
 	{ label: "Technical Copilot", value: "technical" },
 	{ label: "Sales Representative", value: "sales" },
-];
+] as const;
 
 type Usecase = (typeof AGENT_USECASES)[number]["value"];
 

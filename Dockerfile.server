@@ -20,4 +20,4 @@ COPY --from=builder /prod/server ./
 
 EXPOSE 3000
 
-CMD ["bun", "run", "start"]
+CMD ["bun", "run", "src/index.ts"]
