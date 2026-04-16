@@ -1,13 +1,12 @@
 #!/bin/sh
 set -eu
 
-echo "Running database setup..."
+echo "Running database setup and migrations..."
 
 attempt=1
 max_attempts=20
 
-# Run setup to create extensions
-until bun run src/setup.ts; do
+until sh -eu -c 'cd /app/apps/server && bun run src/setup.ts && cd /app/packages/db && bun run db:migrate'; do
   if [ "$attempt" -ge "$max_attempts" ]; then
     echo "Database setup failed after $max_attempts attempts."
     exit 1
@@ -18,11 +17,6 @@ until bun run src/setup.ts; do
   sleep 3
 done
 
-echo "Pushing database schema..."
-# We run db:push where the schema rules and configuration reside.
-cd node_modules/@padyna/db
-bun run db:push --force
-cd -
-
 echo "Starting server..."
-exec bun run src/index.ts
+cd /app/apps/server
+exec bun run dist/index.mjs
