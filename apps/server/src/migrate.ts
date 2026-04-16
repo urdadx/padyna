@@ -40,6 +40,11 @@ try {
   await pool.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
 
   await migrate(db, { migrationsFolder });
+
+  // Older databases may predate this column even though current auth code
+  // expects it on every user lookup.
+  await pool.query(`ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "role" text DEFAULT 'admin' NOT NULL`);
+
   console.log(`Database migrations completed from ${migrationsFolder}`);
 } finally {
   await pool.end();
