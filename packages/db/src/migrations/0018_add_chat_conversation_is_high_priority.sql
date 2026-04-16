@@ -1,0 +1,1 @@
+ALTER TABLE "chat_conversation" ADD COLUMN "is_high_priority" boolean DEFAULT false NOT NULL;

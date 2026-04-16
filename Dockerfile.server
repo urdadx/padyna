@@ -4,11 +4,12 @@ WORKDIR /app
 
 RUN corepack enable
 
-COPY . .
+COPY package.json pnpm-lock.yaml ./
+COPY packages packages
+COPY apps apps
 
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter server build
-RUN pnpm --filter server deploy --legacy --prod /prod/server
 
 FROM oven/bun:1 AS runner
 
@@ -16,8 +17,14 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY --from=builder /prod/server ./
+COPY package.json pnpm-lock.yaml ./
+COPY packages packages
+COPY apps apps
 COPY docker/server/start.sh ./start.sh
+
+RUN corepack enable && pnpm install --frozen-lockfile
+
+COPY --from=builder /app/apps/server/dist ./apps/server/dist
 
 RUN chmod +x ./start.sh
 
