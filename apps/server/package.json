@@ -41,6 +41,7 @@
   "devDependencies": {
     "@padyna/config": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/pg": "^8.15.5",
     "@types/uuid": "^11.0.0",
     "tsdown": "^0.16.5",
     "typescript": "catalog:"

@@ -34,6 +34,11 @@ try {
   const migrationsFolder = await resolveMigrationsFolder();
   const db = drizzle(pool);
 
+  // Fresh deployments need extensions available before migrations create
+  // tables that depend on them.
+  await pool.query(`CREATE EXTENSION IF NOT EXISTS vector`);
+  await pool.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
+
   await migrate(db, { migrationsFolder });
   console.log(`Database migrations completed from ${migrationsFolder}`);
 } finally {
