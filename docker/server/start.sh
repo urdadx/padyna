@@ -19,9 +19,9 @@ until bun run src/setup.ts; do
 done
 
 echo "Pushing database schema..."
-# We run drizzle-kit push where the schema rules and configuration reside
+# We run db:push where the schema rules and configuration reside.
 cd node_modules/@padyna/db
-bunx --bun drizzle-kit push --force
+bun run db:push --force
 cd -
 
 echo "Starting server..."
