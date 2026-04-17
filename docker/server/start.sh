@@ -17,7 +17,7 @@ done
 echo "--- 2. Syncing Schema with Drizzle ---"
 echo "--- 2. Syncing Schema with Drizzle ---"
 cd /app/packages/db
-bun run db:push
+bun run drizzle-kit migrate --config=drizzle.config.ts
 
 echo "--- 3. Starting Production Server ---"
 cd /app/apps/server
