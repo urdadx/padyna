@@ -15,9 +15,9 @@ until bun run /app/apps/server/src/setup.ts; do
 done
 
 echo "--- 2. Syncing Schema with Drizzle ---"
-# Navigate to the DB package where drizzle-kit is configured
+echo "--- 2. Syncing Schema with Drizzle ---"
 cd /app/packages/db
-bun run db:push --force
+bun run db:push
 
 echo "--- 3. Starting Production Server ---"
 cd /app/apps/server
