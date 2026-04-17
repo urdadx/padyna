@@ -1,22 +1,24 @@
 #!/bin/sh
-set -eu
+set -e
 
-echo "Running database setup and schema sync..."
-
+echo "--- 1. Waiting for Database Connection ---"
+# We use a simple ping to the setup script to see if the DB is awake
 attempt=1
-max_attempts=20
-
-until sh -eu -c 'cd /app/apps/server && bun run src/setup.ts && cd /app/packages/db && bun run db:push --force && cd /app/apps/server && bun run src/ensure-chat-conversation-schema.ts'; do
-  if [ "$attempt" -ge "$max_attempts" ]; then
-    echo "Database setup failed after $max_attempts attempts."
+until bun run /app/apps/server/src/setup.ts; do
+  echo "Database not ready yet (Attempt $attempt)... retrying in 2s"
+  sleep 2
+  attempt=$((attempt + 1))
+  if [ $attempt -gt 30 ]; then
+    echo "Error: Database timed out."
     exit 1
   fi
-
-  echo "Setup attempt $attempt failed. Waiting for database..."
-  attempt=$((attempt + 1))
-  sleep 3
 done
 
-echo "Starting server..."
+echo "--- 2. Syncing Schema with Drizzle ---"
+# Navigate to the DB package where drizzle-kit is configured
+cd /app/packages/db
+bun run db:push --force
+
+echo "--- 3. Starting Production Server ---"
 cd /app/apps/server
 exec bun run dist/index.mjs
