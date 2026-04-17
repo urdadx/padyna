@@ -6,7 +6,7 @@ echo "Running database setup and schema sync..."
 attempt=1
 max_attempts=20
 
-until sh -eu -c 'cd /app/apps/server && bun run src/setup.ts && cd /app/packages/db && bun run db:push --force'; do
+until sh -eu -c 'cd /app/apps/server && bun run src/setup.ts && cd /app/packages/db && bun run db:push --force && cd /app/apps/server && bun run src/ensure-chat-conversation-schema.ts'; do
   if [ "$attempt" -ge "$max_attempts" ]; then
     echo "Database setup failed after $max_attempts attempts."
     exit 1
