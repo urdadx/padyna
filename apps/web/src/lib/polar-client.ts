@@ -3,5 +3,5 @@ import { Polar } from "@polar-sh/sdk";
 
 export const polarClient = new Polar({
   accessToken: env.VITE_POLAR_ACCESS_TOKEN,
-  server: "sandbox",
+  server: env.VITE_POLAR_SERVER,
 });
