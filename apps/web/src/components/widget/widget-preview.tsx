@@ -142,6 +142,7 @@ function WidgetPreviewContent({
 	});
 
 	const isStreaming = status === "streaming";
+	const isSubmitted = status === "submitted";
 	const isError = status === "error";
 	const isEscalated = ESCALATED_STATUSES.has(initData?.conversationStatus ?? "");
 	const isClosed = initData?.conversationStatus === "closed";
@@ -304,6 +305,7 @@ function WidgetPreviewContent({
 						) : (
 							<WidgetMessages
 								messages={messages}
+								isSubmitted={isSubmitted}
 								isStreaming={isStreaming}
 								primaryColor={widgetConfig?.primaryColor}
 								chatId={chatId}

@@ -1,5 +1,12 @@
 import { motion, AnimatePresence } from "motion/react";
-import { type ReactNode, useState } from "react";
+import { Children, isValidElement, type ReactNode, useState } from "react";
+
+function isFullBleedChild(child: ReactNode) {
+  return (
+    isValidElement<{ "data-full-bleed"?: boolean }>(child) &&
+    Boolean(child.props["data-full-bleed"])
+  );
+}
 
 type Tab = {
   id: string;
@@ -14,6 +21,7 @@ type TabsProps = {
 
 export function Tabs({ tabs, children }: TabsProps) {
   const [activeTab, setActiveTab] = useState<number>(0);
+  const childArray = Children.toArray(children);
 
   const toggleTab = (index: number) => {
     setActiveTab(index);
@@ -111,7 +119,13 @@ export function Tabs({ tabs, children }: TabsProps) {
                     }}
                     className="overflow-hidden border-b border-stone-200 bg-white md:border-b-0"
                   >
-                    <div className="p-6 md:p-8">{children[index]}</div>
+                    <div
+                      className={
+                        isFullBleedChild(childArray[index]) ? "" : "p-0 md:p-8"
+                      }
+                    >
+                      {childArray[index]}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

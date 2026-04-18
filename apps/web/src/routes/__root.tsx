@@ -53,7 +53,7 @@ function RootComponent() {
 						<Outlet />
 					</TooltipProvider>
 				</div>
-				<Toaster />
+				<Toaster duration={1000} />
 			</ThemeProvider>
 			{/* <TanStackRouterDevtools position="bottom-left" /> */}
 			{/* <ReactQueryDevtools position="bottom" buttonPosition="bottom-left" /> */}

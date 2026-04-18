@@ -41,6 +41,7 @@ type UIMessageLike = BaseMessage & {
 
 type WidgetMessagesProps = {
   messages: UIMessageLike[];
+  isSubmitted?: boolean;
   isStreaming?: boolean;
   primaryColor?: string;
   chatId?: string;
@@ -50,6 +51,7 @@ type WidgetMessagesProps = {
 
 export const WidgetMessages = ({
   messages,
+  isSubmitted,
   isStreaming,
   primaryColor,
   chatId,
@@ -58,6 +60,8 @@ export const WidgetMessages = ({
 }: WidgetMessagesProps) => {
   return messages.map((message, index) => {
     const isLastMessage = index === messages.length - 1;
+    const isPendingAssistantMessage =
+      message.role === "assistant" && isLastMessage && (isSubmitted || isStreaming);
     const isCurrentlyStreaming = isStreaming && isLastMessage;
     const isUser = message.role === "user";
 
@@ -82,7 +86,7 @@ export const WidgetMessages = ({
     const hasVisibleContent = hasTextContent || hasContentText || parts.length === 0;
 
     const getStatusLabel = () => {
-      if (!isCurrentlyStreaming || hasTextContent || formCount > 0) return null;
+      if (!isPendingAssistantMessage || hasTextContent || formCount > 0) return null;
 
       const isSearchingDocs = parts.some(
         (p: any) => p.type === "tool-knowledge_base" && p.state !== "output-available",
@@ -150,7 +154,7 @@ export const WidgetMessages = ({
         {!formCount || hasVisibleContent || statusLabel ? (
           <WidgetMessage
             isUser={isUser}
-            animate={isUser || isCurrentlyStreaming}
+            animate={isUser || isPendingAssistantMessage}
             primaryColor={primaryColor}
           >
             {!hasVisibleContent && !statusLabel ? null : messageContent}

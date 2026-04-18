@@ -96,9 +96,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					<NavUser />
 				</SidebarFooter>
 			</Sidebar>
-			<SidebarInset className="min-h-0 flex flex-col">
+			<SidebarInset className="min-h-0 min-w-0 flex flex-col overflow-x-hidden">
 				<Navbar />
-				<div className="flex-1 overflow-auto">
+				<div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
 					<Outlet />
 				</div>
 			</SidebarInset>

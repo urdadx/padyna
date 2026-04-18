@@ -49,6 +49,7 @@ type PreviewMessagesProps = {
 	chatId?: string;
 	chatbotId?: string;
 	isReady?: boolean;
+	isSubmitted?: boolean;
 	isStreaming?: boolean;
 	primaryColor?: string;
 	bottomComponent?: BottomComponent;
@@ -87,6 +88,7 @@ export const PreviewMessages = memo(
 		isReady,
 		isStreaming,
 		primaryColor,
+		isSubmitted,
 		bottomComponent = "vote-block",
 		showVoteBlock = false,
 		showToolCalls = false,
@@ -94,6 +96,8 @@ export const PreviewMessages = memo(
 	}: PreviewMessagesProps) => {
 		return messages.map((message, index) => {
 			const isLastMessage = index === messages.length - 1;
+			const isPendingAssistantMessage =
+				message.role === "assistant" && isLastMessage && (isSubmitted || isStreaming);
 			const isCurrentlyStreaming = isStreaming && isLastMessage;
 			const isUser = message.role === "user";
 
@@ -143,7 +147,7 @@ export const PreviewMessages = memo(
 			});
 
 			const getStatusLabel = () => {
-				if (!isCurrentlyStreaming || hasTextContent || formCount > 0) return null;
+				if (!isPendingAssistantMessage || hasTextContent || formCount > 0) return null;
 
 				const isSearchingDocs = parts.some(
 					(p: any) =>
@@ -217,7 +221,7 @@ export const PreviewMessages = memo(
 					{!formCount || hasVisibleContent || statusLabel ? (
 						<SupportMessage
 							isUser={isUser}
-							animate={isUser || isCurrentlyStreaming}
+							animate={isUser || isPendingAssistantMessage}
 							primaryColor={primaryColor}>
 							{!hasVisibleContent && !statusLabel
 								? null

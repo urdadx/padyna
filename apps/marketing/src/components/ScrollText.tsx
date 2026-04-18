@@ -2,7 +2,7 @@ import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 
 const text =
-  "When I first opened Padyna, I instantly felt like this was the next generation customer support ";
+  "When I first opened Padyna, I instantly felt like this was the next generation of customer support ";
 
 export function ScrollText() {
   const containerRef = useRef<HTMLDivElement>(null);

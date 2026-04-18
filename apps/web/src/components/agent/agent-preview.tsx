@@ -60,6 +60,7 @@ function AgentPreviewPanelContent() {
 	const { messages, setMessages, sendMessage, status } = useChat({ id: chatId, transport });
 
 	const isStreaming = status === "streaming";
+	const isSubmitted = status === "submitted";
 	const isError = status === "error";
 	const isReady = status === "ready";
 
@@ -98,10 +99,10 @@ function AgentPreviewPanelContent() {
 	} as React.CSSProperties;
 
 	return (
-		<div className="relative grid h-full min-h-0 w-full place-items-center px-4 py-6 md:px-8">
-			<div className="mx-auto flex h-full min-h-0 w-full max-w-102 items-center justify-center">
+		<div className="relative grid h-full min-h-0 min-w-0 w-full place-items-center overflow-x-hidden px-4 py-6 md:px-8">
+			<div className="mx-auto flex h-full min-h-0 min-w-0 w-full max-w-102 items-center justify-center overflow-x-hidden">
 				<div
-					className="flex h-full min-h-0 max-h-183 w-full flex-col rounded-xl border bg-background"
+					className="flex h-full min-h-0 min-w-0 max-h-183 w-full flex-col overflow-x-hidden rounded-xl border bg-background"
 					style={
 						{
 							"--primary": primaryColor,
@@ -128,6 +129,7 @@ function AgentPreviewPanelContent() {
 										chatbotId={chatbotId || undefined}
 										isReady={isReady}
 										isStreaming={isStreaming}
+										isSubmitted={isSubmitted}
 										primaryColor={primaryColor}
 										showVoteBlock={showVoteBlock}
 									/>
