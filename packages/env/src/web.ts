@@ -18,7 +18,7 @@ export const env = createEnv({
     VITE_POLAR_ACCESS_TOKEN: z.string(),
     VITE_FRONTEND_ORIGIN: z.url(),
     VITE_TELEGRAM_BOT_USERNAME: z.string().min(1).default("padyna_bot"),
-    VITE_POLAR_SERVER: z.enum(["sandbox", "production"]),
+    VITE_POLAR_SERVER: z.string(),
   },
   runtimeEnv: (import.meta as any).env,
   emptyStringAsUndefined: true,
