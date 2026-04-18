@@ -1,5 +1,3 @@
-import Logo from "@/assets/padyna-official-logo.png";
-
 const links = [
   {
     title: "Features",
@@ -25,7 +23,12 @@ export function FooterSection() {
     <footer className="w-full border-t py-16 md:py-32">
       <div className="mx-auto max-w-5xl px-6">
         <a href="/" aria-label="go home" className="mx-auto block size-fit">
-          <img src={Logo.src} alt="Padyna" className="size-6" loading="lazy" />
+          <img
+            src={"https://padyna.com/assets/padyna-official-logo.png"}
+            alt="Padyna"
+            className="size-6"
+            loading="lazy"
+          />
         </a>
 
         <div className="my-8 flex flex-wrap justify-center gap-6 text-sm">

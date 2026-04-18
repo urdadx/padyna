@@ -59,7 +59,7 @@ export const ScrapeWebsite = ({ onSuccess }: ScrapeWebsiteProps) => {
 						https://
 					</span>
 					<Input
-						className="w-full -ms-px rounded-s-none shadow-none focus-visible:ring-0"
+						className="w-full -ms-px rounded-s-none shadow-none "
 						placeholder="mywebsite.com"
 						type="text"
 						name="slug"

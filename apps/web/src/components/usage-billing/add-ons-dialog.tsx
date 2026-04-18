@@ -122,7 +122,7 @@ export const AddOnsDialog = ({
 				className={cn(
 					"py-4 rounded-md cursor-pointer transition-colors",
 					isSelected("messages")
-						? "ring-2 ring-purple-500 bg-purple-50"
+						? "ring-2 ring-primary bg-primary/10"
 						: "hover:bg-gray-50",
 				)}
 				onClick={() => selectAddon("messages")}>
@@ -131,13 +131,13 @@ export const AddOnsDialog = ({
 						<div className="flex items-center gap-4">
 							<div
 								className={cn(
-									"w-12 h-10 rounded-lg flex items-center justify-center",
+									"w-12 h-10 rounded-lg flex items-center justify-center text-primary",
 									isSelected("messages")
-										? "bg-purple-100"
-										: "bg-purple-50",
+										? "bg-primary/15"
+										: "bg-primary/10",
 								)}>
 								<SolarChatUnreadBoldDuotone
-									color="#8b5cf6"
+									color="currentColor"
 									className="w-6 h-6 "
 								/>
 							</div>
@@ -163,7 +163,7 @@ export const AddOnsDialog = ({
 				className={cn(
 					"py-4 rounded-md cursor-pointer transition-colors",
 					isSelected("chatbot")
-						? "ring-2 ring-purple-500 bg-purple-50"
+						? "ring-2 ring-primary bg-primary/10"
 						: "hover:bg-gray-50",
 				)}
 				onClick={() => selectAddon("chatbot")}>
@@ -172,13 +172,13 @@ export const AddOnsDialog = ({
 						<div className="flex items-center gap-4">
 							<div
 								className={cn(
-									"w-12 h-10 bprder rounded-lg flex items-center justify-center",
+									"w-12 h-10 bprder rounded-lg flex items-center justify-center text-primary",
 									isSelected("chatbot")
-										? "bg-purple-100"
-										: "bg-purple-50",
+										? "bg-primary/15"
+										: "bg-primary/10",
 								)}>
 								<RiRobot2Fill
-									color="#a78bfa"
+									color="currentColor"
 									className="w-6 h-6 "
 								/>
 							</div>
@@ -204,7 +204,7 @@ export const AddOnsDialog = ({
 				className={cn(
 					"py-4 rounded-md cursor-pointer transition-colors",
 					isSelected("member")
-						? "ring-2 ring-purple-500 bg-purple-50"
+						? "ring-2 ring-primary bg-primary/10"
 						: "hover:bg-gray-50",
 				)}
 				onClick={() => selectAddon("member")}>
@@ -213,13 +213,13 @@ export const AddOnsDialog = ({
 						<div className="flex items-center gap-4">
 							<div
 								className={cn(
-									"w-12 h-10 bprder rounded-lg flex items-center justify-center",
+									"w-12 h-10 bprder rounded-lg flex items-center justify-center text-primary",
 									isSelected("member")
-										? "bg-purple-100"
-										: "bg-purple-50",
+										? "bg-primary/15"
+										: "bg-primary/10",
 								)}>
 								<SolarUserRoundedBoldDuotone
-									color="#8b5cf6"
+									color="currentColor"
 									className="w-6 h-6 "
 								/>
 							</div>
@@ -245,7 +245,7 @@ export const AddOnsDialog = ({
 				className={cn(
 					" py-4 rounded-md cursor-pointer transition-colors",
 					isSelected("branding")
-						? "ring-2 ring-purple-500 bg-purple-50"
+						? "ring-2 ring-primary bg-primary/10"
 						: "hover:bg-gray-50",
 				)}
 				onClick={() => selectAddon("branding")}>
@@ -254,12 +254,12 @@ export const AddOnsDialog = ({
 						<div className="flex items-center gap-4">
 							<div
 								className={cn(
-									"w-12 h-10 bprder rounded-lg flex items-center justify-center",
+									"w-12 h-10 bprder rounded-lg flex items-center justify-center text-primary",
 									isSelected("branding")
-										? "bg-purple-100"
-										: "bg-purple-50",
+										? "bg-primary/15"
+										: "bg-primary/10",
 								)}>
-								<BoltIcon color="#8b5cf6" className="w-6 h-6 " />
+								<BoltIcon color="currentColor" className="w-6 h-6 " />
 							</div>
 							<div>
 								<h3 className="text-base font-sans text-gray-900">
