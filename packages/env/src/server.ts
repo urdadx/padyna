@@ -62,7 +62,7 @@ export const env = createEnv({
     CAL_API_KEY: z.string().min(1).optional(),
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
-    POLAR_SERVER: z.string(),
+    POLAR_SERVER: z.enum(["sandbox", "production"]).default("sandbox"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

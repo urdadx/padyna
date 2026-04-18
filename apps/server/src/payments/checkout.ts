@@ -9,7 +9,6 @@ checkout.get(
   Checkout({
     accessToken: env.POLAR_ACCESS_TOKEN!,
     successUrl: env.POLAR_SUCCESS_URL!,
-    // returnUrl: "https://myapp.com",
-    server: "sandbox",
+    server: env.POLAR_SERVER,
   }),
 );
