@@ -13,10 +13,9 @@ import FAQs from "@/components/Faqs";
 import { FooterSection } from "@/components/Footer";
 ---
 
-<>
+<Layout>
   <Header />
   <CtaSection />
-  <Layout>
     <FeatureOverview />
     <ScrollAnimation />
     <SetupSection />
@@ -30,5 +29,4 @@ import { FooterSection } from "@/components/Footer";
     <FAQs client:load />
     <GridSeparator />
     <FooterSection client:load />
-  </Layout>
-</>
+</Layout>

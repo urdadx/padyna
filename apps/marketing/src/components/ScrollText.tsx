@@ -15,7 +15,7 @@ export function ScrollText() {
 
   return (
     <div ref={containerRef} className="relative h-[150vh] w-full">
-      <div className="sticky top-(--site-header-height) flex h-[calc(100vh-var(--site-header-height))] items-center justify-center px-6">
+      <div className="sticky top-[var(--site-header-height)] flex h-[calc(100vh-var(--site-header-height))] items-center justify-center px-6">
         <p className="font-display lg:text-heading-lg max-w-[18em] text-center text-[35px] leading-tight tracking-tight sm:text-[55px]">
           {words.map((word, i) => {
             const start = i / words.length;

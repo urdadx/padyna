@@ -48,7 +48,7 @@ export function NavMain({
 										tooltip={item.title}
 										className={
 											isMainItemActive
-												? "bg-purple-50  dark:bg-purple-900/30"
+												? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary"
 												: ""
 										}>
 										{item.icon && (
@@ -56,7 +56,7 @@ export function NavMain({
 												color="currentColor"
 												className={`size-4! text-muted-foreground ${
 													isMainItemActive
-														? "text-purple-600  dark:text-purple-400"
+														? "text-primary"
 														: ""
 												}`}
 											/>
@@ -64,7 +64,7 @@ export function NavMain({
 										<span
 											className={
 												isMainItemActive
-													? "text-purple-600  dark:text-purple-400 font-medium"
+													? "text-primary font-medium"
 													: ""
 											}>
 											{item.title}
@@ -81,7 +81,7 @@ export function NavMain({
 												key={subItem.title}
 												className={
 													isSubItemActive
-														? "bg-purple-100 dark:bg-purple-900/30"
+														? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary"
 														: ""
 												}>
 												<Link
@@ -93,7 +93,7 @@ export function NavMain({
 													<span
 														className={
 															isSubItemActive
-																? "text-purple-600 dark:text-purple-400 font-medium"
+																? "text-primary font-medium"
 																: ""
 														}>
 														{subItem.title}

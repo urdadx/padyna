@@ -1,14 +1,21 @@
 ---
 import { Image } from "astro:assets";
 import logo from "../assets/padyna-official-logo.png";
----
 
+const navLinks = [
+  { label: "Features", href: "#features" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "Integrations", href: "#integrations" },
+  { label: "FAQs", href: "#faqs" },
+];
+---
+<section class="sticky top-0 z-50 w-full border-b border-stone-200 bg-white/80 backdrop-blur-xl">
 <div
-  class="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-stone-100 bg-white px-6 backdrop-blur-lg"
+  class="flex h-14 w-full items-center justify-between px-6"
 >
   <a href="/" class="flex items-center gap-2 py-4">
     <Image
-      src={logo}
+      src={"https://padyna.com/assets/padyna-official-logo.png"}
       alt="Padyna logo"
       class="h-8 w-auto"
       width={24}
@@ -17,6 +24,19 @@ import logo from "../assets/padyna-official-logo.png";
       fetchpriority="high"
     />
   </a>
+
+  <nav class="hidden max-w-2xl mx-auto items-center gap-6 sm:gap-10 md:flex">
+    {
+      navLinks.map((link) => (
+        <a
+          href={link.href}
+          class="font-mono text-sm font-medium uppercase transition-colors duration-150 hover:text-stone-900"
+        >
+          {link.label}
+        </a>
+      ))
+    }
+  </nav>
 
   <div class="flex items-center gap-3">
     <a
@@ -35,3 +55,4 @@ import logo from "../assets/padyna-official-logo.png";
     </a>
   </div>
 </div>
+</section>  

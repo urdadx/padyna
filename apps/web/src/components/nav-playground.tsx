@@ -41,18 +41,18 @@ export function NavPlayground({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   tooltip={item.title}
-                  className={isActive ? "bg-purple-50 dark:bg-purple-900/30" : ""}
+                  className={isActive ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary" : ""}
                 >
                   {item.icon && (
                     <item.icon
                       color="currentColor"
                       className={`size-4! ${
-                        isActive ? "text-purple-600 dark:text-purple-400" : "text-muted-foreground"
+                        isActive ? "text-primary" : "text-muted-foreground"
                       }`}
                     />
                   )}
                   <span
-                    className={isActive ? "text-purple-600 dark:text-purple-400 font-medium" : ""}
+                    className={isActive ? "text-primary font-medium" : ""}
                   >
                     {item.title}
                   </span>
