@@ -27,7 +27,6 @@ interface WidgetInstructionsProps {
 
 export const WidgetInstructions = ({ chatbot, onClose }: WidgetInstructionsProps) => {
 	const sdkUrl = `${env.VITE_FRONTEND_ORIGIN}/sdk.js`;
-	const serverUrl = `${env.VITE_SERVER_URL}/api`;
 	const [isHtmlCopied, setIsHtmlCopied] = useState(false);
 	const [isReactCopied, setIsReactCopied] = useState(false);
 
@@ -52,9 +51,7 @@ d.head.appendChild(s)
 <script>
   if(window.self===window.top&&window.location.pathname!=="/widget"){
   window.Padyna("init",{
-    widgetId:"${chatbot.embedToken}",
-    serverUrl:"${env.VITE_FRONTEND_ORIGIN}",
-    apiUrl:"${serverUrl}"
+    widgetId:"${chatbot.embedToken}"
   });
 }
   </script>`
@@ -79,9 +76,7 @@ useEffect(() => {
   script.onload = () => {
     if(window.Padyna) {
       window.Padyna("init", {
-        widgetId: "${chatbot.embedToken}",
-        serverUrl: "${env.VITE_FRONTEND_ORIGIN}",
-        apiUrl: "${serverUrl}"
+        widgetId: "${chatbot.embedToken}"
       });
     }
   };

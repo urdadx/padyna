@@ -24,7 +24,7 @@ export function FooterSection() {
       <div className="mx-auto max-w-5xl px-6">
         <a href="/" aria-label="go home" className="mx-auto block size-fit">
           <img
-            src={"https://padyna.com/assets/padyna-official-logo.png"}
+            src={"https://assets.padyna.com/assets/padyna-official-logo.png"}
             alt="Padyna"
             className="size-6"
             loading="lazy"

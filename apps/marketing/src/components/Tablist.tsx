@@ -41,7 +41,7 @@ export function Tablist() {
             playsInline
             preload="auto"
             className="absolute inset-0 h-full w-full object-cover"
-            src="https://padyna.com/assets/playground_long.mp4"
+            src="https://assets.padyna.com/assets/playground_long.mp4"
           />
           <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
             <div className="w-fit rounded-lg border border-white/15 bg-black/35 px-4 py-3 text-white backdrop-blur-sm">
@@ -66,7 +66,7 @@ export function Tablist() {
             playsInline
             preload="auto"
             className="absolute inset-0 h-full w-full object-cover"
-            src="https://padyna.com/assets/padyna_action.mp4"
+            src="https://assets.padyna.com/assets/padyna_action.mp4"
           />
           <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
             <div className="w-fit rounded-lg border border-white/15 bg-black/35 px-4 py-3 text-white backdrop-blur-sm">
@@ -91,7 +91,7 @@ export function Tablist() {
             playsInline
             preload="auto"
             className="absolute h-full w-full object-cover"
-            src="https://padyna.com/assets/padyna-analytics.mp4"
+            src="https://assets.padyna.com/assets/padyna-analytics.mp4"
           />
           <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
             <div className="w-fit rounded-lg border border-white/15 bg-black/35 px-4 py-3 text-white backdrop-blur-sm">
@@ -117,7 +117,7 @@ export function Tablist() {
             playsInline
             preload="auto"
             className="absolute inset-0 h-full w-full object-cover"
-            src="https://padyna.com/assets/padyna-activity.mp4"
+            src="https://assets.padyna.com/assets/padyna-activity.mp4"
           />
           <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
             <div className="w-fit rounded-lg border border-white/15 bg-black/35 px-4 py-3 text-white backdrop-blur-sm">

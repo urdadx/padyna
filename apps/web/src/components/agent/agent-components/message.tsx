@@ -49,7 +49,7 @@ export function SupportMessage({
 							isUser && primaryColor
 								? { backgroundColor: primaryColor }
 								: isUser
-									? { backgroundColor: "#8b5cf6" }
+									? { backgroundColor: "#6366f1" }
 									: undefined
 						}>
 						{content}
@@ -65,7 +65,7 @@ export function SupportMessage({
 							isUser && primaryColor
 								? { backgroundColor: primaryColor }
 								: isUser
-									? { backgroundColor: "#8b5cf6" }
+									? { backgroundColor: "#6366f1" }
 									: undefined
 						}>
 						{children}
