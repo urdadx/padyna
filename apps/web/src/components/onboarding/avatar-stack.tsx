@@ -14,7 +14,7 @@ export function AvatarStack({ className, websiteFavicon, isLoading }: AvatarStac
 		<div className={cn("flex items-center gap-2 overflow-hidden", className)}>
 			<img
 				className="inline-block h-10 w-10 rounded-xl ring-2 ring-white dark:ring-gray-800 rotate-10 object-cover"
-				src={"https://padyna.com/assets/padyna-official-logo.png"}
+				src={"https://assets.padyna.com/assets/padyna-official-logo.png"}
 				alt="User"
 			/>
 			<span className="text-muted-foreground font-light">---</span>
