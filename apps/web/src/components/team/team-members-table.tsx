@@ -41,7 +41,7 @@ export function TeamMembersTable() {
 	});
 
 	return (
-		<div className="max-w-sm md:max-w-full">
+		<div className="max-w-xs md:max-w-full">
 			<Table className=" ">
 				<TableHeader className="w-full text-muted-foreground ">
 					<TableRow className="hover:bg-transparent text-muted-foreground text-xs">

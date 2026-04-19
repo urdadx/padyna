@@ -133,7 +133,7 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 
 	return (
 		<>
-			<div className="flex h-full min-h-0 flex-col gap-6 bg-background pr-1">
+			<div className="flex flex-col gap-6 bg-background pr-1">
 				<div className="flex justify-between items-center">
 					<h1 className="text-2xl font-semibold tracking-tight">Playground</h1>
 					<Tooltip>
