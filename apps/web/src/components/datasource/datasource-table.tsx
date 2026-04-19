@@ -328,7 +328,7 @@ export function DataSourceTable() {
 					<AddSource />
 				</div>
 			</div>
-			<div className="rounded-xl border max-w-xs md:max-w-full overflow-hidden">
+			<div className="rounded-xl border max-w-[20rem] md:max-w-full overflow-hidden">
 				<Table className="">
 					<TableHeader className="bg-gray-50">
 						{table.getHeaderGroups().map((headerGroup) => (
