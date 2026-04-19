@@ -28,7 +28,7 @@ export async function createCalendlyConnectUrl(c: Context) {
     chatbotId: access.chatbotId,
   });
 
-  const callbackUrl = getCalendlyCallbackUrl(c);
+  const callbackUrl = getCalendlyCallbackUrl();
   const authorizeUrl = getCalendlyAuthorizeUrl(state, callbackUrl);
 
   return c.json({

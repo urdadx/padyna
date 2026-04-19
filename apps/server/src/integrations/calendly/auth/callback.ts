@@ -28,7 +28,7 @@ export async function handleCalendlyOAuthCallback(c: Context) {
     return c.json({ message: "Invalid or expired OAuth state" }, 400);
   }
 
-  const callbackUrl = getCalendlyCallbackUrl(c);
+  const callbackUrl = getCalendlyCallbackUrl();
 
   const tokenResponse = await exchangeCalendlyAuthorizationCode({
     code,

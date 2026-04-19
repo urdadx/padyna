@@ -1,7 +1,7 @@
 import { db } from "@padyna/db";
 import { calendlyIntegration, calendlyOAuthState, chatbot } from "@padyna/db/schema/index";
+import { env } from "@padyna/env/server";
 import { and, eq, gt, isNull } from "drizzle-orm";
-import type { Context } from "hono";
 import { refreshCalendlyAccessToken } from "./auth/client";
 
 type SessionShape = {
@@ -18,9 +18,8 @@ export type CalendlyAuthContext = {
   session: SessionShape;
 };
 
-export function getCalendlyCallbackUrl(c: Context): string {
-  const currentUrl = new URL(c.req.url);
-  return `${currentUrl.origin}/api/integrations/calendly/callback`;
+export function getCalendlyCallbackUrl(): string {
+  return `${env.BETTER_AUTH_URL}/api/integrations/calendly/callback`;
 }
 
 export function generateOAuthStateToken(): string {
