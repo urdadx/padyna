@@ -144,6 +144,9 @@ function PlanCard({
           <Button
             variant={plan.isPopular ? "default" : "outline"}
             className="w-full"
+            onClick={() => {
+              window.location.href = "https://app.padyna.com";
+            }}
           >
             Start free trial
           </Button>

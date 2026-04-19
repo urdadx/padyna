@@ -45,32 +45,44 @@ export function TopActions() {
 				<div className="flex-1 min-h-0 overflow-hidden">
 					<TabsContent value="actions" className="h-full m-0 p-0">
 						<div className="h-full flex flex-col">
-							<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
-								<BarList
-									tab="Actions"
-									unit="mentions"
-									data={topWorkflows}
-									barBackground="bg-blue-200"
-									hoverBackground="hover:bg-blue-50"
-									maxValue={maxTopicCount}
-									limit={5}
-								/>
-							</div>
-							{mapActions.length > 5 && (
-								<div className="shrink-0 px-4 py-3 ">
-									<div className="flex items-center justify-center">
-										<Button
-											variant="outline"
-											size="sm"
-											onClick={() =>
-												setWorkflowsDialogOpen(true)
-											}
-											className="text-muted-foreground">
-											<ExpandIcon className="h-4 w-4 mr-1" />
-											View all
-										</Button>
-									</div>
+							{mapActions.length === 0 ? (
+								<div className="flex flex-col items-center justify-center h-full min-h-48 text-center">
+									<p className="text-muted-foreground text-sm">
+										No data available yet
+									</p>
 								</div>
+							) : (
+								<>
+									<div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden">
+										<BarList
+											tab="Actions"
+											unit="mentions"
+											data={topWorkflows}
+											barBackground="bg-blue-200"
+											hoverBackground="hover:bg-blue-50"
+											maxValue={maxTopicCount}
+											limit={5}
+										/>
+									</div>
+									{mapActions.length > 5 && (
+										<div className="shrink-0 px-4 py-3 ">
+											<div className="flex items-center justify-center">
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() =>
+														setWorkflowsDialogOpen(
+															true,
+														)
+													}
+													className="text-muted-foreground">
+													<ExpandIcon className="h-4 w-4 mr-1" />
+													View all
+												</Button>
+											</div>
+										</div>
+									)}
+								</>
 							)}
 						</div>
 						<ViewAllStats
