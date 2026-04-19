@@ -53,7 +53,8 @@ function getFormState(chatbot: any) {
 		primaryColor: chatbot.primaryColor || "#6366f1",
 		image: chatbot.image || "",
 		usecase: (chatbot.usecase as Usecase) || "support",
-		initialMessage: chatbot.initialMessage || "Hi, What can I help you with?",
+		launcherMessage: chatbot.launcherMessage ?? "Hey👋, ask me anything",
+		initialMessage: chatbot.initialMessage ?? "Hi, What can I help you with?",
 		hidePoweredBy: chatbot.hidePoweredBy || false,
 		isEnabled: chatbot.isEnabled ?? true,
 		suggestedMessages: chatbot.suggestedMessages || [],
@@ -416,6 +417,24 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 							}>
 							<Plus size={14} /> Add allowed domain
 						</Button>
+					</div>
+					<div className="flex flex-col gap-3">
+						<Label className="text-muted-foreground font-medium">
+							Launcher bubble message
+						</Label>
+						<Input
+							value={form.launcherMessage}
+							onChange={(e) =>
+								setForm((p) => ({
+									...p,
+									launcherMessage: e.target.value,
+								}))
+							}
+							onBlur={() =>
+								save({ launcherMessage: form.launcherMessage })
+							}
+							placeholder="Hey👋, ask me anything"
+						/>
 					</div>
 
 					<div className="flex items-center justify-between">

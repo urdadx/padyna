@@ -6,6 +6,10 @@ const BUTTON_ID = "padyna-widget-button";
 const PANEL_ID = "padyna-widget-panel";
 const IFRAME_ID = "padyna-widget-iframe";
 const LOADER_ID = "padyna-widget-loader";
+const BUBBLE_ID = "padyna-widget-launcher-bubble";
+const BUBBLE_TEXT_ID = "padyna-widget-launcher-bubble-text";
+const BUBBLE_CLOSE_ID = "padyna-widget-launcher-bubble-close";
+const DEFAULT_LAUNCHER_MESSAGE = "Hey there👋, ask me anything";
 const MIN_LOADER_VISIBLE_MS = 10;
 const MOBILE_BREAKPOINT_PX = 640;
 
@@ -15,12 +19,22 @@ const WIDGET_OPEN_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="28" hei
 
 const WIDGET_SPINNER_ICON = `<div style="width:22px;height:22px;border-radius:50%;border:2.5px solid #e5e7eb;border-top-color:#6b7280;animation:padyna-spin 0.75s linear infinite"></div>`;
 
+const WIDGET_BUBBLE_CLOSE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6L6 18M6 6l12 12"/></svg>`;
+
+type PadynaWidgetConfig = {
+  primaryColor?: string;
+  launcherMessage?: string;
+};
+
 type PadynaDom = {
   root: HTMLDivElement;
   button: HTMLButtonElement;
   panel: HTMLDivElement;
   iframe: HTMLIFrameElement;
   loader: HTMLDivElement;
+  bubble: HTMLDivElement;
+  bubbleText: HTMLSpanElement;
+  bubbleClose: HTMLButtonElement;
 };
 
 type PadynaState = {
@@ -37,6 +51,8 @@ type PadynaState = {
   isIframeBootstrapped: boolean;
   loaderShownAt: number;
   hideLoaderTimer: ReturnType<typeof setTimeout> | null;
+  launcherMessage: string;
+  isLauncherMessageDismissed: boolean;
 };
 
 function inferDefaultServerUrl() {
@@ -94,6 +110,51 @@ function isMobileViewport() {
   return typeof window !== "undefined" && window.innerWidth <= MOBILE_BREAKPOINT_PX;
 }
 
+function getLauncherMessageStorageKey(widgetId: string) {
+  return `padyna-launcher-message-dismissed:${widgetId}`;
+}
+
+function readLauncherMessageDismissed(widgetId: string) {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    return window.localStorage.getItem(getLauncherMessageStorageKey(widgetId)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function persistLauncherMessageDismissed(widgetId: string, dismissed: boolean) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    if (dismissed) {
+      window.localStorage.setItem(getLauncherMessageStorageKey(widgetId), "1");
+      return;
+    }
+
+    window.localStorage.removeItem(getLauncherMessageStorageKey(widgetId));
+  } catch {}
+}
+
+function hasLauncherMessage() {
+  return state.launcherMessage.trim().length > 0;
+}
+
+function syncLauncherBubble(dom: PadynaDom) {
+  dom.bubbleText.textContent = state.launcherMessage;
+
+  const shouldShow = !state.isOpen && !state.isLauncherMessageDismissed && hasLauncherMessage();
+  dom.bubble.style.display = shouldShow ? "flex" : "none";
+  dom.bubble.style.opacity = shouldShow ? "1" : "0";
+  dom.bubble.style.transform = shouldShow ? "scale(1)" : "scale(0.96)";
+  dom.bubble.style.pointerEvents = shouldShow ? "auto" : "none";
+}
+
 function applyLayoutState(dom: PadynaDom, isOpen: boolean) {
   const isMobileFullscreen = isOpen && isMobileViewport();
 
@@ -124,6 +185,7 @@ function applyOpenState(dom: PadynaDom, isOpen: boolean) {
   dom.button.setAttribute("aria-expanded", String(isOpen));
   dom.button.setAttribute("aria-label", isOpen ? "Close chat" : "Open chat");
   dom.button.innerHTML = isOpen ? WIDGET_OPEN_ICON : WIDGET_CLOSED_ICON;
+  syncLauncherBubble(dom);
 }
 
 function setLoadingVisual(dom: PadynaDom, isLoading: boolean) {
@@ -152,7 +214,7 @@ function scheduleHideLoader(dom: PadynaDom) {
   }, remaining);
 }
 
-async function fetchWidgetPrimaryColor(options: PadynaInitOptions, defaultServerUrl: string) {
+async function fetchWidgetConfig(options: PadynaInitOptions, defaultServerUrl: string) {
   const apiUrl = normalizeApiUrl(options, defaultServerUrl);
   if (!apiUrl) {
     return null;
@@ -168,27 +230,34 @@ async function fetchWidgetPrimaryColor(options: PadynaInitOptions, defaultServer
     return null;
   }
 
-  const payload = (await response.json()) as { primaryColor?: unknown };
+  const payload = (await response.json()) as {
+    primaryColor?: unknown;
+    launcherMessage?: unknown;
+  };
+
+  const config: PadynaWidgetConfig = {};
+
   if (typeof payload.primaryColor === "string" && payload.primaryColor.trim().length > 0) {
-    return payload.primaryColor;
+    config.primaryColor = payload.primaryColor;
   }
 
-  return null;
+  if (typeof payload.launcherMessage === "string") {
+    config.launcherMessage = payload.launcherMessage;
+  }
+
+  return config;
 }
 
-async function applyWidgetBranding(
-  options: PadynaInitOptions,
-  defaultServerUrl: string,
-  dom: PadynaDom,
-) {
-  try {
-    const color = await fetchWidgetPrimaryColor(options, defaultServerUrl);
-    if (color) {
-      dom.button.style.background = color;
-    }
-  } catch {
-    // Ignore branding failures, widget still works with fallback colors.
+function applyWidgetConfig(dom: PadynaDom, config: PadynaWidgetConfig | null) {
+  if (config?.primaryColor) {
+    dom.button.style.background = config.primaryColor;
   }
+
+  if (typeof config?.launcherMessage === "string") {
+    state.launcherMessage = config.launcherMessage;
+  }
+
+  syncLauncherBubble(dom);
 }
 
 function createDom(_defaultServerUrl: string): PadynaDom {
@@ -196,6 +265,9 @@ function createDom(_defaultServerUrl: string): PadynaDom {
   const existingButton = document.getElementById(BUTTON_ID) as HTMLButtonElement | null;
   const existingPanel = document.getElementById(PANEL_ID) as HTMLDivElement | null;
   const existingIframe = document.getElementById(IFRAME_ID) as HTMLIFrameElement | null;
+  const existingBubble = document.getElementById(BUBBLE_ID) as HTMLDivElement | null;
+  const existingBubbleText = document.getElementById(BUBBLE_TEXT_ID) as HTMLSpanElement | null;
+  const existingBubbleClose = document.getElementById(BUBBLE_CLOSE_ID) as HTMLButtonElement | null;
 
   if (existingRoot && existingButton && existingPanel && existingIframe) {
     existingPanel.style.boxShadow = "0 12px 28px rgba(0, 0, 0, 0.15)";
@@ -214,12 +286,69 @@ function createDom(_defaultServerUrl: string): PadynaDom {
       existingPanel.appendChild(loader);
     }
 
+    const bubble = existingBubble ?? document.createElement("div");
+    if (!existingBubble) {
+      bubble.id = BUBBLE_ID;
+      existingRoot.insertBefore(bubble, existingButton);
+    }
+
+    const bubbleText = existingBubbleText ?? document.createElement("span");
+    if (!existingBubbleText) {
+      bubbleText.id = BUBBLE_TEXT_ID;
+      bubble.appendChild(bubbleText);
+    }
+
+    const bubbleClose = existingBubbleClose ?? document.createElement("button");
+    if (!existingBubbleClose) {
+      bubbleClose.id = BUBBLE_CLOSE_ID;
+      bubble.appendChild(bubbleClose);
+    }
+
+    bubble.style.display = "none";
+    bubble.style.alignItems = "center";
+    bubble.style.gap = "10px";
+    bubble.style.maxWidth = "min(280px, calc(100vw - 96px))";
+    bubble.style.margin = "8px";
+    bubble.style.padding = "12px 12px 12px 14px";
+    bubble.style.borderRadius = "10px";
+    bubble.style.background = "white";
+    bubble.style.color = "black";
+    bubble.style.boxShadow =
+      "rgba(150, 150, 150, 0.2) 0px 10px 30px 0px, rgba(150, 150, 150, 0.2) 0px 0px 0px 1px";
+    bubble.style.border = "0";
+    bubble.style.fontSize = "14px";
+    bubble.style.lineHeight = "1.4";
+    bubble.style.cursor = "pointer";
+    bubble.style.transition = "opacity 0.5s, transform 0.5s";
+    bubble.style.transform = "scale(1)";
+    bubble.style.opacity = "1";
+
+    bubbleText.style.flex = "1";
+
+    bubbleClose.type = "button";
+    bubbleClose.setAttribute("aria-label", "Dismiss launcher message");
+    bubbleClose.innerHTML = WIDGET_BUBBLE_CLOSE_ICON;
+    bubbleClose.style.width = "24px";
+    bubbleClose.style.height = "24px";
+    bubbleClose.style.padding = "0";
+    bubbleClose.style.display = "grid";
+    bubbleClose.style.placeItems = "center";
+    bubbleClose.style.flexShrink = "0";
+    bubbleClose.style.border = "0";
+    bubbleClose.style.borderRadius = "999px";
+    bubbleClose.style.background = "transparent";
+    bubbleClose.style.color = "#6b7280";
+    bubbleClose.style.cursor = "pointer";
+
     return {
       root: existingRoot,
       button: existingButton,
       panel: existingPanel,
       iframe: existingIframe,
       loader,
+      bubble,
+      bubbleText,
+      bubbleClose,
     };
   }
 
@@ -289,13 +418,59 @@ function createDom(_defaultServerUrl: string): PadynaDom {
   button.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.12)";
   button.style.visibility = "hidden";
 
+  const bubble = document.createElement("div");
+  bubble.id = BUBBLE_ID;
+  bubble.style.display = "none";
+  bubble.style.alignItems = "center";
+  bubble.style.gap = "10px";
+  bubble.style.maxWidth = "min(280px, calc(100vw - 96px))";
+  bubble.style.margin = "8px";
+  bubble.style.padding = "12px 12px 12px 14px";
+  bubble.style.borderRadius = "10px";
+  bubble.style.background = "white";
+  bubble.style.color = "black";
+  bubble.style.boxShadow =
+    "rgba(150, 150, 150, 0.2) 0px 10px 30px 0px, rgba(150, 150, 150, 0.2) 0px 0px 0px 1px";
+  bubble.style.border = "0";
+  bubble.style.fontSize = "14px";
+  bubble.style.lineHeight = "1.4";
+  bubble.style.cursor = "pointer";
+  bubble.style.transition = "opacity 0.5s, transform 0.5s";
+  bubble.style.transform = "scale(1)";
+  bubble.style.opacity = "1";
+
+  const bubbleText = document.createElement("span");
+  bubbleText.id = BUBBLE_TEXT_ID;
+  bubbleText.style.flex = "1";
+
+  const bubbleClose = document.createElement("button");
+  bubbleClose.id = BUBBLE_CLOSE_ID;
+  bubbleClose.type = "button";
+  bubbleClose.setAttribute("aria-label", "Dismiss launcher message");
+  bubbleClose.innerHTML = WIDGET_BUBBLE_CLOSE_ICON;
+  bubbleClose.style.width = "24px";
+  bubbleClose.style.height = "24px";
+  bubbleClose.style.padding = "0";
+  bubbleClose.style.display = "grid";
+  bubbleClose.style.placeItems = "center";
+  bubbleClose.style.flexShrink = "0";
+  bubbleClose.style.border = "0";
+  bubbleClose.style.borderRadius = "999px";
+  bubbleClose.style.background = "transparent";
+  bubbleClose.style.color = "#6b7280";
+  bubbleClose.style.cursor = "pointer";
+
+  bubble.appendChild(bubbleText);
+  bubble.appendChild(bubbleClose);
+
   panel.appendChild(iframe);
   panel.appendChild(loader);
   root.appendChild(panel);
+  root.appendChild(bubble);
   root.appendChild(button);
   document.body.appendChild(root);
 
-  return { root, button, panel, iframe, loader };
+  return { root, button, panel, iframe, loader, bubble, bubbleText, bubbleClose };
 }
 
 const state: PadynaState = {
@@ -312,6 +487,8 @@ const state: PadynaState = {
   isIframeBootstrapped: false,
   loaderShownAt: 0,
   hideLoaderTimer: null,
+  launcherMessage: DEFAULT_LAUNCHER_MESSAGE,
+  isLauncherMessageDismissed: false,
 };
 
 async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
@@ -327,6 +504,10 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
     state.initOptions = options;
     state.isIframeLoaded = false;
     state.isIframeBootstrapped = false;
+    state.launcherMessage = DEFAULT_LAUNCHER_MESSAGE;
+    state.isLauncherMessageDismissed = readLauncherMessageDismissed(options.widgetId);
+
+    syncLauncherBubble(dom);
 
     window.addEventListener("beforeunload", () => {
       if (state.dom?.iframe.contentWindow) {
@@ -347,19 +528,31 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
     }
 
     try {
-      const preloadedColor = await fetchWidgetPrimaryColor(options, state.defaultServerUrl);
-      if (preloadedColor) {
-        dom.button.style.background = preloadedColor;
-      }
+      const widgetConfig = await fetchWidgetConfig(options, state.defaultServerUrl);
+      applyWidgetConfig(dom, widgetConfig);
     } catch {
+      applyWidgetConfig(dom, null);
     } finally {
       dom.button.style.visibility = "visible";
+      syncLauncherBubble(dom);
     }
-
-    void applyWidgetBranding(options, state.defaultServerUrl, dom);
 
     dom.button.onclick = () => {
       runCommand(state.isOpen ? "close" : "open");
+    };
+
+    dom.bubble.onclick = () => {
+      if (!state.isOpen) {
+        runCommand("open");
+      }
+    };
+
+    dom.bubbleClose.onclick = (event) => {
+      event.stopPropagation();
+
+      state.isLauncherMessageDismissed = true;
+      persistLauncherMessageDismissed(options.widgetId, true);
+      syncLauncherBubble(dom);
     };
 
     if (!state.onKeydown) {
@@ -466,6 +659,8 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
   state.initOptions = null;
   state.isIframeBootstrapped = false;
   state.isIframeLoaded = false;
+  state.launcherMessage = "";
+  state.isLauncherMessageDismissed = false;
   if (state.hideLoaderTimer) {
     clearTimeout(state.hideLoaderTimer);
     state.hideLoaderTimer = null;

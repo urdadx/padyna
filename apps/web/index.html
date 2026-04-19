@@ -9,33 +9,6 @@
   <body>
     <div id="app"></div>
 
-    <!-- <script>
-      (function (w, d) {
-        if (w.self !== w.top) return;
-        if (w.location.pathname === "/widget") return;
-        if (typeof w.Padyna !== "function") {
-          var q = [];
-          var stub = function () {
-            q.push(arguments);
-          };
-          stub.q = q;
-          w.Padyna = stub;
-        }
-        var s = d.createElement("script");
-        s.src = "http://localhost:3001/sdk.js";
-        s.async = true;
-        d.head.appendChild(s);
-      })(window, document);
-    </script> -->
-    <!-- <script>
-      if (window.self === window.top && window.location.pathname !== "/widget") {
-        window.Padyna("init", {
-          widgetId: "padyna_XWlr0jUpnUypu85M",
-          serverUrl: "http://localhost:3001",
-          apiUrl: "http://localhost:3000/api",
-        });
-      }
-    </script> -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

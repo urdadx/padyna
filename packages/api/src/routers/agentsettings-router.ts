@@ -70,6 +70,7 @@ export const agentsettingsRouter = router({
         theme: z.enum(["light", "dark"]).optional(),
         hidePoweredBy: z.boolean().optional(),
         usecase: z.enum(["support", "technical", "sales"]).optional(),
+        launcherMessage: z.string().optional(),
         initialMessage: z.string().optional(),
         suggestedMessages: z.array(z.string()).optional(),
         allowedDomains: z.array(z.string()).optional(),
@@ -118,6 +119,7 @@ export const agentsettingsRouter = router({
           theme: input.theme ?? "light",
           hidePoweredBy: input.hidePoweredBy ?? false,
           usecase: input.usecase ?? "support",
+          launcherMessage: input.launcherMessage ?? "Hey👋, ask me anything",
           initialMessage: input.initialMessage ?? "Hi👋, What can I help you with?",
           suggestedMessages: input.suggestedMessages,
           allowedDomains: input.allowedDomains,
@@ -159,6 +161,7 @@ export const agentsettingsRouter = router({
         theme: z.enum(["light", "dark"]).optional(),
         hidePoweredBy: z.boolean().optional(),
         usecase: z.enum(["support", "technical", "sales"]).optional(),
+        launcherMessage: z.string().optional(),
         initialMessage: z.string().optional(),
         suggestedMessages: z.array(z.string()).optional(),
         allowedDomains: z.array(z.string()).optional(),
@@ -194,6 +197,9 @@ export const agentsettingsRouter = router({
           ...(input.theme !== undefined && { theme: input.theme }),
           ...(input.hidePoweredBy !== undefined && { hidePoweredBy: input.hidePoweredBy }),
           ...(input.usecase !== undefined && { usecase: input.usecase }),
+          ...(input.launcherMessage !== undefined && {
+            launcherMessage: input.launcherMessage,
+          }),
           ...(input.initialMessage !== undefined && { initialMessage: input.initialMessage }),
           ...(input.suggestedMessages !== undefined && {
             suggestedMessages: input.suggestedMessages,

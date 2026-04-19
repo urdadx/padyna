@@ -28,6 +28,9 @@ export const chatbot = pgTable(
     })
       .notNull()
       .default("support"),
+    launcherMessage: text("launcher_message")
+      .notNull()
+      .default("Hey👋, ask me anything"),
     initialMessage: text("initial_message").notNull().default("Hi👋, What can I help you with?"),
     suggestedMessages: text("suggested_messages").array(),
 

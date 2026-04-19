@@ -40,6 +40,7 @@ export type WidgetConfig = {
 	image: string | null;
 	primaryColor: string;
 	initialMessage: string;
+	launcherMessage: string;
 	hidePoweredBy: boolean;
 	suggestedMessages: string[];
 	isEnabled: boolean;

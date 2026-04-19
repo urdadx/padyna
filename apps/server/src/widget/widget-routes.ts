@@ -43,6 +43,7 @@ type PublicWidgetChatbot = {
   primaryColor: string;
   hidePoweredBy: boolean;
   suggestedMessages: string[] | null;
+  launcherMessage: string;
   initialMessage: string;
   isEnabled: boolean;
   usecase: "support" | "technical" | "sales";
@@ -84,6 +85,7 @@ function buildWidgetConfig(chatbotRecord: PublicWidgetChatbot, hasBrandingAddon:
       hidePoweredBy: chatbotRecord.hidePoweredBy,
     }),
     suggestedMessages: chatbotRecord.suggestedMessages ?? [],
+    launcherMessage: chatbotRecord.launcherMessage,
     initialMessage: chatbotRecord.initialMessage,
     isEnabled: chatbotRecord.isEnabled,
   };
@@ -163,6 +165,7 @@ async function getWidgetChatbot(widgetId: string) {
       primaryColor: chatbot.primaryColor,
       hidePoweredBy: chatbot.hidePoweredBy,
       suggestedMessages: chatbot.suggestedMessages,
+      launcherMessage: chatbot.launcherMessage,
       initialMessage: chatbot.initialMessage,
       isEnabled: chatbot.isEnabled,
       usecase: chatbot.usecase,
