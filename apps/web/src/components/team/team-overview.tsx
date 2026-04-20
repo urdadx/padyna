@@ -3,8 +3,7 @@ import { Label } from "../ui/label";
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { Skeleton } from "../ui/skeleton";
 import { UploadLinear } from "@/assets/icons/upload-icon";
-import { authClient } from "@/lib/auth-client";
-import { useRouteContext } from "@tanstack/react-router";
+import { authClient, useSession } from "@/lib/auth-client";
 import { trpc, queryClient } from "@/utils/trpc";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -17,9 +16,10 @@ interface TeamFormProps {
 }
 
 export function TeamOverview() {
-	const { session } = useRouteContext({ from: "/(admin)" });
+	const { data: session } = useSession();
+
 	const activeOrganizationId = session?.session.activeOrganization;
-	const isAdmin = session?.user.role === "admin";
+	const isAdmin = session?.user.role === "admin" || session?.user.role === "owner";
 
 	const { data: organizations, isPending } = authClient.useListOrganizations();
 

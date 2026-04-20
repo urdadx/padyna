@@ -1,5 +1,9 @@
 ---
 import "../styles/global.css";
+
+const pathname = Astro.url.pathname;
+const isLegalPage = pathname === "/privacy" || pathname === "/terms-of-service";
+const shouldLoadWidget = pathname !== "/widget" && !isLegalPage;
 ---
 
 <!doctype html>
@@ -17,34 +21,40 @@ import "../styles/global.css";
     >
       <slot />
     </div>
-    <script>
-      (function (w, d) {
-        if (w.self !== w.top) return;
-        if (w.location.pathname === "/widget") return;
-        if (typeof w.Padyna !== "function") {
-          var q = [];
-          var stub = function () {
-            q.push(arguments);
-          };
-          stub.q = q;
-          w.Padyna = stub;
-        }
-        var s = d.createElement("script");
-        s.src = "https://app.padyna.com/sdk.js";
-        s.async = true;
-        d.head.appendChild(s);
-      })(window, document);
-    </script>
-    <script>
-      if (
-        window.self === window.top &&
-        window.location.pathname !== "/widget"
-      ) {
-        window.Padyna("init", {
-          widgetId: "padyna_UQXeODdWl2xDQ7Nm",
-        });
-      }
-    </script>
+    {
+      shouldLoadWidget && (
+        <>
+          <script>
+            (function (w, d) {
+              if (w.self !== w.top) return;
+              if (w.location.pathname === "/widget") return;
+              if (typeof w.Padyna !== "function") {
+                var q = [];
+                var stub = function () {
+                  q.push(arguments);
+                };
+                stub.q = q;
+                w.Padyna = stub;
+              }
+              var s = d.createElement("script");
+              s.src = "https://app.padyna.com/sdk.js";
+              s.async = true;
+              d.head.appendChild(s);
+            })(window, document);
+          </script>
+          <script>
+            if (
+              window.self === window.top &&
+              window.location.pathname !== "/widget"
+            ) {
+              window.Padyna("init", {
+                widgetId: "padyna_UQXeODdWl2xDQ7Nm",
+              });
+            }
+          </script>
+        </>
+      )
+    }
   </body>
 </html>
 

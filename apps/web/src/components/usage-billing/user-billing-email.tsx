@@ -14,7 +14,7 @@ export function UserBillingEmail() {
 	);
 
 	const { session } = useRouteContext({ from: "/(admin)" });
-	const isAdmin = session?.user.role === "admin";
+	const isAdmin = session?.user.role === "admin" || session?.user.role === "owner";
 
 	const { data: customerState, refetch } = useSuspenseQuery({
 		queryKey: ["customerState", orgLimits?.externalCustomerId],

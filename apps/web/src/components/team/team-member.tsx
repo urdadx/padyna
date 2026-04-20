@@ -2,13 +2,13 @@ import { useState } from "react";
 import { TeamMembersTable } from "./team-members-table";
 import { Button } from "../ui/button";
 import { InviteMembers } from "./invite-members";
-import { useRouteContext } from "@tanstack/react-router";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { useSession } from "@/lib/auth-client";
 
 export function TeamMembers() {
 	const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-	const { session } = useRouteContext({ from: "/(admin)" });
-	const isAdmin = session?.user.role === "admin";
+	const { data: session } = useSession();
+	const isAdmin = session?.user.role === "admin" || session?.user.role === "owner";
 
 	return (
 		<div className="rounded-2xl border bg-card text-card-foreground">

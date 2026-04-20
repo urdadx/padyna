@@ -17,12 +17,12 @@ import { useState } from "react";
 import { EditMemberDetails } from "./edit-member-details";
 import { RemoveMember } from "./remove-member";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import { useRouteContext } from "@tanstack/react-router";
+import { useSession } from "@/lib/auth-client";
 
 export function TeamMembersTable() {
-	const { session } = useRouteContext({ from: "/(admin)" });
+	const { data: session } = useSession();
 	const activeOrganizationId = session?.session.activeOrganization;
-	const isAdmin = session?.user.role === "admin";
+	const isAdmin = session?.user.role === "admin" || session?.user.role === "owner";
 
 	const [editingMember, setEditingMember] = useState<any>(null);
 	const [removingMember, setRemovingMember] = useState<any>(null);
