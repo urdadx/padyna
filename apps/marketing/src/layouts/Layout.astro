@@ -2,7 +2,7 @@
 import "../styles/global.css";
 
 const pathname = Astro.url.pathname;
-const isLegalPage = pathname === "/privacy" || pathname === "/terms-of-service";
+const isLegalPage = /^\/(privacy|terms-of-service)\/?$/.test(pathname);
 const shouldLoadWidget = pathname !== "/widget" && !isLegalPage;
 ---
 

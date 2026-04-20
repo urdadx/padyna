@@ -10,11 +10,11 @@ const links = [
   },
   {
     title: "Terms of Service",
-    href: "/terms-of-service",
+    href: "/terms-of-service/",
   },
   {
     title: "Privacy Policy",
-    href: "/privacy",
+    href: "/privacy/",
   },
 ];
 
