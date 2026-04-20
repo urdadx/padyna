@@ -419,8 +419,17 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 						</Button>
 					</div>
 					<div className="flex flex-col gap-3">
-						<Label className="text-muted-foreground font-medium">
-							Launcher bubble message
+						<Label className="text-muted-foreground font-medium flex items-center gap-1.5">
+							Widget bubble message
+							<Tooltip>
+								<TooltipTrigger>
+									<InfoIcon className="size-4" />
+								</TooltipTrigger>
+								<TooltipContent>
+									This short message appears on top of the chat
+									bubble to invite users to open the widget.
+								</TooltipContent>
+							</Tooltip>
 						</Label>
 						<Input
 							value={form.launcherMessage}

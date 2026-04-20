@@ -30,7 +30,7 @@ export const AddOnsDialog = ({
 	);
 	const [isCheckingOut, setIsCheckingOut] = useState(false);
 	const { session } = useRouteContext({ from: "/(admin)" });
-	const isAdmin = session?.user.role === "admin";
+	const isAdmin = session?.user.role === "admin" || session?.user.role === "owner";
 	const navigate = useNavigate();
 
 	const handleCheckout = async () => {
@@ -259,7 +259,10 @@ export const AddOnsDialog = ({
 										? "bg-primary/15"
 										: "bg-primary/10",
 								)}>
-								<BoltIcon color="currentColor" className="w-6 h-6 " />
+								<BoltIcon
+									color="currentColor"
+									className="w-6 h-6 "
+								/>
 							</div>
 							<div>
 								<h3 className="text-base font-sans text-gray-900">
