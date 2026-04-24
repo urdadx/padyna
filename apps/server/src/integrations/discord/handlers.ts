@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { db } from "@padyna/db";
 import { chatConversation, chatMessage, discordConnection } from "@padyna/db/schema/index";
+import { eq } from "drizzle-orm";
 import { createSupportChatAgent } from "../../chat";
 
 declare global {
@@ -11,10 +12,28 @@ type DiscordConnectionRecord = typeof discordConnection.$inferSelect;
 
 type DiscordRawMessage = {
   id?: string;
+  type?: number;
   guild_id?: string;
   channel_id?: string;
   author?: {
     id?: string;
+    username?: string;
+    global_name?: string;
+  };
+  member?: {
+    nick?: string;
+  };
+  referenced_message?: {
+    guild_id?: string;
+    channel_id?: string;
+    author?: {
+      id?: string;
+      username?: string;
+      global_name?: string;
+    };
+    member?: {
+      nick?: string;
+    };
   };
 };
 
@@ -23,7 +42,64 @@ type DiscordConversationMetadata = {
   channelId?: string | null;
   threadId?: string | null;
   discordUserId?: string | null;
+  participantName?: string | null;
+  participantHandle?: string | null;
+  sourceLabel?: string | null;
 };
+
+function getTrimmedString(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function getDiscordConversationMetadata(threadId: string, message: any): DiscordConversationMetadata {
+  const rawMessage = getDiscordRawMessage(message);
+  const sourceMessage = rawMessage.referenced_message ?? rawMessage;
+  const userName =
+    getTrimmedString(message.author?.userName) ?? getTrimmedString(sourceMessage.author?.username);
+  const participantName =
+    getTrimmedString(message.author?.fullName) ??
+    getTrimmedString(sourceMessage.member?.nick) ??
+    getTrimmedString(sourceMessage.author?.global_name) ??
+    userName;
+
+  return {
+    guildId: sourceMessage.guild_id ?? rawMessage.guild_id ?? null,
+    channelId: sourceMessage.channel_id ?? rawMessage.channel_id ?? null,
+    threadId,
+    discordUserId: sourceMessage.author?.id ?? rawMessage.author?.id ?? null,
+    participantName,
+    participantHandle: userName ? `@${userName}` : null,
+    sourceLabel: (sourceMessage.guild_id ?? rawMessage.guild_id)
+      ? "Discord server thread"
+      : "Discord direct message",
+  };
+}
+
+async function updateConversationMetadata(conversationId: string, metadata: DiscordConversationMetadata) {
+  const [conversation] = await db
+    .select({ metadata: chatConversation.metadata })
+    .from(chatConversation)
+    .where(eq(chatConversation.id, conversationId))
+    .limit(1);
+
+  if (!conversation) {
+    return;
+  }
+
+  const nextMetadata = {
+    ...conversation.metadata,
+    ...metadata,
+  };
+
+  if (JSON.stringify(conversation.metadata ?? {}) === JSON.stringify(nextMetadata)) {
+    return;
+  }
+
+  await db
+    .update(chatConversation)
+    .set({ metadata: nextMetadata, updatedAt: new Date() })
+    .where(eq(chatConversation.id, conversationId));
+}
 
 function getDiscordRawMessage(message: any) {
   return (message.raw ?? {}) as DiscordRawMessage;
@@ -112,8 +188,6 @@ async function createConversationForMention(args: {
   message: any;
   connection: DiscordConnectionRecord;
 }) {
-  const rawMessage = getDiscordRawMessage(args.message);
-
   const [conversation] = await db
     .insert(chatConversation)
     .values({
@@ -121,12 +195,7 @@ async function createConversationForMention(args: {
       organizationId: args.connection.organizationId,
       channel: "discord",
       title: getDiscordConversationTitle(args.message),
-      metadata: {
-        guildId: rawMessage.guild_id ?? null,
-        channelId: rawMessage.channel_id ?? null,
-        threadId: args.threadId,
-        discordUserId: rawMessage.author?.id ?? null,
-      },
+      metadata: getDiscordConversationMetadata(args.threadId, args.message),
     })
     .returning({ id: chatConversation.id });
 
@@ -216,6 +285,8 @@ export function registerDiscordHandlers(discordBot: any) {
       return;
     }
 
+    await updateConversationMetadata(conversation.id, getDiscordConversationMetadata(thread.id, message));
+
     await thread.subscribe();
 
     await persistDiscordMessage({
@@ -253,6 +324,8 @@ export function registerDiscordHandlers(discordBot: any) {
     if (!conversation) {
       return;
     }
+
+    await updateConversationMetadata(conversation.id, getDiscordConversationMetadata(thread.id, message));
 
     await persistDiscordMessage({
       conversationId: conversation.id,

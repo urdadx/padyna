@@ -25,6 +25,12 @@ interface ChatDetailsProps {
 	assignedUserName?: string;
 }
 
+type DetailItem = {
+	label: string;
+	value?: string;
+	icon?: React.ElementType;
+};
+
 function formatDate(value: Date | string | null | undefined) {
 	if (!value) {
 		return "Not available";
@@ -63,23 +69,114 @@ function DetailRow({
 	);
 }
 
+function getStringValue(value: unknown) {
+	return typeof value === "string" && value.trim().length > 0
+		? value.trim()
+		: undefined;
+}
+
+function getParticipantDetails(conversation?: ConversationDetails): DetailItem[] {
+	const metadata = conversation?.metadata as Record<string, any> | undefined;
+	const channel = conversation?.channel;
+	const sourceLabel = getStringValue(metadata?.sourceLabel);
+	const participantName = getStringValue(metadata?.participantName);
+	const participantHandle = getStringValue(metadata?.participantHandle);
+	const participantLanguage = getStringValue(metadata?.participantLanguage);
+
+	const location = [getStringValue(metadata?.city), getStringValue(metadata?.country)]
+		.filter(Boolean)
+		.join(", ");
+	const device = [
+		getStringValue(metadata?.deviceInfo?.type),
+		getStringValue(metadata?.deviceInfo?.model),
+	]
+		.filter(Boolean)
+		.join(" • ");
+	const browser = getStringValue(metadata?.deviceInfo?.browser);
+	const os = getStringValue(metadata?.deviceInfo?.os);
+	const details: DetailItem[] = [
+		{
+			label: "Source",
+			value:
+				sourceLabel ||
+				(channel === "web"
+					? "Website chat"
+					: channel === "widget"
+						? "Widget chat"
+						: channel
+							? channel.charAt(0).toUpperCase() + channel.slice(1)
+							: undefined),
+			icon: GlobeLinear,
+		},
+		{
+			label: "Last activity",
+			value: formatDate(conversation?.updatedAt),
+			icon: PenLinear,
+		},
+	];
+
+	if (participantName) {
+		details.push({
+			label: "Name",
+			value: participantName,
+			icon: UserLinear,
+		});
+	}
+
+	if (participantHandle) {
+		details.push({
+			label: "Username",
+			value: participantHandle,
+			icon: UserLinear,
+		});
+	}
+
+	if (participantLanguage) {
+		details.push({
+			label: "Language",
+			value: participantLanguage,
+			icon: GlobeLinear,
+		});
+	}
+
+	if (channel === "telegram" || channel === "slack" || channel === "discord") {
+		return details;
+	}
+
+	details.push(
+		{
+			label: "Location",
+			value: location || undefined,
+			icon: LocationLinear,
+		},
+		{
+			label: "Device",
+			value: device || undefined,
+			icon: MobilePhoneLinear,
+		},
+		{
+			label: "Browser",
+			value: browser,
+			icon: GlobeLinear,
+		},
+		{
+			label: "Operating system",
+			value: os,
+			icon: SolarBoxMinimalisticLinear,
+		},
+	);
+
+	return details;
+}
+
 export const ChatDetails = ({
 	isOpen,
 	onOpenChange,
 	conversation,
 	assignedUserName,
 }: ChatDetailsProps) => {
-	const metadata = conversation?.metadata as Record<string, any> | undefined;
-
-	const location = [metadata?.city?.trim(), metadata?.country?.trim()]
-		.filter(Boolean)
-		.join(", ");
-
-	const browser = metadata?.deviceInfo?.browser?.trim();
-	const os = metadata?.deviceInfo?.os?.trim();
-	const deviceType = metadata?.deviceInfo?.type?.trim();
-	const deviceModel = metadata?.deviceInfo?.model?.trim();
 	const isMobile = useIsMobile();
+	const participantDetails = getParticipantDetails(conversation);
 
 	return (
 		<Drawer
@@ -174,33 +271,17 @@ export const ChatDetails = ({
 
 						<section className="space-y-3">
 							<h3 className="text-xs font-sans font-medium uppercase tracking-wide text-muted-foreground">
-								Visitor Info
+								Participant Info
 							</h3>
 							<div className="space-y-3">
-								<DetailRow
-									icon={LocationLinear}
-									label="Location"
-									value={location || undefined}
-								/>
-								<DetailRow
-									label="Device"
-									icon={MobilePhoneLinear}
-									value={
-										[deviceType, deviceModel]
-											.filter(Boolean)
-											.join(" • ") || undefined
-									}
-								/>
-								<DetailRow
-									label="Browser"
-									value={browser}
-									icon={GlobeLinear}
-								/>
-								<DetailRow
-									icon={SolarBoxMinimalisticLinear}
-									label="Operating system"
-									value={os}
-								/>
+								{participantDetails.map((detail) => (
+									<DetailRow
+										key={detail.label}
+										label={detail.label}
+										value={detail.value}
+										icon={detail.icon}
+									/>
+								))}
 							</div>
 						</section>
 					</div>

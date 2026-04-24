@@ -39,6 +39,20 @@ type ConversationChannel =
   | "instagram"
   | "messenger";
 
+function mergeConversationMetadata(
+  currentMetadata: Record<string, unknown> | null | undefined,
+  nextMetadata: Record<string, unknown> | undefined,
+) {
+  if (!nextMetadata) {
+    return currentMetadata ?? undefined;
+  }
+
+  return {
+    ...currentMetadata,
+    ...nextMetadata,
+  };
+}
+
 function extractTextFromParts(parts: unknown[] | undefined): string {
   if (!parts || parts.length === 0) {
     return "";
@@ -136,12 +150,21 @@ async function getOrCreateConversation(input: {
 }) {
   if (input.conversationId) {
     const [existing] = await db
-      .select({ id: chatConversation.id })
+      .select({ id: chatConversation.id, metadata: chatConversation.metadata })
       .from(chatConversation)
       .where(eq(chatConversation.id, input.conversationId))
       .limit(1);
 
     if (existing) {
+      const nextMetadata = mergeConversationMetadata(existing.metadata, input.metadata);
+
+      if (JSON.stringify(existing.metadata ?? {}) !== JSON.stringify(nextMetadata ?? {})) {
+        await db
+          .update(chatConversation)
+          .set({ metadata: nextMetadata, updatedAt: new Date() })
+          .where(eq(chatConversation.id, existing.id));
+      }
+
       return existing.id;
     }
 
@@ -160,7 +183,7 @@ async function getOrCreateConversation(input: {
   }
 
   const existing = await db
-    .select({ id: chatConversation.id })
+    .select({ id: chatConversation.id, metadata: chatConversation.metadata })
     .from(chatConversation)
     .where(
       and(
@@ -174,6 +197,15 @@ async function getOrCreateConversation(input: {
   if (existing.length > 0) {
     const firstConversation = existing[0];
     if (firstConversation) {
+      const nextMetadata = mergeConversationMetadata(firstConversation.metadata, input.metadata);
+
+      if (JSON.stringify(firstConversation.metadata ?? {}) !== JSON.stringify(nextMetadata ?? {})) {
+        await db
+          .update(chatConversation)
+          .set({ metadata: nextMetadata, updatedAt: new Date() })
+          .where(eq(chatConversation.id, firstConversation.id));
+      }
+
       return firstConversation.id;
     }
   }

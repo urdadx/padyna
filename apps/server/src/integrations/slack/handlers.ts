@@ -3,6 +3,7 @@ import { db } from "@padyna/db";
 import { chatConversation, chatMessage, chatbot, slackConnection } from "@padyna/db/schema/index";
 import { and, eq, sql } from "drizzle-orm";
 import { createSupportChatAgent } from "../../chat";
+import { getSlackUserProfile } from "./client";
 import { SLACK_PENDING_CHANNEL_ID } from "./utils";
 
 declare global {
@@ -20,7 +21,73 @@ type SlackRawMessage = {
   thread_ts?: string;
   ts?: string;
   user?: string;
+  username?: string;
 };
+
+function getTrimmedString(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function getSlackParticipantName(message: any, fallbackUserId: string | null) {
+  const fullName = getTrimmedString(message.author?.fullName);
+  const userName = getTrimmedString(message.author?.userName);
+  const fallback = fallbackUserId ? fallbackUserId.trim() : null;
+
+  if (fullName && fullName !== fallback) {
+    return fullName;
+  }
+
+  if (userName && userName !== fallback) {
+    return userName;
+  }
+
+  return null;
+}
+
+async function getSlackConversationMetadata(message: any, threadTs: string) {
+  const rawMessage = getSlackRawMessage(message);
+  const teamId = rawMessage.team ?? rawMessage.team_id ?? null;
+  const slackUserId = rawMessage.user ?? null;
+  const userProfile =
+    teamId && slackUserId ? await getSlackUserProfile(teamId, slackUserId).catch(() => null) : null;
+
+  return {
+    teamId,
+    channelId: rawMessage.channel ?? null,
+    threadTs,
+    slackUserId,
+    participantName:
+      userProfile?.participantName ?? getSlackParticipantName(message, rawMessage.user ?? null),
+    participantHandle: userProfile?.participantHandle ?? null,
+    sourceLabel: "Slack channel thread",
+  };
+}
+
+async function updateConversationMetadata(conversationId: string, metadata: Record<string, unknown>) {
+  const [conversation] = await db
+    .select({ metadata: chatConversation.metadata })
+    .from(chatConversation)
+    .where(eq(chatConversation.id, conversationId))
+    .limit(1);
+
+  if (!conversation) {
+    return;
+  }
+
+  const nextMetadata = {
+    ...conversation.metadata,
+    ...metadata,
+  };
+
+  if (JSON.stringify(conversation.metadata ?? {}) === JSON.stringify(nextMetadata)) {
+    return;
+  }
+
+  await db
+    .update(chatConversation)
+    .set({ metadata: nextMetadata, updatedAt: new Date() })
+    .where(eq(chatConversation.id, conversationId));
+}
 
 function logSlackSkip(
   reason: string,
@@ -118,8 +185,6 @@ async function createConversationForMention(args: {
   message: any;
   threadTs: string;
 }) {
-  const rawMessage = getSlackRawMessage(args.message);
-  const teamId = rawMessage.team ?? rawMessage.team_id ?? null;
   const title = getSlackText(args.message) || "Slack conversation";
 
   const [conversation] = await db
@@ -129,12 +194,7 @@ async function createConversationForMention(args: {
       organizationId: args.connection.organizationId,
       channel: "slack",
       title,
-      metadata: {
-        teamId,
-        channelId: rawMessage.channel ?? null,
-        threadTs: args.threadTs,
-        slackUserId: rawMessage.user ?? null,
-      },
+      metadata: await getSlackConversationMetadata(args.message, args.threadTs),
     })
     .returning({ id: chatConversation.id });
 
@@ -271,6 +331,11 @@ async function handleInitialSlackMessage(args: {
     return;
   }
 
+  await updateConversationMetadata(
+    conversation.id,
+    await getSlackConversationMetadata(args.message, threadTs),
+  );
+
   console.info(`[slack-integration] conversation created for ${args.source}`, {
     conversationId: conversation.id,
     teamId,
@@ -376,6 +441,11 @@ export function registerSlackHandlers(slackBot: any) {
       });
       return;
     }
+
+    await updateConversationMetadata(
+      conversation.id,
+      await getSlackConversationMetadata(message, threadTs),
+    );
 
     console.info("[slack-integration] found existing conversation for subscribed message", {
       conversationId: conversation.id,

@@ -6,6 +6,24 @@ import { Chat } from "chat";
 import { registerTelegramHandlers } from "./handlers";
 import { getTelegramWebhookUrl, isTelegramBotConfigured } from "./utils";
 
+async function clearTelegramWebhookForPolling() {
+  if (!env.TELEGRAM_BOT_TOKEN) {
+    return;
+  }
+
+  const url = new URL(`bot${env.TELEGRAM_BOT_TOKEN}/deleteWebhook`, env.TELEGRAM_API_BASE_URL);
+  const response = await fetch(url, { method: "POST" });
+  const payload = (await response.json().catch(() => null)) as
+    | { ok?: boolean; description?: string }
+    | null;
+
+  if (!response.ok || payload?.ok === false) {
+    throw new Error(
+      payload?.description || `deleteWebhook failed with status ${response.status}`,
+    );
+  }
+}
+
 declare global {
   var __padynaTelegramBot:
     | {
@@ -47,7 +65,7 @@ const telegramRuntime =
 
 export const telegramBot = telegramRuntime.bot;
 
-export function initializeTelegramBot() {
+export async function initializeTelegramBot() {
   if (telegramRuntime.initialized || !isTelegramBotConfigured()) {
     return;
   }
@@ -60,10 +78,16 @@ export function initializeTelegramBot() {
 
   telegramRuntime.initialized = true;
 
-  void telegramBot.initialize().catch((error) => {
+  try {
+    if (env.NODE_ENV !== "production") {
+      await clearTelegramWebhookForPolling();
+    }
+
+    await telegramBot.initialize();
+  } catch (error) {
     telegramRuntime.initialized = false;
     console.error("Telegram bot initialization failed", error);
-  });
+  }
 }
 
-initializeTelegramBot();
+void initializeTelegramBot();

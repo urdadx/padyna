@@ -28,6 +28,19 @@ type SlackJoinResponse = {
   error?: string;
 };
 
+type SlackUserInfoResponse = {
+  ok?: boolean;
+  error?: string;
+  user?: {
+    name?: string;
+    real_name?: string;
+    profile?: {
+      display_name?: string;
+      real_name?: string;
+    };
+  };
+};
+
 async function getSlackInstallation(teamId: string) {
   await initializeSlackBot();
 
@@ -96,6 +109,41 @@ export async function joinSlackChannel(teamId: string, channelId: string) {
   ) {
     throw new SlackApiError("Failed to join Slack channel", 502, data.error);
   }
+}
+
+export async function getSlackUserProfile(teamId: string, userId: string) {
+  const installation = await getSlackInstallation(teamId);
+
+  const response = await fetch(
+    `https://slack.com/api/users.info?user=${encodeURIComponent(userId)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${installation.botToken}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = (await response.json()) as SlackUserInfoResponse;
+  if (!data.ok || !data.user) {
+    return null;
+  }
+
+  const handle = data.user.name?.trim();
+  const name =
+    data.user.profile?.display_name?.trim() ||
+    data.user.real_name?.trim() ||
+    data.user.profile?.real_name?.trim() ||
+    handle ||
+    null;
+
+  return {
+    participantHandle: handle ? `@${handle}` : null,
+    participantName: name || null,
+  };
 }
 
 export async function postSlackChannelMessage(teamId: string, channelId: string, message: string) {

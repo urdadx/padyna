@@ -9,6 +9,7 @@ import { authMiddleware } from "../middlewares/auth-middleware";
 import { createSupportChatAgent } from "./agents";
 import {
   getConversationStatus,
+  getUserMetadataFromRequest,
   loadConversationMessages,
   persistConversationMessages,
 } from "./chat-utils";
@@ -106,6 +107,7 @@ chatRoutes.post("/", authChatRateLimitMiddleware, async (c) => {
     organizationId: activeOrganization,
     userId,
     channel: "web",
+    metadata: getUserMetadataFromRequest(c),
     messages: uiMessages,
     title,
     conversationId,
@@ -184,6 +186,7 @@ chatRoutes.post("/", authChatRateLimitMiddleware, async (c) => {
         organizationId: activeOrganization,
         userId,
         channel: "web",
+        metadata: getUserMetadataFromRequest(c),
         messages,
         conversationId: resolvedConversationId,
       });

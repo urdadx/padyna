@@ -27,6 +27,71 @@ type ConversationRecord = {
 
 const TELEGRAM_DEFAULT_TITLE = "Telegram conversation";
 
+function getTrimmedString(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function getTelegramSourceLabel(chatType: TelegramMessage["chat"]["type"] | undefined) {
+  switch (chatType) {
+    case "private":
+      return "Telegram private chat";
+    case "group":
+      return "Telegram group";
+    case "supergroup":
+      return "Telegram supergroup";
+    case "channel":
+      return "Telegram channel";
+    default:
+      return "Telegram conversation";
+  }
+}
+
+function getTelegramConversationMetadata(message: any, chatbotId?: string) {
+  const rawMessage = getTelegramRawMessage(message);
+  const participantName =
+    [rawMessage.from?.first_name, rawMessage.from?.last_name].filter(Boolean).join(" ").trim() ||
+    getTrimmedString(rawMessage.chat?.title) ||
+    [rawMessage.chat?.first_name, rawMessage.chat?.last_name].filter(Boolean).join(" ").trim() ||
+    getTrimmedString(rawMessage.from?.username);
+  const participantHandle = getTrimmedString(rawMessage.from?.username);
+
+  return {
+    ...(chatbotId ? { chatbotId } : {}),
+    telegramChatId: rawMessage.chat?.id?.toString() ?? null,
+    telegramUserId: rawMessage.from?.id?.toString() ?? null,
+    participantName: participantName || null,
+    participantHandle: participantHandle ? `@${participantHandle}` : null,
+    participantLanguage: getTrimmedString(rawMessage.from?.language_code),
+    sourceLabel: getTelegramSourceLabel(rawMessage.chat?.type),
+  };
+}
+
+async function updateConversationMetadata(conversationId: string, metadata: Record<string, unknown>) {
+  const [conversation] = await db
+    .select({ metadata: chatConversation.metadata })
+    .from(chatConversation)
+    .where(eq(chatConversation.id, conversationId))
+    .limit(1);
+
+  if (!conversation) {
+    return;
+  }
+
+  const nextMetadata = {
+    ...conversation.metadata,
+    ...metadata,
+  };
+
+  if (JSON.stringify(conversation.metadata ?? {}) === JSON.stringify(nextMetadata)) {
+    return;
+  }
+
+  await db
+    .update(chatConversation)
+    .set({ metadata: nextMetadata, updatedAt: new Date() })
+    .where(eq(chatConversation.id, conversationId));
+}
+
 function getTelegramRawMessage(message: any) {
   return (message.raw ?? {}) as TelegramMessage;
 }
@@ -294,11 +359,7 @@ async function handleStartCommand(thread: any, message: any, text: string) {
         organizationId: chatbotRecord.organizationId,
         channel: "telegram",
         title: TELEGRAM_DEFAULT_TITLE,
-        metadata: {
-          chatbotId: chatbotRecord.id,
-          telegramChatId,
-          telegramUserId,
-        },
+        metadata: getTelegramConversationMetadata(message, chatbotRecord.id),
       })
       .returning({
         id: chatConversation.id,
@@ -314,6 +375,11 @@ async function handleStartCommand(thread: any, message: any, text: string) {
     );
     return;
   }
+
+  await updateConversationMetadata(
+    conversation.id,
+    getTelegramConversationMetadata(message, chatbotRecord.id),
+  );
 
   await thread.setState({
     chatbotId: conversation.chatbotId,
@@ -340,6 +406,11 @@ async function handleTelegramMessage(thread: any, message: any) {
     await thread.post("Please use the Telegram link provided by the business to get started.");
     return;
   }
+
+  await updateConversationMetadata(
+    conversation.id,
+    getTelegramConversationMetadata(message, conversation.chatbotId),
+  );
 
   const contentText = getTelegramText(message);
   if (!contentText) {
