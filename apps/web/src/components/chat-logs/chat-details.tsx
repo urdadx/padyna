@@ -11,6 +11,7 @@ import { PenLinear } from "@/assets/icons/pen-icon";
 import { MobilePhoneLinear } from "@/assets/icons/mobilephone-icon";
 import { LocationLinear } from "@/assets/icons/location-icon";
 import { SolarBoxMinimalisticLinear } from "@/assets/icons/box-icon";
+import { AtSignIcon } from "@/assets/icons/at-sign-icon";
 import { Badge } from "../ui/badge";
 import { XIcon } from "lucide-react";
 import { Button } from "../ui/button";
@@ -127,7 +128,7 @@ function getParticipantDetails(conversation?: ConversationDetails): DetailItem[]
 		details.push({
 			label: "Username",
 			value: participantHandle,
-			icon: UserLinear,
+			icon: AtSignIcon,
 		});
 	}
 
