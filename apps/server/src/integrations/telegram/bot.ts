@@ -4,6 +4,7 @@ import { getPgPool } from "@padyna/db";
 import { env } from "@padyna/env/server";
 import { Chat } from "chat";
 import { registerTelegramHandlers } from "./handlers";
+import { getTelegramWebhookUrl, isTelegramBotConfigured } from "./utils";
 
 declare global {
   var __padynaTelegramBot:
@@ -16,10 +17,6 @@ declare global {
     | undefined;
 }
 
-export function isTelegramBotConfigured() {
-  return Boolean(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_BOT_USERNAME);
-}
-
 const telegramRuntime =
   globalThis.__padynaTelegramBot ??
   (() => {
@@ -30,7 +27,7 @@ const telegramRuntime =
           apiBaseUrl: env.TELEGRAM_API_BASE_URL,
           botToken: env.TELEGRAM_BOT_TOKEN,
           mode: env.NODE_ENV === "production" ? "webhook" : "polling",
-          secretToken: env.TELEGRAM_WEBHOOK_SECRET,
+          secretToken: env.TELEGRAM_WEBHOOK_SECRET_TOKEN,
           userName: env.TELEGRAM_BOT_USERNAME,
         }),
       },
@@ -53,6 +50,12 @@ export const telegramBot = telegramRuntime.bot;
 export function initializeTelegramBot() {
   if (telegramRuntime.initialized || !isTelegramBotConfigured()) {
     return;
+  }
+
+  if (env.NODE_ENV === "production") {
+    console.info("Telegram webhook endpoint", {
+      webhookUrl: getTelegramWebhookUrl(),
+    });
   }
 
   telegramRuntime.initialized = true;

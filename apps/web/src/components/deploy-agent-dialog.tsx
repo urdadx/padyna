@@ -9,7 +9,6 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTrigger } from "./ui/drawer"
 import { HugeRocket } from "@/assets/icons/rocket";
 import { WebsiteIcon } from "@/assets/icons/website-icon";
 import { QrCodeIcon } from "@/assets/icons/qrcode-icon";
-import { useRouteContext } from "@tanstack/react-router";
 import { trpc } from "@/utils/trpc";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -17,10 +16,11 @@ import Spinner from "./ui/spinner";
 import { TelegramIcon } from "@/assets/icons/telegram-icon";
 import { TelegramInstructions } from "./telegram-instructions";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSession } from "@/lib/auth-client";
 
 export const DeployAgentDialog = () => {
 	const isMobile = useIsMobile();
-	const { session } = useRouteContext({ from: "/(admin)" });
+	const { data: session } = useSession();
 	const [isOpen, setIsOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<"widget" | "link" | "qr" | "telegram">("widget");
 	const chatbotId = session?.session.activeChatbot;

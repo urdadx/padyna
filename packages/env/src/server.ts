@@ -48,7 +48,7 @@ export const env = createEnv({
     CLICKUP_CLIENT_ID: z.string().min(1).optional(),
     CLICKUP_CLIENT_SECRET: z.string().min(1).optional(),
     TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
-    TELEGRAM_WEBHOOK_SECRET: z.string().min(1).optional(),
+    TELEGRAM_WEBHOOK_SECRET_TOKEN: z.string().min(1).optional(),
     TELEGRAM_API_BASE_URL: z.url().default("https://api.telegram.org"),
     TELEGRAM_BOT_USERNAME: z.string().min(1).default("padyna_bot"),
     SLACK_CLIENT_ID: z.string().min(1).optional(),

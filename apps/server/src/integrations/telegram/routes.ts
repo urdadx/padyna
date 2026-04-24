@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { isTelegramBotConfigured, telegramBot } from "./bot";
+import { telegramBot } from "./bot";
+import { isTelegramBotConfigured } from "./utils";
 
 type WaitUntilTask = Promise<unknown>;
 
