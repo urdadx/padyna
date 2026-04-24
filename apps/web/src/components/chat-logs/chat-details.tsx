@@ -82,7 +82,6 @@ function getParticipantDetails(conversation?: ConversationDetails): DetailItem[]
 	const sourceLabel = getStringValue(metadata?.sourceLabel);
 	const participantName = getStringValue(metadata?.participantName);
 	const participantHandle = getStringValue(metadata?.participantHandle);
-	const participantLanguage = getStringValue(metadata?.participantLanguage);
 
 	const location = [getStringValue(metadata?.city), getStringValue(metadata?.country)]
 		.filter(Boolean)
@@ -129,14 +128,6 @@ function getParticipantDetails(conversation?: ConversationDetails): DetailItem[]
 			label: "Username",
 			value: participantHandle,
 			icon: AtSignIcon,
-		});
-	}
-
-	if (participantLanguage) {
-		details.push({
-			label: "Language",
-			value: participantLanguage,
-			icon: GlobeLinear,
 		});
 	}
 
