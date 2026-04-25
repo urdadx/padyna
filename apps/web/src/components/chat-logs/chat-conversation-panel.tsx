@@ -32,12 +32,11 @@ interface ChatConversationPanelProps {
 
 type ChatComposerProps = {
   isEscalated: boolean;
-  canSendMessage: boolean;
+  canSendLiveMessage: boolean;
   hasJoined: boolean;
   isAssignedToOther: boolean;
-  sendMessage: (text: string) => boolean | Promise<boolean>;
-  sendTyping?: (isTyping: boolean) => boolean;
-  placeholder?: string;
+  sendMessage: (text: string) => boolean;
+  sendTyping: (isTyping: boolean) => boolean;
 };
 
 function toUiMessage(message: any) {
@@ -58,26 +57,23 @@ function toUiMessage(message: any) {
 
 function ChatComposer({
   isEscalated,
-  canSendMessage,
+  canSendLiveMessage,
   hasJoined,
   isAssignedToOther,
   sendMessage,
   sendTyping,
-  placeholder,
 }: ChatComposerProps) {
   const [inputValue, setInputValue] = useState("");
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingSentRef = useRef(false);
 
-  const inputDisabled = isEscalated ? !canSendMessage || isAssignedToOther : true;
+  const inputDisabled = isEscalated ? !canSendLiveMessage || isAssignedToOther : true;
 
-  const inputPlaceholder =
-    placeholder ??
-    (isEscalated
-      ? canSendMessage
+  const placeholder = isEscalated
+    ? canSendLiveMessage
       ? "Type your message..."
       : "Waiting for both sides to join live chat..."
-      : "Escalate this chat to enable live messaging");
+    : "Escalate this chat to enable live messaging";
 
   const stopTyping = useCallback(() => {
     if (typingTimeoutRef.current) {
@@ -85,14 +81,14 @@ function ChatComposer({
       typingTimeoutRef.current = null;
     }
 
-    if (typingSentRef.current && sendTyping) {
+    if (typingSentRef.current) {
       sendTyping(false);
       typingSentRef.current = false;
     }
   }, [sendTyping]);
 
   useEffect(() => {
-    if (!isEscalated || !hasJoined || !canSendMessage || isAssignedToOther || !sendTyping) {
+    if (!isEscalated || !hasJoined || !canSendLiveMessage || isAssignedToOther) {
       stopTyping();
       return;
     }
@@ -122,7 +118,7 @@ function ChatComposer({
     inputValue,
     isEscalated,
     hasJoined,
-    canSendMessage,
+    canSendLiveMessage,
     isAssignedToOther,
     sendTyping,
     stopTyping,
@@ -136,18 +132,18 @@ function ChatComposer({
 
   const submitMessage = useCallback(async () => {
     const next = inputValue.trim();
-    if (!next || !isEscalated || !canSendMessage || isAssignedToOther) {
+    if (!next || !isEscalated || !canSendLiveMessage || isAssignedToOther) {
       return;
     }
 
-    const sent = await Promise.resolve(sendMessage(next));
+    const sent = sendMessage(next);
     if (!sent) {
       return;
     }
 
     setInputValue("");
     stopTyping();
-  }, [inputValue, isEscalated, canSendMessage, isAssignedToOther, sendMessage, stopTyping]);
+  }, [inputValue, isEscalated, canSendLiveMessage, isAssignedToOther, sendMessage, stopTyping]);
 
   return (
     <div className="bg-background p-1.5 rounded-2xl">
@@ -158,7 +154,7 @@ function ChatComposer({
         className="w-full "
         disabled={inputDisabled}
       >
-        <PromptInputTextarea placeholder={inputPlaceholder} disabled={inputDisabled} />
+        <PromptInputTextarea placeholder={placeholder} disabled={inputDisabled} />
         <PromptInputActions className="justify-end pt-2">
           <PromptInputAction tooltip={"Send message"}>
             <Button
@@ -178,30 +174,6 @@ function ChatComposer({
   );
 }
 
-function NativeHandoffHeader({
-  sourceLabel,
-  isAssignedToOther,
-  assignedUserName,
-}: {
-  sourceLabel?: string;
-  isAssignedToOther: boolean;
-  assignedUserName?: string;
-}) {
-  return (
-    <div className="border-b flex items-center justify-between px-4 py-2 bg-blue-50 dark:bg-blue-950">
-      <div className="flex items-center gap-2 text-sm">
-        <div className="size-2 rounded-full bg-blue-500 animate-pulse" />
-        <span className="font-medium text-blue-700 dark:text-blue-300">
-          Human handoff active in {sourceLabel ?? "Discord"}. Replies here are sent to the customer.
-        </span>
-      </div>
-      {isAssignedToOther ? (
-        <span className="text-xs text-muted-foreground italic">Assigned to {assignedUserName}</span>
-      ) : null}
-    </div>
-  );
-}
-
 export const ChatConversationPanel = ({ chatId, className }: ChatConversationPanelProps) => {
   const [socketMessages, setSocketMessages] = useState<any[]>([]);
   const lastListInvalidateAtRef = useRef(0);
@@ -209,24 +181,23 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
   const { session } = useRouteContext({ from: "/(admin)" });
   const currentUserId = session?.user?.id;
 
-  const { data: conversation } = useQuery({
-    ...trpc.conversations.getById.queryOptions({ id: chatId! }),
-    enabled: !!chatId,
-  });
-
-  const isEscalated = conversation?.status === "escalated" || conversation?.status === "assigned";
-  const isNativeDiscordHandoff = conversation?.channel === "discord" && isEscalated;
-
   const { data: messages, isLoading } = useQuery({
     ...trpc.conversations.getMessages.queryOptions({ conversationId: chatId! }),
     enabled: !!chatId,
     refetchOnMount: true,
   });
 
+  const { data: conversation } = useQuery({
+    ...trpc.conversations.getById.queryOptions({ id: chatId! }),
+    enabled: !!chatId,
+  });
+
   const { data: organizationMembers } = useQuery({
     ...trpc.organization.getMembers.queryOptions(),
     enabled: !!chatId,
   });
+
+  const isEscalated = conversation?.status === "escalated" || conversation?.status === "assigned";
 
   const assignedUserName = useMemo(() => {
     if (!conversation?.assignedTo) {
@@ -278,30 +249,11 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
     },
   });
 
-  const nativeDiscordReplyMutation = useMutation({
-    ...trpc.conversations.sendEscalatedReply.mutationOptions(),
-    onSuccess: (result) => {
-      if (!chatId) {
-        return;
-      }
-
-      setSocketMessages((prev) => {
-        if (prev.some((msg) => msg.id === result.message.id)) {
-          return prev;
-        }
-
-        return [...prev, toUiMessage(result.message)];
-      });
-
-      invalidateConversationCaches(chatId, { includeMessages: true });
-    },
-  });
-
   const liveChat = useLiveChatSocket({
     conversationId: chatId,
     role: "agent",
-    enabled: Boolean(chatId) && (!isNativeDiscordHandoff || !isAssignedToOther),
-    autoJoin: isNativeDiscordHandoff && !isAssignedToOther,
+    enabled: Boolean(chatId),
+    autoJoin: false,
     onMessage: (incoming) => {
       setSocketMessages((prev) => {
         if (prev.some((msg) => msg.id === incoming.id)) {
@@ -319,7 +271,7 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
         ];
       });
 
-      if (chatId && !isNativeDiscordHandoff) {
+      if (chatId) {
         const now = Date.now();
         if (now - lastListInvalidateAtRef.current > 5_000) {
           lastListInvalidateAtRef.current = now;
@@ -373,30 +325,7 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
   }, [baseMessages, socketMessages]);
 
   const blockedByAssignment = liveChat.isAssignedToOther || isAssignedToOther;
-  const canSendMessage = isEscalated
-    ? isNativeDiscordHandoff
-      ? liveChat.canSendMessages && !blockedByAssignment
-      : liveChat.canSendMessages && !blockedByAssignment
-    : false;
-
-  const sendNativeDiscordMessage = useCallback(
-    async (text: string) => {
-      if (!chatId) {
-        return false;
-      }
-
-      try {
-        await nativeDiscordReplyMutation.mutateAsync({
-          id: chatId,
-          text,
-        });
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    [chatId, nativeDiscordReplyMutation],
-  );
+  const canSendLiveMessage = isEscalated ? liveChat.canSendMessages && !blockedByAssignment : false;
 
   const chatbotId = useMemo(() => {
     if (liveMessages.length === 0) {
@@ -441,14 +370,7 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
         conversation={conversation}
         assignedUserName={assignedUserName}
       />
-      {isEscalated && isNativeDiscordHandoff ? (
-        <NativeHandoffHeader
-          sourceLabel={typeof conversation?.metadata === "object" ? (conversation.metadata as any)?.sourceLabel : undefined}
-          isAssignedToOther={blockedByAssignment}
-          assignedUserName={assignedUserName}
-        />
-      ) : null}
-      {isEscalated && !isNativeDiscordHandoff ? (
+      {isEscalated ? (
         <ChatStatusHeader
           status={liveChat.status}
           hasJoined={liveChat.hasJoined}
@@ -497,12 +419,11 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
         </ChatContainerContent>
         <ChatComposer
           isEscalated={isEscalated}
-          canSendMessage={canSendMessage}
+          canSendLiveMessage={canSendLiveMessage}
           hasJoined={liveChat.hasJoined}
           isAssignedToOther={blockedByAssignment}
-          sendMessage={isNativeDiscordHandoff ? sendNativeDiscordMessage : liveChat.sendMessage}
-          sendTyping={isNativeDiscordHandoff ? undefined : liveChat.sendTyping}
-          placeholder={isNativeDiscordHandoff ? "Reply in Discord thread..." : undefined}
+          sendMessage={liveChat.sendMessage}
+          sendTyping={liveChat.sendTyping}
         />
       </ChatContainerRoot>
     </div>
