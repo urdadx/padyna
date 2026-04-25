@@ -3,6 +3,7 @@ import { db } from "@padyna/db";
 import { chatConversation, chatMessage, discordConnection } from "@padyna/db/schema/index";
 import { eq } from "drizzle-orm";
 import { createSupportChatAgent } from "../../chat";
+import { liveChatService } from "../../chat/live-chat-service";
 
 declare global {
   var __padynaDiscordHandlersRegistered: boolean | undefined;
@@ -154,6 +155,13 @@ async function persistDiscordMessage(args: {
       parts: [{ type: "text", text: args.contentText }],
     })
     .onConflictDoNothing();
+
+  return {
+    id: args.messageId,
+    role: args.role,
+    text: args.contentText,
+    createdAt: new Date().toISOString(),
+  };
 }
 
 async function findConversationByThreadId(threadId: string, connection: DiscordConnectionRecord) {
@@ -163,6 +171,7 @@ async function findConversationByThreadId(threadId: string, connection: DiscordC
       chatbotId: true,
       organizationId: true,
       channel: true,
+      status: true,
       metadata: true,
     },
   });
@@ -200,6 +209,10 @@ async function createConversationForMention(args: {
     .returning({ id: chatConversation.id });
 
   return conversation ?? null;
+}
+
+function isConversationInHumanHandoff(status: string | null | undefined) {
+  return status === "escalated" || status === "assigned";
 }
 
 async function runAgentAndRespond(args: {
@@ -274,11 +287,14 @@ export function registerDiscordHandlers(discordBot: any) {
       return;
     }
 
-    const conversation = await createConversationForMention({
-      threadId: thread.id,
-      message,
-      connection,
-    });
+    const existingConversation = await findConversationByThreadId(thread.id, connection);
+    const conversation =
+      existingConversation ??
+      (await createConversationForMention({
+        threadId: thread.id,
+        message,
+        connection,
+      }));
 
     if (!conversation) {
       await thread.post("I couldn't start a conversation for this server. Please try again.");
@@ -289,13 +305,21 @@ export function registerDiscordHandlers(discordBot: any) {
 
     await thread.subscribe();
 
-    await persistDiscordMessage({
+    const persisted = await persistDiscordMessage({
       conversationId: conversation.id,
       connection,
       role: "user",
       messageId: typeof message.id === "string" ? message.id : rawMessage.id || randomUUID(),
       contentText: message.text || "",
     });
+
+    if (isConversationInHumanHandoff((conversation as { status?: string | null }).status)) {
+      liveChatService.broadcastExternalMessage({
+        conversationId: conversation.id,
+        message: persisted,
+      });
+      return;
+    }
 
     await runAgentAndRespond({
       thread,
@@ -327,13 +351,21 @@ export function registerDiscordHandlers(discordBot: any) {
 
     await updateConversationMetadata(conversation.id, getDiscordConversationMetadata(thread.id, message));
 
-    await persistDiscordMessage({
+    const persisted = await persistDiscordMessage({
       conversationId: conversation.id,
       connection,
       role: "user",
       messageId: typeof message.id === "string" ? message.id : rawMessage.id || randomUUID(),
       contentText: message.text || "",
     });
+
+    if (isConversationInHumanHandoff(conversation.status)) {
+      liveChatService.broadcastExternalMessage({
+        conversationId: conversation.id,
+        message: persisted,
+      });
+      return;
+    }
 
     await runAgentAndRespond({
       thread,

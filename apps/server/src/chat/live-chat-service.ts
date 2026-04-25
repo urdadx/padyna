@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { RedisClient } from "bun";
 import { auth } from "@padyna/auth";
 import { db } from "@padyna/db";
 import { createOrganizationNotification } from "@padyna/db/notifications";
+import { env } from "@padyna/env/server";
 import { chatConversation, chatMessage } from "@padyna/db/schema/index";
 import { and, eq } from "drizzle-orm";
 import type {
@@ -29,6 +31,7 @@ type SocketContext = {
 type RoomState = {
   conversationId: string;
   sockets: Set<string>;
+  mode: "live_chat" | "native_handoff";
   visitorConnectionId: string | null;
   visitorJoined: boolean;
   visitorTyping: boolean;
@@ -45,21 +48,121 @@ type ConversationMeta = {
   id: string;
   chatbotId: string;
   organizationId: string;
+  channel: string;
   status: string;
   metadata: Record<string, unknown> | null;
 };
 
+function requiresVisitorPresence(room: RoomState) {
+  return room.mode === "live_chat";
+}
+
 const socketRegistry = new Map<string, SocketContext>();
 const roomRegistry = new Map<string, RoomState>();
+const liveChatRedisUrl = env.REDIS_URL ?? "redis://localhost:6379";
+const liveChatRedisPublisher = new RedisClient(liveChatRedisUrl);
+const liveChatRedisSubscriber = new RedisClient(liveChatRedisUrl);
+const subscribedConversationChannels = new Set<string>();
+
+type ExternalConversationMessagePayload = {
+  conversationId: string;
+  message: {
+    id: string;
+    role: "user" | "assistant";
+    text: string;
+    createdAt: string;
+  };
+};
+
+function externalConversationMessageChannel(conversationId: string) {
+  return `live-chat:conversation:${conversationId}:message`;
+}
+
+function deliverExternalConversationMessage(payload: ExternalConversationMessagePayload) {
+  const room = roomRegistry.get(payload.conversationId);
+  if (!room) {
+    return;
+  }
+
+  const outbound: LiveChatServerEvent = {
+    type: "message",
+    message: payload.message,
+  };
+
+  for (const socket of getRoomSockets(room)) {
+    sendEvent(socket.ws, outbound);
+  }
+}
+
+function parseExternalConversationMessage(value: string): ExternalConversationMessagePayload | null {
+  try {
+    const parsed = JSON.parse(value) as Partial<ExternalConversationMessagePayload>;
+    if (typeof parsed.conversationId !== "string" || !parsed.message) {
+      return null;
+    }
+
+    const message = parsed.message as Partial<ExternalConversationMessagePayload["message"]>;
+    if (
+      typeof message.id !== "string" ||
+      (message.role !== "user" && message.role !== "assistant") ||
+      typeof message.text !== "string" ||
+      typeof message.createdAt !== "string"
+    ) {
+      return null;
+    }
+
+    return {
+      conversationId: parsed.conversationId,
+      message: {
+        id: message.id,
+        role: message.role,
+        text: message.text,
+        createdAt: message.createdAt,
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function ensureConversationSubscription(conversationId: string) {
+  const channel = externalConversationMessageChannel(conversationId);
+  if (subscribedConversationChannels.has(channel)) {
+    return;
+  }
+
+  subscribedConversationChannels.add(channel);
+
+  await liveChatRedisSubscriber.subscribe(channel, (message) => {
+    const payload = parseExternalConversationMessage(message);
+    if (!payload) {
+      return;
+    }
+
+    deliverExternalConversationMessage(payload);
+  });
+}
+
+async function cleanupConversationSubscription(conversationId: string) {
+  const channel = externalConversationMessageChannel(conversationId);
+  if (!subscribedConversationChannels.has(channel)) {
+    return;
+  }
+
+  subscribedConversationChannels.delete(channel);
+  await liveChatRedisSubscriber.unsubscribe(channel);
+}
 
 function toRoomStatePayload(room: RoomState): LiveChatRoomState {
+  const ready = room.agentJoined && (requiresVisitorPresence(room) ? room.visitorJoined : true);
+
   return {
     conversationId: room.conversationId,
     hasVisitor: room.visitorConnectionId !== null,
     hasAgent: room.agentConnectionId !== null,
     visitorJoined: room.visitorJoined,
     agentJoined: room.agentJoined,
-    ready: room.visitorJoined && room.agentJoined,
+    ready,
   };
 }
 
@@ -72,6 +175,7 @@ function ensureRoom(conversationId: string): RoomState {
   const created: RoomState = {
     conversationId,
     sockets: new Set(),
+    mode: "live_chat",
     visitorConnectionId: null,
     visitorJoined: false,
     visitorTyping: false,
@@ -225,6 +329,7 @@ async function getConversationMeta(conversationId: string): Promise<Conversation
       id: chatConversation.id,
       chatbotId: chatConversation.chatbotId,
       organizationId: chatConversation.organizationId,
+      channel: chatConversation.channel,
       status: chatConversation.status,
       metadata: chatConversation.metadata,
     })
@@ -240,6 +345,7 @@ async function getConversationMeta(conversationId: string): Promise<Conversation
     id: conversation.id,
     chatbotId: conversation.chatbotId,
     organizationId: conversation.organizationId,
+    channel: conversation.channel,
     status: conversation.status,
     metadata: (conversation.metadata ?? null) as Record<string, unknown> | null,
   };
@@ -378,6 +484,7 @@ async function handleJoinEvent(
   }
 
   const room = ensureRoom(socket.conversationId);
+  room.mode = conversation.channel === "discord" ? "native_handoff" : "live_chat";
 
   if (!socket.role) {
     sendEvent(socket.ws, {
@@ -505,7 +612,7 @@ async function handleMessageEvent(socket: SocketContext, event: LiveChatClientEv
     return;
   }
 
-  if (!room.agentJoined || !room.visitorJoined) {
+  if (!room.agentJoined || (requiresVisitorPresence(room) && !room.visitorJoined)) {
     sendError(socket.ws, "NOT_READY", "Both parties must join before chat can start.");
     return;
   }
@@ -548,7 +655,7 @@ function handleTypingEvent(socket: SocketContext, event: LiveChatClientEvent) {
     return;
   }
 
-  if (!room.agentJoined || !room.visitorJoined) {
+  if (!room.agentJoined || (requiresVisitorPresence(room) && !room.visitorJoined)) {
     return;
   }
 
@@ -588,6 +695,7 @@ function cleanupConnection(socket: SocketContext) {
 
   if (room.sockets.size === 0) {
     roomRegistry.delete(socket.conversationId);
+    void cleanupConversationSubscription(socket.conversationId);
     return;
   }
 
@@ -630,6 +738,9 @@ export const liveChatService = {
 
     const room = ensureRoom(input.conversationId);
     room.sockets.add(connectionId);
+    if (room.sockets.size === 1) {
+      void ensureConversationSubscription(input.conversationId);
+    }
 
     broadcastRoomState(room);
 
@@ -663,6 +774,21 @@ export const liveChatService = {
       return;
     }
     cleanupConnection(socket);
+  },
+
+  broadcastExternalMessage(input: {
+    conversationId: string;
+    message: {
+      id: string;
+      role: "user" | "assistant";
+      text: string;
+      createdAt: string;
+    };
+  }) {
+    void liveChatRedisPublisher.publish(
+      externalConversationMessageChannel(input.conversationId),
+      JSON.stringify(input),
+    );
   },
 };
 

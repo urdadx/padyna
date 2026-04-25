@@ -4,6 +4,7 @@ import { db } from "@padyna/db";
 import { eq, and, or, desc, asc, SQL } from "drizzle-orm";
 import { chatConversation, chatMessage } from "@padyna/db/schema/chat";
 import { createOrganizationNotification } from "@padyna/db/notifications";
+import { env } from "@padyna/env/server";
 import { randomUUID } from "node:crypto";
 
 function getLiveChatToken(metadata: Record<string, unknown> | undefined): string {
@@ -33,6 +34,76 @@ const conversationSortSchema = z.enum([
 
 function isPlatformSort(sort: z.infer<typeof conversationSortSchema>) {
   return !["recent", "oldest", "priority"].includes(sort);
+}
+
+type DiscordConversationMetadata = {
+  channelId?: string | null;
+  threadId?: string | null;
+};
+
+function getDiscordApiChannelId(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (!trimmed.startsWith("discord:")) {
+    return trimmed;
+  }
+
+  const [, , , threadId] = trimmed.split(":");
+  return threadId?.trim() || null;
+}
+
+function isConversationInHumanHandoff(status: string | null | undefined) {
+  return status === "escalated" || status === "assigned";
+}
+
+async function postDiscordConversationReply(args: {
+  metadata: Record<string, unknown> | null | undefined;
+  text: string;
+}) {
+  if (!env.DISCORD_BOT_TOKEN) {
+    throw new Error("Discord bot is not configured");
+  }
+
+  const metadata = (args.metadata ?? {}) as DiscordConversationMetadata;
+  const targetChannelId =
+    getDiscordApiChannelId(metadata.threadId) ?? getDiscordApiChannelId(metadata.channelId);
+
+  if (!targetChannelId) {
+    throw new Error("Discord conversation is missing routing metadata");
+  }
+
+  const response = await fetch(
+    `https://discord.com/api/v10/channels/${encodeURIComponent(targetChannelId)}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ content: args.text }),
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to post Discord reply: ${response.status} ${errorText}`);
+  }
+
+  const data = (await response.json()) as { id?: unknown };
+  if (typeof data.id !== "string" || data.id.length === 0) {
+    throw new Error("Discord reply did not return a message id");
+  }
+
+  return {
+    messageId: data.id,
+  };
 }
 
 export const conversationsRouter = router({
@@ -158,6 +229,94 @@ export const conversationsRouter = router({
         .orderBy(chatMessage.createdAt);
 
       return messages;
+    }),
+
+  sendEscalatedReply: protectedProcedure
+    .input(
+      z.object({
+        id: z.uuid(),
+        text: z.string().trim().min(1),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const organizationId = ctx.session.session.activeOrganization;
+      if (!organizationId) {
+        throw new Error("No active organization");
+      }
+
+      const [record] = await db
+        .select()
+        .from(chatConversation)
+        .where(eq(chatConversation.id, input.id))
+        .limit(1);
+
+      if (!record || record.organizationId !== organizationId) {
+        throw new Error("Conversation not found");
+      }
+
+      if (record.channel !== "discord") {
+        throw new Error("Native escalated replies are only supported for Discord right now");
+      }
+
+      if (!isConversationInHumanHandoff(record.status)) {
+        throw new Error("Conversation is not currently escalated");
+      }
+
+      const isAdmin = ctx.session.user.role === "admin";
+      const isAssignedToCurrentUser = record.assignedTo === ctx.session.user.id;
+      if (record.assignedTo && !isAdmin && !isAssignedToCurrentUser) {
+        throw new Error("Conversation is assigned to another member");
+      }
+
+      const reply = await postDiscordConversationReply({
+        metadata: record.metadata,
+        text: input.text,
+      });
+
+      const nextStatus = record.status === "assigned" ? record.status : "assigned";
+      const nextAssignedTo = record.assignedTo ?? ctx.session.user.id;
+
+      await db.insert(chatMessage).values({
+        conversationId: record.id,
+        chatbotId: record.chatbotId,
+        organizationId: record.organizationId,
+        userId: ctx.session.user.id,
+        role: "assistant",
+        messageId: reply.messageId,
+        contentText: input.text,
+        parts: [{ type: "text", text: input.text }],
+      });
+
+      const [updated] = await db
+        .update(chatConversation)
+        .set({
+          status: nextStatus,
+          assignedTo: nextAssignedTo,
+          updatedAt: new Date(),
+        })
+        .where(eq(chatConversation.id, record.id))
+        .returning();
+
+      if (updated && updated.status !== record.status) {
+        ctx.liveChat?.broadcastConversationStatus?.({
+          conversationId: updated.id,
+          status: updated.status,
+        });
+      }
+
+      return {
+        message: {
+          id: reply.messageId,
+          messageId: reply.messageId,
+          role: "assistant" as const,
+          contentText: input.text,
+          parts: [{ type: "text", text: input.text }],
+          chatbotId: record.chatbotId,
+          userId: ctx.session.user.id,
+          createdAt: new Date(),
+        },
+        conversation: updated ?? record,
+      };
     }),
 
   update: protectedProcedure
