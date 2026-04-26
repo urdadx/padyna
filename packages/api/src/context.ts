@@ -20,17 +20,28 @@ export async function createContext({ context, liveChat }: CreateContextOptions)
   });
 
   const headers = context.req.raw.headers;
+  const hostname = new URL(context.req.raw.url).hostname;
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+  const rawCountryCode = headers.get("cf-ipcountry")?.toUpperCase();
+  const countryCode = rawCountryCode && /^[A-Z]{2}$/.test(rawCountryCode) && rawCountryCode !== "XX"
+    ? rawCountryCode
+    : isLocalhost
+      ? "GH"
+    : undefined;
+  const country = countryCode
+    ? new Intl.DisplayNames(["en"], { type: "region" }).of(countryCode) ?? undefined
+    : undefined;
 
   return {
     session,
     liveChat,
     request: {
       headers: {
-        countryCode: headers.get("cf-ipcountry") || "GH",
-        city: headers.get("cf-ipcity") || "Accra",
-        region: headers.get("cf-region") || "Greater Accra",
-        country: headers.get("cf-country") || "Ghana",
-        continent: headers.get("cf-continent") || "AF",
+        countryCode,
+        city: headers.get("cf-ipcity") || (isLocalhost ? "Accra" : undefined),
+        region: headers.get("cf-region") || (isLocalhost ? "Greater Accra" : undefined),
+        country,
+        continent: headers.get("cf-ipcontinent") || (isLocalhost ? "AF" : undefined),
         userAgent: headers.get("user-agent") || undefined,
         referer: headers.get("referer") || undefined,
       },

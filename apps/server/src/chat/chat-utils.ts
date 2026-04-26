@@ -523,9 +523,16 @@ export async function getConversationStatus(conversationId: string) {
 
 export const getUserMetadataFromRequest = (c: any) => {
   const userAgent = c.req.header("user-agent") || "";
-  const country = c.req.header("cf-ipcountry") || "GH";
+  const hostname = new URL(c.req.raw.url).hostname;
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+  const rawCountryCode = c.req.header("cf-ipcountry")?.toUpperCase();
+  const country = rawCountryCode && /^[A-Z]{2}$/.test(rawCountryCode) && rawCountryCode !== "XX"
+    ? new Intl.DisplayNames(["en"], { type: "region" }).of(rawCountryCode) ?? undefined
+    : isLocalhost
+      ? "Ghana"
+    : undefined;
   const timeZone = c.req.header("x-timezone") || Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const city = c.req.header("cf-ipcity") || "Accra";
+  const city = c.req.header("cf-ipcity") || (isLocalhost ? "Accra" : undefined);
   const deviceInfo = detectDeviceFromUserAgent(userAgent);
 
   return {
