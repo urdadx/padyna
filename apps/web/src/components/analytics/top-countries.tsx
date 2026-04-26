@@ -12,6 +12,7 @@ import { DesktopIconLinear } from "@/assets/icons/desktop-icon";
 import { MobilePhoneLinear } from "@/assets/icons/mobilephone-icon";
 import { TabletIconLinear } from "@/assets/icons/tablet-icon";
 import { QuestionCircleIcon } from "@/assets/icons/question-circle-icon";
+import { getCountryFromCode } from "@/constants/counties";
 
 export const TIME_RANGE_ITEMS = [
 	{ label: "Last 24 hours", value: "24h" },
@@ -58,19 +59,23 @@ export function TopCountries() {
 		unknown: "SYS",
 	};
 
-	const mapCountries = (countriesQuery.data ?? []).map((c) => ({
-		icon: (
-			<img
-				src={`https://flag.vercel.app/m/${c.countryCode}.svg`}
-				className="w-4"
-				alt={c.countryCode}
-			/>
-		),
-		title: c.country,
-		value: c.value,
-		href: "",
-		linkId: "",
-	}));
+	const mapCountries = (countriesQuery.data ?? []).map((c) => {
+		const countryName = getCountryFromCode(c.countryCode.toUpperCase()) ?? c.country ?? "Unknown";
+
+		return {
+			icon: (
+				<img
+					src={`https://flag.vercel.app/m/${c.countryCode}.svg`}
+					className="w-4"
+					alt={c.countryCode}
+				/>
+			),
+			title: countryName,
+			value: c.value,
+			href: "",
+			linkId: "",
+		};
+	});
 
 	const mapDevices = (devicesQuery.data ?? []).map((d) => ({
 		icon:
