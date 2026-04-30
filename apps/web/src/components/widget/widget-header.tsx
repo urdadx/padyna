@@ -75,7 +75,7 @@ export const WidgetHeader = ({ chatbot, isLoading, onReset, onClose }: WidgetHea
 							<Button
 								variant="ghost"
 								size="icon"
-								className="rounded-full hidden sm:flex"
+								className="rounded-full"
 								onClick={onClose}
 								aria-label="Close widget">
 								<XIcon className="size-5" />

@@ -37,6 +37,17 @@ type PadynaDom = {
   bubbleClose: HTMLButtonElement;
 };
 
+type PageScrollLockState = {
+  scrollY: number;
+  bodyOverflow: string;
+  bodyPosition: string;
+  bodyTop: string;
+  bodyWidth: string;
+  bodyOverscrollBehavior: string;
+  htmlOverflow: string;
+  htmlOverscrollBehavior: string;
+};
+
 type PadynaState = {
   isInitialized: boolean;
   isOpen: boolean;
@@ -53,6 +64,7 @@ type PadynaState = {
   hideLoaderTimer: ReturnType<typeof setTimeout> | null;
   launcherMessage: string;
   isLauncherMessageDismissed: boolean;
+  pageScrollLock: PageScrollLockState | null;
 };
 
 function inferDefaultServerUrl() {
@@ -155,8 +167,64 @@ function syncLauncherBubble(dom: PadynaDom) {
   dom.bubble.style.pointerEvents = shouldShow ? "auto" : "none";
 }
 
+function lockHostPageScroll() {
+  if (state.pageScrollLock || typeof window === "undefined") {
+    return;
+  }
+
+  const body = document.body;
+  const html = document.documentElement;
+  const scrollY = window.scrollY || html.scrollTop || body.scrollTop || 0;
+
+  state.pageScrollLock = {
+    scrollY,
+    bodyOverflow: body.style.overflow,
+    bodyPosition: body.style.position,
+    bodyTop: body.style.top,
+    bodyWidth: body.style.width,
+    bodyOverscrollBehavior: body.style.overscrollBehavior,
+    htmlOverflow: html.style.overflow,
+    htmlOverscrollBehavior: html.style.overscrollBehavior,
+  };
+
+  html.style.overflow = "hidden";
+  html.style.overscrollBehavior = "none";
+  body.style.overflow = "hidden";
+  body.style.position = "fixed";
+  body.style.top = `-${scrollY}px`;
+  body.style.width = "100%";
+  body.style.overscrollBehavior = "none";
+}
+
+function unlockHostPageScroll() {
+  if (!state.pageScrollLock || typeof window === "undefined") {
+    return;
+  }
+
+  const previous = state.pageScrollLock;
+  const body = document.body;
+  const html = document.documentElement;
+
+  body.style.overflow = previous.bodyOverflow;
+  body.style.position = previous.bodyPosition;
+  body.style.top = previous.bodyTop;
+  body.style.width = previous.bodyWidth;
+  body.style.overscrollBehavior = previous.bodyOverscrollBehavior;
+  html.style.overflow = previous.htmlOverflow;
+  html.style.overscrollBehavior = previous.htmlOverscrollBehavior;
+  window.scrollTo(0, previous.scrollY);
+
+  state.pageScrollLock = null;
+}
+
 function applyLayoutState(dom: PadynaDom, isOpen: boolean) {
   const isMobileFullscreen = isOpen && isMobileViewport();
+
+  if (isMobileFullscreen) {
+    lockHostPageScroll();
+  } else {
+    unlockHostPageScroll();
+  }
 
   dom.root.style.top = isMobileFullscreen ? "0" : "auto";
   dom.root.style.left = isMobileFullscreen ? "0" : "auto";
@@ -165,13 +233,15 @@ function applyLayoutState(dom: PadynaDom, isOpen: boolean) {
   dom.root.style.width = isMobileFullscreen ? "100vw" : "auto";
   dom.root.style.height = isMobileFullscreen ? "100dvh" : "auto";
   dom.root.style.alignItems = isMobileFullscreen ? "stretch" : "flex-end";
+  dom.root.style.overflow = isMobileFullscreen ? "hidden" : "visible";
 
-  dom.panel.style.width = isMobileFullscreen ? "100vw" : "min(400px, calc(100vw - 24px))";
-  dom.panel.style.height = isMobileFullscreen ? "100dvh" : "min(680px, calc(100vh - 96px))";
+  dom.panel.style.width = isMobileFullscreen ? "100%" : "min(400px, calc(100vw - 24px))";
+  dom.panel.style.height = isMobileFullscreen ? "100%" : "min(680px, calc(100vh - 96px))";
   dom.panel.style.maxHeight = isMobileFullscreen ? "none" : "680px";
   dom.panel.style.marginBottom = isMobileFullscreen ? "0" : "12px";
   dom.panel.style.borderRadius = isMobileFullscreen ? "0" : "16px";
   dom.panel.style.transformOrigin = isMobileFullscreen ? "center center" : "bottom right";
+  dom.panel.style.boxShadow = isMobileFullscreen ? "none" : "0 12px 28px rgba(0, 0, 0, 0.15)";
 
   dom.button.style.display = isMobileFullscreen ? "none" : "grid";
 }
@@ -489,6 +559,7 @@ const state: PadynaState = {
   hideLoaderTimer: null,
   launcherMessage: DEFAULT_LAUNCHER_MESSAGE,
   isLauncherMessageDismissed: false,
+  pageScrollLock: null,
 };
 
 async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
@@ -665,6 +736,8 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
     clearTimeout(state.hideLoaderTimer);
     state.hideLoaderTimer = null;
   }
+
+  unlockHostPageScroll();
 }
 
 function drainQueue(queued: unknown[][]) {

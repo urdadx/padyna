@@ -1,6 +1,5 @@
 import LoginForm from "@/components/auth/login-form";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import LoginBackgroundImage from "@/assets/images/bridge.webp";
 import { z } from "zod";
 
 const loginSearchSchema = z.object({
@@ -34,7 +33,7 @@ async function RouteComponent() {
 				</div>
 				<div className="relative hidden bg-muted lg:block">
 					<img
-						src={LoginBackgroundImage}
+						src="https://assets.padyna.com/assets/bridge.webp"
 						alt="Image"
 						loading="lazy"
 						className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
