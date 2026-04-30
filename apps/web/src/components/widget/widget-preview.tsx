@@ -275,7 +275,7 @@ function WidgetPreviewContent({
 
 	return (
 		<div
-			className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background"
+			className="flex h-[100dvh] sm:h-full min-h-0 w-full flex-col overflow-hidden bg-background"
 			style={{ "--primary": widgetConfig?.primaryColor } as React.CSSProperties}>
 			<WidgetHeader
 				chatbot={widgetConfig}

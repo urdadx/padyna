@@ -36,7 +36,7 @@ function WidgetRoute() {
 
 	if (!widgetId) {
 		return (
-			<div className="grid h-dvh w-full place-items-center bg-white p-6">
+			<div className="grid h-svh w-full place-items-center bg-white p-6">
 				<div className="rounded-md bg-red-50 p-4">
 					<div className="flex gap-2">
 						<AlertCircleIcon
@@ -54,7 +54,7 @@ function WidgetRoute() {
 	}
 
 	return (
-		<div className="h-dvh w-full overflow-hidden bg-white">
+		<div className="h-svh w-full overflow-hidden bg-white">
 			<WidgetPreview
 				widgetId={widgetId}
 				serverUrl={env.VITE_SERVER_URL}
