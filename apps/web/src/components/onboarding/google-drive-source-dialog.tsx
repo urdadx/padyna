@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { GoogleDrive } from "@/assets/icons/google-drive-icon";
 import { SearchLinear } from "@/assets/icons/search-icon";
 import { FileTree } from "@/components/filetree";
+import GoogleDrive from "@/assets/google-drive.png";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -417,7 +417,11 @@ export function GoogleDriveSourceDialog({ open, onOpenChange }: GoogleDriveSourc
 						<div className="rounded-lg border bg-muted/20 p-4">
 							<div className="flex items-start gap-3">
 								<div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-background">
-									<GoogleDrive className="size-5" />
+									<img
+										src={GoogleDrive}
+										alt="Google Drive"
+										className="size-6"
+									/>
 								</div>
 								<div className="min-w-0 flex-1">
 									<h3 className="font-medium font-sans text-foreground">
@@ -515,30 +519,32 @@ export function GoogleDriveSourceDialog({ open, onOpenChange }: GoogleDriveSourc
 					)}
 				</div>
 
-        <DialogFooter>
-          {isConnected && (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isIngesting}>
-                Cancel
-              </Button>
-              <Button
-                disabled={selectedItemList.length === 0 || isIngesting}
-                onClick={() => ingestItems(selectedItemList)}>
-                {isIngesting ? (
-                  <>
-                    <Spinner className="mr-2 h-4 w-4" />
-                    Ingesting...
-                  </>
-                ) : (
-                  `Ingest ${selectedItemList.length || ""} Item${selectedItemList.length === 1 ? "" : "s"}`
-                )}
-              </Button>
-            </>
-          )}
-        </DialogFooter>
+				<DialogFooter>
+					{isConnected && (
+						<>
+							<Button
+								variant="outline"
+								onClick={() => onOpenChange(false)}
+								disabled={isIngesting}>
+								Cancel
+							</Button>
+							<Button
+								disabled={
+									selectedItemList.length === 0 || isIngesting
+								}
+								onClick={() => ingestItems(selectedItemList)}>
+								{isIngesting ? (
+									<>
+										<Spinner className="mr-2 h-4 w-4" />
+										Ingesting...
+									</>
+								) : (
+									`Ingest ${selectedItemList.length || ""} Item${selectedItemList.length === 1 ? "" : "s"}`
+								)}
+							</Button>
+						</>
+					)}
+				</DialogFooter>
 			</DialogContent>
 		</Dialog>
 	);

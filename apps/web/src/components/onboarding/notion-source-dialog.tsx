@@ -6,7 +6,6 @@ import api from "@/lib/api";
 import { trpc } from "@/utils/trpc";
 import { Button } from "@/components/ui/button";
 import { FileTree } from "@/components/filetree";
-import { NotionIcon } from "@/assets/icons/notion-icon";
 import {
 	Dialog,
 	DialogContent,
@@ -18,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import Spinner from "../ui/spinner";
 import { SearchLinear } from "@/assets/icons/search-icon";
+import NotionLogo from "@/assets/notion.png";
 
 type NotionResource = {
 	id: string;
@@ -486,9 +486,10 @@ export function NotionSourceDialog({ open, onOpenChange }: NotionSourceDialogPro
 						<div className="rounded-lg border bg-muted/20 p-4">
 							<div className="mb-4 flex items-start gap-3">
 								<div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-background">
-									<NotionIcon
-										className="size-5"
-										color="currentColor"
+									<img
+										src={NotionLogo}
+										alt="Notion"
+										className="size-6"
 									/>
 								</div>
 								<div className="min-w-0">
