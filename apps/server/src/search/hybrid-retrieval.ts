@@ -17,7 +17,7 @@ export interface HybridRetrievedChunk {
   content: string;
   chunkIndex: number;
   sourceName: string;
-  sourceType: "link" | "file" | "qa" | "text";
+  sourceType: "link" | "file" | "qa" | "text" | "notion" | "google_drive";
   url: string | null;
   fusedScore: number;
   semanticScore: number | null;
@@ -32,7 +32,7 @@ interface HybridRetrievedChunkRow {
   content: string;
   chunk_index: number;
   source_name: string;
-  source_type: "link" | "file" | "qa" | "text";
+  source_type: "link" | "file" | "qa" | "text" | "notion" | "google_drive";
   url: string | null;
   fused_score: number;
   semantic_score: number | null;

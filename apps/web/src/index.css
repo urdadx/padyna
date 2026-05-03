@@ -336,6 +336,17 @@
     height: 70vh;
   }
 }
+@media (min-width: 1024px) {
+  .filetree-height {
+    height: 75vh;
+  }
+}
+
+@media (min-width: 1450px) {
+  .filetree-height {
+    height: 70vh;
+  }
+}
 
 @layer base {
   * {

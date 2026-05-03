@@ -32,7 +32,7 @@ export const datasourceRouter = router({
     const organizationId = ctx.session.session.activeOrganization;
     const chatbotId = ctx.session.session.activeChatbot;
     if (!organizationId || !chatbotId) {
-      return { file: 0, text: 0, link: 0, qa: 0 };
+      return { file: 0, text: 0, link: 0, qa: 0, notion: 0, google_drive: 0, all: 0 };
     }
 
     const result = await db
@@ -47,6 +47,8 @@ export const datasourceRouter = router({
       text: result.filter((r) => r.sourceType === "text").length,
       link: result.filter((r) => r.sourceType === "link").length,
       qa: result.filter((r) => r.sourceType === "qa").length,
+      notion: result.filter((r) => r.sourceType === "notion").length,
+      google_drive: result.filter((r) => r.sourceType === "google_drive").length,
       all: result.length,
     };
   }),

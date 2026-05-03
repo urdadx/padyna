@@ -13,6 +13,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/utils/trpc";
 import { DefaultChatTransport } from "ai";
+import * as Sentry from "@sentry/react";
 import { WidgetHeader } from "./widget-header";
 import { WidgetMessages } from "./widget-messages";
 import { WidgetMessage } from "./widget-components/message";
@@ -174,6 +175,8 @@ function WidgetPreviewContent({
 		id: chatId,
 		transport,
 		onError: (error) => {
+			const debugInfo = getWidgetDebugInfo();
+
 			console.error("[Padyna widget] chat request failed", {
 				error,
 				errorName: error.name,
@@ -184,7 +187,20 @@ function WidgetPreviewContent({
 				hostOrigin,
 				platform,
 				chatApi,
-				debugInfo: getWidgetDebugInfo(),
+				debugInfo,
+			});
+
+			Sentry.withScope((scope) => {
+				scope.setTag("padyna.area", "widget-chat");
+				scope.setContext("widget", {
+					widgetId,
+					chatId,
+					hostOrigin,
+					platform,
+					chatApi,
+				});
+				scope.setContext("browserDebug", debugInfo);
+				Sentry.captureException(error);
 			});
 		},
 	});

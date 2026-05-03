@@ -71,7 +71,7 @@ export const StepTwo = ({ onBack, onContinue }: StepProps) => {
 
   const { data: sourceCounts } = useQuery({
     ...trpc.datasource.getSourceCounts.queryOptions(),
-    initialData: { file: 0, text: 0, link: 0, qa: 0 },
+    initialData: { file: 0, text: 0, link: 0, qa: 0, notion: 0, google_drive: 0, all: 0 },
     refetchOnMount: true,
     staleTime: 0,
   });

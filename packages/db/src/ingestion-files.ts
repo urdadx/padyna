@@ -12,10 +12,13 @@ interface CreateDatasourceInput {
   mimeType?: string;
   fileHash?: string;
   contentHash?: string;
-  sourceType?: "file" | "link" | "qa" | "text";
+  sourceType?: "file" | "link" | "qa" | "text" | "notion" | "google_drive";
   url?: string;
   question?: string;
   answer?: string;
+  sourceConfig?: Record<string, unknown>;
+  providerPayload?: Record<string, unknown>;
+  extraMetadata?: Record<string, unknown>;
 }
 
 interface UpdateDatasourceSuccessInput {
@@ -44,7 +47,12 @@ interface InsertChunkInput {
 export async function createDatasourceRecord(input: CreateDatasourceInput) {
   let existingId: string | undefined;
 
-  if (input.sourceType === "link" && input.url) {
+  if (
+    (input.sourceType === "link" ||
+      input.sourceType === "notion" ||
+      input.sourceType === "google_drive") &&
+    input.url
+  ) {
     const existing = await db.query.datasources.findFirst({
       where: and(eq(datasources.chatbotId, input.chatbotId), eq(datasources.url, input.url)),
       columns: { id: true },
@@ -89,6 +97,10 @@ export async function createDatasourceRecord(input: CreateDatasourceInput) {
         ...(input.fileHash ? { fileHash: input.fileHash } : {}),
         ...(input.question ? { question: input.question } : {}),
         ...(input.answer ? { answer: input.answer } : {}),
+        ...(input.url ? { url: input.url } : {}),
+        ...(input.sourceConfig ? { sourceConfig: input.sourceConfig } : {}),
+        ...(input.providerPayload ? { providerPayload: input.providerPayload } : {}),
+        ...(input.extraMetadata ? { extraMetadata: input.extraMetadata } : {}),
       })
       .where(eq(datasources.id, existingId));
 
@@ -106,13 +118,16 @@ export async function createDatasourceRecord(input: CreateDatasourceInput) {
       sourceName: input.sourceName,
       ingestStatus: "processing",
       sizeBytes: input.sizeBytes ?? 0,
-      fileName: input.sourceType === "link" ? null : input.sourceName,
+      fileName: input.sourceType === "file" ? input.sourceName : null,
       url: input.url,
       mimeType: input.mimeType,
       fileHash: input.fileHash,
       contentHash: input.contentHash ?? input.fileHash,
       question: input.question,
       answer: input.answer,
+      sourceConfig: input.sourceConfig,
+      providerPayload: input.providerPayload,
+      extraMetadata: input.extraMetadata,
     })
     .returning({ id: datasources.id });
 

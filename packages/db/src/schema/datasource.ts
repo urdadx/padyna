@@ -44,7 +44,7 @@ export const datasources = pgTable(
       .references(() => organization.id, { onDelete: "cascade" }),
 
     sourceType: varchar("source_type", {
-      enum: ["link", "file", "qa", "text"],
+      enum: ["link", "file", "qa", "text", "notion", "google_drive"],
     }).notNull(),
     sourceName: text("source_name").notNull(),
 

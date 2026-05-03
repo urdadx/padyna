@@ -36,6 +36,8 @@ import { GlobeLinear } from "@/assets/icons/globe-icon";
 import { TextLinear } from "@/assets/icons/text-icon";
 import { ChatLinear } from "@/assets/icons/chat-icon";
 import { PaperclipLinear } from "@/assets/icons/paperclip-icon";
+import { NotionIcon } from "@/assets/icons/notion-icon";
+import { GoogleDrive } from "@/assets/icons/google-drive-icon";
 import { DataSourceActions } from "./datasource-actions";
 import { queryClient, trpc, trpcClient } from "@/utils/trpc";
 import Spinner from "../ui/spinner";
@@ -49,7 +51,7 @@ export type Item = {
 	fileSize: string;
 	noReferenced: number;
 	status: "Synced" | "Processing" | "Failed";
-	type: "File" | "Text" | "Q&A" | "Link";
+	type: "File" | "Text" | "Q&A" | "Link" | "Notion" | "Google Drive";
 	url?: string;
 	question?: string;
 	answer?: string;
@@ -59,7 +61,7 @@ export type Item = {
 type DatasourceRow = {
 	id: string;
 	sourceName: string;
-	sourceType: "link" | "file" | "qa" | "text";
+	sourceType: "link" | "file" | "qa" | "text" | "notion" | "google_drive";
 	ingestStatus: "pending" | "processing" | "synced" | "failed" | "archived";
 	timesReferenced: number;
 	sizeBytes: number | null;
@@ -90,7 +92,11 @@ function mapDatasourceToItem(db: DatasourceRow): Item {
 					? "Text"
 					: db.sourceType === "qa"
 						? "Q&A"
-						: "Link",
+						: db.sourceType === "notion"
+							? "Notion"
+							: db.sourceType === "google_drive"
+								? "Google Drive"
+								: "Link",
 		url: db.url ?? undefined,
 		question: db.question ?? undefined,
 		answer: db.answer ?? undefined,
@@ -133,7 +139,11 @@ const columns: ColumnDef<Item>[] = [
 									? TextLinear
 									: type === "File"
 										? PaperclipLinear
-										: ChatLinear
+										: type === "Notion"
+											? NotionIcon
+											: type === "Google Drive"
+												? GoogleDrive
+												: ChatLinear
 						}
 						color={
 							type === "Link"
@@ -142,9 +152,9 @@ const columns: ColumnDef<Item>[] = [
 									? "orange"
 									: type === "File"
 										? "violet"
-										: type === "Q&A"
-											? "gray"
-											: "purple"
+										: type === "Google Drive"
+											? "red"
+											: "gray"
 						}
 					/>
 					<span className="truncate w-40 sm:w-75">{row.getValue("name")}</span>

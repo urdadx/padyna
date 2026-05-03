@@ -27,6 +27,8 @@ import { discordRoutes, registerDiscordGatewayCron } from "./integrations/discor
 import { jiraRoutes } from "./integrations/jira";
 import { handleSlackWebhook, slackRoutes } from "./integrations/slack";
 import { telegramRoutes } from "./integrations/telegram";
+import { notionRoutes } from "./integrations/notion";
+import { googleDriveRoutes } from "./integrations/google-drive";
 import { actionRoutes } from "./actions";
 
 const app = new Hono();
@@ -37,7 +39,7 @@ app.use(
   cors({
     origin: env.CORS_ORIGIN,
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "sentry-trace", "baggage"],
     credentials: true,
   }),
 );
@@ -186,6 +188,8 @@ app.route("/api/integrations/clickup", clickupRoutes);
 app.route("/api/integrations/discord", discordRoutes);
 app.route("/api/integrations/jira", jiraRoutes);
 app.route("/api/integrations/slack", slackRoutes);
+app.route("/api/integrations/notion", notionRoutes);
+app.route("/api/integrations/google-drive", googleDriveRoutes);
 app.route("/api/actions", actionRoutes);
 app.post("/api/integrations/webhooks/slack", handleSlackWebhook);
 app.post("/api/webhooks/slack", handleSlackWebhook);

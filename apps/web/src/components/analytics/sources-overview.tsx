@@ -5,6 +5,8 @@ import { FileLinear } from "@/assets/icons/file-icon";
 import { ChatLinear } from "@/assets/icons/chat-icon";
 import { TextLinear } from "@/assets/icons/text-icon";
 import { GlobeLinear } from "@/assets/icons/globe-icon";
+import { NotionIcon } from "@/assets/icons/notion-icon";
+import { GoogleDrive } from "@/assets/icons/google-drive-icon";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import BarList from "./bar-list";
@@ -15,7 +17,7 @@ interface SourcesOverviewProps {
     sourceName?: string | null;
     url?: string | null;
     question?: string | null;
-    sourceType: "file" | "link" | "qa" | "text";
+    sourceType: "file" | "link" | "qa" | "text" | "notion" | "google_drive";
     timesReferenced: number;
   }[];
 }
@@ -29,6 +31,8 @@ export function SourcesOverview({ sourcesData }: SourcesOverviewProps) {
       if (source.sourceType === "link") icon = <GlobeLinear color="black" className="w-4 h-4" />;
       if (source.sourceType === "qa") icon = <ChatLinear color="black" className="w-4 h-4" />;
       if (source.sourceType === "text") icon = <TextLinear color="black" className="w-4 h-4" />;
+      if (source.sourceType === "notion") icon = <NotionIcon className="w-4 h-4" />;
+      if (source.sourceType === "google_drive") icon = <GoogleDrive className="w-4 h-4" />;
 
       return {
         icon,

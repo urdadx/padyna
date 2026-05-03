@@ -54,7 +54,7 @@ export const ScrapeWebsite = ({ onSuccess }: ScrapeWebsiteProps) => {
 				Enter a single page URL to extract content from it.
 			</p>
 			<div className="w-full flex justify-between items-center gap-2">
-				<div className="flex rounded-md shadow-xs flex-1">
+				<div className="flex rounded-md flex-1">
 					<span className="border-input bg-gray-50 text-gray-500 inline-flex items-center rounded-s-md border px-3 text-sm">
 						https://
 					</span>

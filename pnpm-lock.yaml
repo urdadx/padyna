@@ -263,6 +263,12 @@ importers:
       '@base-ui/react':
         specifier: ^1.0.0
         version: 1.2.0(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@headless-tree/core':
+        specifier: ^1.6.3
+        version: 1.6.3
+      '@headless-tree/react':
+        specifier: ^1.6.3
+        version: 1.6.3(@headless-tree/core@1.6.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@hookform/resolvers':
         specifier: ^5.1.1
         version: 5.2.2(react-hook-form@7.70.0(react@19.2.3))
@@ -302,6 +308,9 @@ importers:
       '@rive-app/react-webgl2':
         specifier: ^4.27.0
         version: 4.27.0(react@19.2.3)
+      '@sentry/react':
+        specifier: ^10.51.0
+        version: 10.51.0(react@19.2.3)
       '@shikijs/transformers':
         specifier: ^4.0.2
         version: 4.0.2
@@ -1673,6 +1682,16 @@ packages:
   '@fontsource-variable/inter@5.2.8':
     resolution: {integrity: sha512-kOfP2D+ykbcX/P3IFnokOhVRNoTozo5/JxhAIVYLpea/UBmCQ/YWPBfWIDuBImXX/15KH+eKh4xpEUyS2sQQGQ==}
 
+  '@headless-tree/core@1.6.3':
+    resolution: {integrity: sha512-en0EOaZfiCRF2B8DEnhGhSaUf3hVr9Bauye8G8aswPbHOKSyhJiN4bsczz1GvqF4Xb7Ga3LP0vLA6Zih7YLoyw==}
+
+  '@headless-tree/react@1.6.3':
+    resolution: {integrity: sha512-aiRwG6e2EPBSec9uLLy9GlTvAuCtSTouU30Nwcr5ZTsYjG/i7B/ouC8f8Zu4unzo/v1h5ztbemp+EH2TPTKh+g==}
+    peerDependencies:
+      '@headless-tree/core': '*'
+      react: '*'
+      react-dom: '*'
+
   '@hono/node-server@1.19.9':
     resolution: {integrity: sha512-vHL6w3ecZsky+8P5MD+eFfaGTyCeOHUIFYMGpQGbrBTSmNNoxv0if69rEZ5giu36weC5saFuznL411gRX7bJDw==}
     engines: {node: '>=18.14.1'}
@@ -3002,6 +3021,7 @@ packages:
   '@react-email/components@1.0.10':
     resolution: {integrity: sha512-r/BnqfAjr3apcvn/NDx2DqNRD5BP5wZLRdjn2IVHXjt4KmQ5RHWSCAvFiXAzRHys1BWQ2zgIc7cpWePUcAl+nw==}
     engines: {node: '>=20.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
@@ -3571,6 +3591,36 @@ packages:
 
   '@selderee/plugin-htmlparser2@0.11.0':
     resolution: {integrity: sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ==}
+
+  '@sentry-internal/browser-utils@10.51.0':
+    resolution: {integrity: sha512-lNKBS4P7RUvf1niojXQWe9bU3gnBUCbST4Dj0pSiyat1N96cXVyHkeE+uGxowD0RrVWhs+kGHiVX3FcmRWF6sA==}
+    engines: {node: '>=18'}
+
+  '@sentry-internal/feedback@10.51.0':
+    resolution: {integrity: sha512-bCM95bcpphx28e6aU0bwRLxOgwosYsdNzezM1sM0pVOkb0TB3hDFRamramVDK+/Hp1o8qmRxS4c5w/A7YBZGkA==}
+    engines: {node: '>=18'}
+
+  '@sentry-internal/replay-canvas@10.51.0':
+    resolution: {integrity: sha512-8PW1Pp+Yl3lPwYqhBCr5SgkuhDanu9ZLzUqD2bPKL/ElqbM2eDVIWxq4z4ZzePrmZa6IcCjTv6sVQJ7Z4dLyLA==}
+    engines: {node: '>=18'}
+
+  '@sentry-internal/replay@10.51.0':
+    resolution: {integrity: sha512-jCpI5HXSwK6ZT2HX70+mDRciAocHzSiDk4DTgvzV69Wvd+Ei5WLgE+d39eaEPsm8lUC0Ydntb5sJIB6uG9D4bw==}
+    engines: {node: '>=18'}
+
+  '@sentry/browser@10.51.0':
+    resolution: {integrity: sha512-Zdc0sKfenxUtW/OGhtJ7xHFN44bXR7YqxJ1zBDzlZfW0nTbeTTUZBq9z5NUw6qdS0Vs/i3V4qzAKTbRKWfqSEA==}
+    engines: {node: '>=18'}
+
+  '@sentry/core@10.51.0':
+    resolution: {integrity: sha512-Y45V/YXvVLEXmOdkbD1oG1gkRWFi9guCEGg3PlIlIpRjAbZUrvLGgjRJIc1E7XpSzmOnWbs5BbUxMv4PDaPj2w==}
+    engines: {node: '>=18'}
+
+  '@sentry/react@10.51.0':
+    resolution: {integrity: sha512-RRHHqjNvjji6ebIqdlAr453AkST8Vm4cxdu1vWm772IgbzTO7Jx46Cj6Bt2/GjMyH0YLE5euDaAOQhFMmpvAOw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      react: ^16.14.0 || 17.x || 18.x || 19.x
 
   '@shikijs/core@3.23.0':
     resolution: {integrity: sha512-NSWQz0riNb67xthdm5br6lAkvpDJRTgB36fxlo37ZzM2yq0PQFFzbd8psqC2XMPgCzo1fW6cVi18+ArJ44wqgA==}
@@ -8038,6 +8088,7 @@ packages:
 
   uuid@10.0.0:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   uuid@11.1.0:
@@ -9438,6 +9489,14 @@ snapshots:
   '@floating-ui/utils@0.2.10': {}
 
   '@fontsource-variable/inter@5.2.8': {}
+
+  '@headless-tree/core@1.6.3': {}
+
+  '@headless-tree/react@1.6.3(@headless-tree/core@1.6.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      '@headless-tree/core': 1.6.3
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
 
   '@hono/node-server@1.19.9(hono@4.11.4)':
     dependencies:
@@ -11964,6 +12023,40 @@ snapshots:
     dependencies:
       domhandler: 5.0.3
       selderee: 0.11.0
+
+  '@sentry-internal/browser-utils@10.51.0':
+    dependencies:
+      '@sentry/core': 10.51.0
+
+  '@sentry-internal/feedback@10.51.0':
+    dependencies:
+      '@sentry/core': 10.51.0
+
+  '@sentry-internal/replay-canvas@10.51.0':
+    dependencies:
+      '@sentry-internal/replay': 10.51.0
+      '@sentry/core': 10.51.0
+
+  '@sentry-internal/replay@10.51.0':
+    dependencies:
+      '@sentry-internal/browser-utils': 10.51.0
+      '@sentry/core': 10.51.0
+
+  '@sentry/browser@10.51.0':
+    dependencies:
+      '@sentry-internal/browser-utils': 10.51.0
+      '@sentry-internal/feedback': 10.51.0
+      '@sentry-internal/replay': 10.51.0
+      '@sentry-internal/replay-canvas': 10.51.0
+      '@sentry/core': 10.51.0
+
+  '@sentry/core@10.51.0': {}
+
+  '@sentry/react@10.51.0(react@19.2.3)':
+    dependencies:
+      '@sentry/browser': 10.51.0
+      '@sentry/core': 10.51.0
+      react: 19.2.3
 
   '@shikijs/core@3.23.0':
     dependencies:

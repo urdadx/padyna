@@ -19,7 +19,11 @@ export const FilterByTypes = ({ value, onChange }: FilterByTypesProps) => {
         ? "Links"
         : value === "Text"
           ? "Text snippets"
-          : value;
+          : value === "Notion"
+            ? "Notion"
+            : value === "Google Drive"
+              ? "Google Drive"
+              : value;
 
   return (
     <DropdownMenu>
@@ -34,6 +38,8 @@ export const FilterByTypes = ({ value, onChange }: FilterByTypesProps) => {
         <DropdownMenuItem onClick={() => onChange("Link")}>Links</DropdownMenuItem>
         <DropdownMenuItem onClick={() => onChange("Q&A")}>Q&A</DropdownMenuItem>
         <DropdownMenuItem onClick={() => onChange("Text")}>Text snippets</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onChange("Notion")}>Notion</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onChange("Google Drive")}>Google Drive</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

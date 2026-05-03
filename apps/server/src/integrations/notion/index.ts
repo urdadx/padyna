@@ -1,0 +1,1 @@
+export { notionRoutes } from "./routes";
