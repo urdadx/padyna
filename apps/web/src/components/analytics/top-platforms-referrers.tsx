@@ -156,7 +156,7 @@ export function TopPlatforms() {
 							{!hasPlatforms ? (
 								<div className="flex flex-col items-center justify-center h-full min-h-48 text-center">
 									<p className="text-muted-foreground text-sm">
-										No data yet
+										No data available yet
 									</p>
 								</div>
 							) : (

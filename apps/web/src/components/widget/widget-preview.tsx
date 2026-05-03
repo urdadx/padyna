@@ -34,6 +34,46 @@ import { env } from "@padyna/env/web";
 
 const ESCALATED_STATUSES = new Set(["escalated", "assigned"]);
 
+function getWidgetDebugInfo() {
+	if (typeof window === "undefined") {
+		return null;
+	}
+
+	let localStorageAvailable = false;
+	try {
+		const key = "padyna-debug-storage-test";
+		window.localStorage.setItem(key, "1");
+		window.localStorage.removeItem(key);
+		localStorageAvailable = true;
+	} catch {}
+
+	let isIframe = false;
+	try {
+		isIframe = window.self !== window.top;
+	} catch {
+		isIframe = true;
+	}
+
+	return {
+		url: window.location.href,
+		userAgent: window.navigator.userAgent,
+		platform: window.navigator.platform,
+		vendor: window.navigator.vendor,
+		language: window.navigator.language,
+		isIframe,
+		localStorageAvailable,
+		supports: {
+			abortController: typeof AbortController !== "undefined",
+			fetch: typeof fetch !== "undefined",
+			readableStream: typeof ReadableStream !== "undefined",
+			structuredClone: typeof structuredClone !== "undefined",
+			textDecoderStream: typeof TextDecoderStream !== "undefined",
+			transformStream: typeof TransformStream !== "undefined",
+			cryptoRandomUUID: typeof globalThis.crypto?.randomUUID === "function",
+		},
+	};
+}
+
 export type WidgetConfig = {
 	id: string;
 	name: string | null;
@@ -84,12 +124,17 @@ function WidgetPreviewContent({
 		return value ? `?${value}` : "";
 	}, [hostOrigin, platform]);
 
+	const chatApi = useMemo(
+		() => `${env.VITE_SERVER_URL}/api/widget/${widgetId}/chat${queryParams}`,
+		[widgetId, queryParams],
+	);
+
 	const transport = useMemo(
 		() =>
 			new DefaultChatTransport({
-				api: `${env.VITE_SERVER_URL}/api/widget/${widgetId}/chat${queryParams}`,
+				api: chatApi,
 			}),
-		[widgetId, queryParams],
+		[chatApi],
 	);
 
 	const [input, setInput] = useState("");
@@ -125,7 +170,24 @@ function WidgetPreviewContent({
 	const widgetConfig = initData?.config;
 	const chatbotId = widgetConfig?.id;
 
-	const { messages, setMessages, sendMessage, status } = useChat({ id: chatId, transport });
+	const { messages, setMessages, sendMessage, status } = useChat({
+		id: chatId,
+		transport,
+		onError: (error) => {
+			console.error("[Padyna widget] chat request failed", {
+				error,
+				errorName: error.name,
+				errorMessage: error.message,
+				errorStack: error.stack,
+				widgetId,
+				chatId,
+				hostOrigin,
+				platform,
+				chatApi,
+				debugInfo: getWidgetDebugInfo(),
+			});
+		},
+	});
 
 	const messageIdsRef = useRef(new Set<string>());
 	const hydratedChatIdRef = useRef<string | undefined>(undefined);

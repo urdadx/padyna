@@ -8,6 +8,8 @@ import { ClickupIntegrationCard } from "./clickup-integration-card";
 import { CalIntegrationCard } from "./cal-integration-card";
 import { WhatsAppIntegrationCard } from "./whatsapp-integration-card";
 import { LinearIntegrationCard } from "./linear-integration-card";
+import { GoogleDriveIntegrationCard } from "./google-drive-integration-card";
+import { NotionIntegrationCard } from "./notion-integration-card";
 
 export const IntegrationCard = ({ data }: { data: IntegrationCardData }) => {
 	switch (data.id) {
@@ -27,8 +29,12 @@ export const IntegrationCard = ({ data }: { data: IntegrationCardData }) => {
 			return <ClickupIntegrationCard data={data} />;
 		case "cal":
 			return <CalIntegrationCard data={data} />;
+		case "google-drive":
+			return <GoogleDriveIntegrationCard data={data} />;
 		case "whatsapp":
 			return <WhatsAppIntegrationCard data={data} />;
+		case "notion":
+			return <NotionIntegrationCard data={data} />;
 		default:
 			return null;
 	}

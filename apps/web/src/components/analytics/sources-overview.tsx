@@ -42,6 +42,7 @@ export function SourcesOverview({ sourcesData }: SourcesOverviewProps) {
 
   const topSources = mapSources.slice(0, 5);
   const maxSourceCount = Math.max(...mapSources.map((s) => s.value), 0);
+  const hasData = mapSources.length > 0;
 
   return (
     <div className="h-87.5 w-full z-0 rounded-xl border bg-white flex flex-col overflow-hidden">
@@ -60,18 +61,24 @@ export function SourcesOverview({ sourcesData }: SourcesOverviewProps) {
         <div className="flex-1 min-h-0 overflow-hidden">
           <TabsContent value="sources" className="h-full m-0 p-0">
             <div className="h-full flex flex-col">
-              <div className="flex-1 min-h-0 px-4  overflow-hidden">
-                <BarList
-                  tab="Data Sources"
-                  unit="usages"
-                  data={topSources}
-                  barBackground="bg-blue-200/40"
-                  hoverBackground="hover:bg-blue-50"
-                  maxValue={maxSourceCount}
-                  limit={5}
-                />
-              </div>
-              {mapSources.length > 5 && (
+              {!hasData ? (
+                <div className="flex flex-col items-center justify-center h-full min-h-48 text-center">
+                  <p className="text-muted-foreground text-sm">No data available yet</p>
+                </div>
+              ) : (
+                <div className="flex-1 min-h-0 px-4 overflow-hidden">
+                  <BarList
+                    tab="Data Sources"
+                    unit="usages"
+                    data={topSources}
+                    barBackground="bg-blue-200/40"
+                    hoverBackground="hover:bg-blue-50"
+                    maxValue={maxSourceCount}
+                    limit={5}
+                  />
+                </div>
+              )}
+              {hasData && mapSources.length > 5 && (
                 <div className="shrink-0 px-4 py-3 ">
                   <div className="flex items-center justify-center">
                     <Button

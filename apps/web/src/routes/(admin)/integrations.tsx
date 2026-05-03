@@ -7,6 +7,8 @@ import JiraLogo from "@/assets/jira.png";
 import ClickUpIcon from "@/assets/clickup.png";
 import WhatsAppLogo from "@/assets/whatsapp.png";
 import LinearLogo from "@/assets/linear.svg";
+import GoogleDriveLogo from "@/assets/google-drive.png";
+import NotionLogo from "@/assets/notion.png";
 
 export const Route = createFileRoute("/(admin)/integrations")({
 	component: RouteComponent,
@@ -26,6 +28,13 @@ function RouteComponent() {
 			name: "Jira",
 			description: "Connect your agent to Jira to create support tickets",
 			logo: JiraLogo,
+		},
+		{
+			id: "google-drive",
+			name: "Google Drive",
+			description:
+				"Connect your agent to Google Drive to access your documents and files",
+			logo: GoogleDriveLogo,
 		},
 		{
 			id: "calendly",
@@ -52,6 +61,13 @@ function RouteComponent() {
 			description:
 				"Connect your agent to Discord to manage conversations and send notifications",
 			logo: DiscordLogo,
+		},
+		{
+			id: "notion",
+			name: "Notion",
+			description:
+				"Connect your agent to Notion to access your knowledge base and documents",
+			logo: NotionLogo,
 		},
 		{
 			id: "slack",
