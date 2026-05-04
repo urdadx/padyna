@@ -49,12 +49,12 @@ function RouteComponent() {
 		// 	logo: LinearLogo,
 		// },
 
-		{
-			id: "whatsapp",
-			name: "WhatsApp",
-			description: "Connect your agent to WhatsApp to manage conversations",
-			logo: WhatsAppLogo,
-		},
+		// {
+		// 	id: "whatsapp",
+		// 	name: "WhatsApp",
+		// 	description: "Connect your agent to WhatsApp to manage conversations",
+		// 	logo: WhatsAppLogo,
+		// },
 		{
 			id: "discord",
 			name: "Discord",

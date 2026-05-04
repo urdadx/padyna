@@ -11,6 +11,7 @@ import Integrations from "@/components/Integrations.astro";
 import { PricingOptions } from "@/components/PricingOptions.tsx";
 import FAQs from "@/components/Faqs";
 import { FooterSection } from "@/components/Footer";
+import EscalationCTA from "@/components/EscalationCTA.astro";
 ---
 
 <Layout>
@@ -23,6 +24,8 @@ import { FooterSection } from "@/components/Footer";
     <SalesText />
     <GridSeparator />
     <Integrations />
+    <GridSeparator />
+    <EscalationCTA />
     <GridSeparator />
     <PricingOptions client:load />
     <GridSeparator />
