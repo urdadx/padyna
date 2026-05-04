@@ -535,7 +535,7 @@ export function GoogleDriveSourceDialog({ open, onOpenChange }: GoogleDriveSourc
 								onClick={() => ingestItems(selectedItemList)}>
 								{isIngesting ? (
 									<>
-										<Spinner className="mr-2 h-4 w-4" />
+										<Spinner className="text-white h-4 w-4" />
 										Ingesting...
 									</>
 								) : (
