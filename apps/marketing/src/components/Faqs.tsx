@@ -9,27 +9,27 @@ export default function FAQs() {
   const faqItems = [
     {
       id: "item-1",
-      question: "How does the AI customer support bot work?",
+      question: "How does the AI customer support agent work?",
       answer:
-        "The bot is trained on your knowledge base (files, youtube videos etc) and support documentation, allowing it to instantly answer customer questions 24/7 across all supported channels.",
+        "The agent is trained on your knowledge base (files, website, notion, google drive contents, youtube videos) and support documentation, allowing it to instantly answer customer questions with context 24/7 across all supported channels.",
     },
     {
       id: "item-2",
       question: "What integrations does the platform support?",
       answer:
-        "We integrate with major communication channels including WhatsApp, Calendly, Cal.com and Slack. More integrations coming soon.",
+        "We integrate with major communication channels and tools including WhatsApp, Slack, Telegram, Discord, Calendly, Jira, ClickUp, Notion and Google Drive. More integrations coming soon.",
     },
     {
       id: "item-3",
-      question: "Can I customize the responses of the AI?",
+      question: "Can I customize the responses of the AI agent?",
       answer:
-        "Yes. You can customize your bot's personality, language and tone in the dashboard's playground.",
+        "Yes. You can customize your agent's personality, language and tone in the dashboard's playground.",
     },
     {
       id: "item-4",
-      question: "Do I need any technical experience to set up the bot?",
+      question: "Do I need any technical experience to set up the agent?",
       answer:
-        "No. You can easily set up and deploy the bot easily in just a few minutes",
+        "No. You can easily set up and deploy the agent in just a few minutes",
     },
     {
       id: "item-5",
