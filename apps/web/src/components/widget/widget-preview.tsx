@@ -32,6 +32,7 @@ import { useWidgetSession } from "./use-widget-session";
 import { StatusIndicator } from "../agent/agent-components/status-indicator";
 import { SupportMessage } from "../agent/agent-components/message";
 import { env } from "@padyna/env/web";
+import { browserSafeChatFetch } from "@/lib/ai/browser-safe-chat-fetch";
 
 const ESCALATED_STATUSES = new Set(["escalated", "assigned"]);
 
@@ -134,6 +135,7 @@ function WidgetPreviewContent({
 		() =>
 			new DefaultChatTransport({
 				api: chatApi,
+				fetch: browserSafeChatFetch,
 			}),
 		[chatApi],
 	);

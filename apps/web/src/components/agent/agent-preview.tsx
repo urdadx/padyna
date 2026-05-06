@@ -21,6 +21,7 @@ import { useMemo, useState } from "react";
 import { PreviewMessages } from "./preview-messages";
 import "streamdown/styles.css";
 import { ErrorBanner, ClosedBanner, DisabledBanner, EscalatedBanner } from "../chat-logs/banners";
+import { browserSafeChatFetch } from "@/lib/ai/browser-safe-chat-fetch";
 
 function AgentPreviewPanelContent() {
 	const transport = useMemo(
@@ -28,6 +29,7 @@ function AgentPreviewPanelContent() {
 			new DefaultChatTransport({
 				api: `${env.VITE_SERVER_URL}/api/chat`,
 				credentials: "include",
+				fetch: browserSafeChatFetch,
 			}),
 		[],
 	);
