@@ -9,12 +9,17 @@ import { trpc } from "@/utils/trpc";
 import { useQuery } from "@tanstack/react-query";
 import { BoltLinear } from "@/assets/icons/bolt-duotone";
 import { TopSkeleton } from "./top-skeleton";
+import { useSearch } from "@tanstack/react-router";
+import type { TimeRange } from "./top-countries";
 
 export function TopActions() {
 	const [actionsDialogOpen, setWorkflowsDialogOpen] = useState(false);
 
+	const { timeRange } = useSearch({ from: "/(admin)/analytics" });
+	const selectedTimeRange: TimeRange = (timeRange as TimeRange) || "24h";
+
 	const { data: actions, isLoading } = useQuery(
-		trpc.analytics.getTopActions.queryOptions({ limit: 10 }),
+		trpc.analytics.getTopActions.queryOptions({ limit: 10, timeRange: selectedTimeRange }),
 	);
 
 	if (isLoading) {

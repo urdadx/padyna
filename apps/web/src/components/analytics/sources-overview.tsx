@@ -11,6 +11,39 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import BarList from "./bar-list";
 
+const EMPTY_SOURCES = [
+	{
+		icon: <GlobeLinear color="black" className="w-4 h-4" />,
+		title: "docs.padyna.com",
+		value: 48,
+		href: "",
+	},
+	{
+		icon: <FileLinear color="black" className="w-4 h-4" />,
+		title: "Implementation guide.pdf",
+		value: 34,
+		href: "",
+	},
+	{
+		icon: <NotionIcon color="black" className="w-4 h-4" />,
+		title: "Team knowledge base",
+		value: 27,
+		href: "",
+	},
+	{
+		icon: <GoogleDrive color="black" className="w-4 h-4" />,
+		title: "Q2 planning deck",
+		value: 19,
+		href: "",
+	},
+	{
+		icon: <ChatLinear color="black" className="w-4 h-4" />,
+		title: "Support playbook",
+		value: 12,
+		href: "",
+	},
+];
+
 interface SourcesOverviewProps {
 	sourcesData?: {
 		id: string;
@@ -56,6 +89,10 @@ export function SourcesOverview({ sourcesData }: SourcesOverviewProps) {
 	const topSources = mapSources.slice(0, 5);
 	const maxSourceCount = Math.max(...mapSources.map((s) => s.value), 0);
 	const hasData = mapSources.length > 0;
+	const displayedSources = hasData ? topSources : EMPTY_SOURCES;
+	const displayedMaxSourceCount = hasData
+		? maxSourceCount
+		: Math.max(...EMPTY_SOURCES.map((source) => source.value), 0);
 
 	return (
 		<div className="h-87.5 w-full z-0 rounded-xl border bg-white flex flex-col overflow-hidden">
@@ -73,25 +110,33 @@ export function SourcesOverview({ sourcesData }: SourcesOverviewProps) {
 				<div className="flex-1 min-h-0 overflow-hidden">
 					<TabsContent value="sources" className="h-full m-0 p-0">
 						<div className="h-full flex flex-col">
-							{!hasData ? (
-								<div className="flex flex-col items-center justify-center h-full min-h-48 text-center">
-									<p className="text-muted-foreground text-sm">
-										No data available yet
-									</p>
+							<div className="flex-1 min-h-0 px-4 overflow-hidden">
+								<div className="relative h-full">
+									<div
+										className={
+											hasData
+												? undefined
+												: "pointer-events-none select-none blur-[3px] opacity-60"
+										}>
+										<BarList
+											tab="Data Sources"
+											unit="usages"
+											data={displayedSources}
+											barBackground="bg-blue-200/40"
+											hoverBackground="hover:bg-blue-50"
+											maxValue={displayedMaxSourceCount}
+											limit={5}
+										/>
+									</div>
+									{!hasData && (
+										<div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+											<div className="rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-foreground shadow-sm">
+												No data available yet
+											</div>
+										</div>
+									)}
 								</div>
-							) : (
-								<div className="flex-1 min-h-0 px-4 overflow-hidden">
-									<BarList
-										tab="Data Sources"
-										unit="usages"
-										data={topSources}
-										barBackground="bg-blue-200/40"
-										hoverBackground="hover:bg-blue-50"
-										maxValue={maxSourceCount}
-										limit={5}
-									/>
-								</div>
-							)}
+							</div>
 							{hasData && mapSources.length > 5 && (
 								<div className="shrink-0 px-4 py-3 ">
 									<div className="flex items-center justify-center">

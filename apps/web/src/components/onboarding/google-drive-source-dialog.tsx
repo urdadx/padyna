@@ -539,7 +539,7 @@ export function GoogleDriveSourceDialog({ open, onOpenChange }: GoogleDriveSourc
 										Ingesting...
 									</>
 								) : (
-									`Ingest ${selectedItemList.length || ""} Item${selectedItemList.length === 1 ? "" : "s"}`
+									`Ingest ${selectedItemList.length || ""} item${selectedItemList.length === 1 ? "" : "s"}`
 								)}
 							</Button>
 						</>

@@ -1,14 +1,8 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Area, Bar, CartesianGrid, ComposedChart, XAxis, YAxis } from "recharts";
 
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	type ChartConfig,
-	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
-} from "@/components/ui/chart";
+import { type ChartConfig } from "@/components/ui/chart";
 import {
 	Select,
 	SelectContent,
@@ -21,6 +15,7 @@ import { Checkbox } from "../ui/checkbox";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { trpc } from "@/utils/trpc";
 import { AnalyticsSkeleton } from "./analytics-skeleton";
+import { AnalyticsChart } from "./analytics-chart";
 import { useOverviewStream } from "./use-overview-stream";
 
 const TIME_RANGE_ITEMS = [
@@ -190,112 +185,14 @@ export function AgentAnalytics() {
 				</CardHeader>
 
 				<CardContent className="pt-4 sm:pt-6">
-					{!hasData ? (
-						<div className="flex flex-col items-center justify-center h-75 text-center">
-							<p className="font-semibold font-display text-xl">
-								No data available yet
-							</p>
-						</div>
-					) : (
-						<ChartContainer
-							config={chartConfig}
-							className="aspect-auto h-75 w-full">
-							<ComposedChart data={chartData}>
-								<defs>
-									<linearGradient
-										id="fillChats"
-										x1="0"
-										y1="0"
-										x2="0"
-										y2="1">
-										<stop
-											offset="5%"
-											stopColor="var(--chart-1)"
-											stopOpacity={0.8}
-										/>
-										<stop
-											offset="95%"
-											stopColor="var(--chart-1)"
-											stopOpacity={0.1}
-										/>
-									</linearGradient>
-									<linearGradient
-										id="fillVisitors"
-										x1="0"
-										y1="0"
-										x2="0"
-										y2="1">
-										<stop
-											offset="5%"
-											stopColor="var(--chart-4)"
-											stopOpacity={0.8}
-										/>
-										<stop
-											offset="95%"
-											stopColor="var(--chart-4)"
-											stopOpacity={0.1}
-										/>
-									</linearGradient>
-								</defs>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									dataKey="date"
-									tickLine={false}
-									axisLine={false}
-									tickMargin={8}
-									minTickGap={32}
-									tickFormatter={(value) => {
-										const date = new Date(value);
-										return date.toLocaleDateString(
-											"en-US",
-											{
-												month: "short",
-												day: "numeric",
-											},
-										);
-									}}
-								/>
-								<YAxis tickLine={false} axisLine={false} />
-								<ChartTooltip
-									cursor={false}
-									content={
-										<ChartTooltipContent
-											labelFormatter={(value) =>
-												new Date(
-													value,
-												).toLocaleDateString(
-													"en-US",
-													{
-														month: "short",
-														day: "numeric",
-													},
-												)
-											}
-											indicator="dot"
-										/>
-									}
-								/>
-								{showVisitors && (
-									<Area
-										dataKey="visitors"
-										type="natural"
-										fill="url(#fillVisitors)"
-										stroke="var(--chart-4)"
-										fillOpacity={0.3}
-									/>
-								)}
-								{showChats && (
-									<Bar
-										dataKey="chats"
-										fill="var(--chart-1)"
-										radius={[8, 8, 0, 0]}
-										barSize={24}
-										fillOpacity={0.8}
-									/>
-								)}
-							</ComposedChart>
-						</ChartContainer>
-					)}
+					<AnalyticsChart
+						config={chartConfig}
+						data={chartData}
+						hasData={hasData}
+						className="h-75"
+						showVisitors={showVisitors}
+						showChats={showChats}
+					/>
 				</CardContent>
 			</div>
 		</div>
