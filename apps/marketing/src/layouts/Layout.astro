@@ -4,9 +4,9 @@ import "../styles/global.css";
 const pathname = Astro.url.pathname;
 const isLegalPage = /^\/(privacy|terms-of-service)\/?$/.test(pathname);
 const shouldLoadWidget = pathname !== "/widget" && !isLegalPage;
-const title = "Padyna - AI customer support for your business";
+const title = "Padyna - Your customer support on autopilot";
 const description =
-  "Instantly answer customer queries with an AI support agent trained on your website, docs, PDF and more.";
+  "Instantly answer customer queries with an AI support agent trained on your business";
 const canonicalUrl = new URL(pathname, Astro.site ?? Astro.url);
 const ogImageUrl = new URL("/og.png", Astro.site ?? Astro.url);
 ---
