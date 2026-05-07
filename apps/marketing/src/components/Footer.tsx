@@ -1,4 +1,4 @@
-const links = [
+const links: { title: string; href: string; rel?: string }[] = [
   {
     title: "Features",
     href: "#features",
@@ -11,10 +11,12 @@ const links = [
   {
     title: "Terms of Service",
     href: "/terms-of-service/",
+    rel: "nofollow",
   },
   {
     title: "Privacy Policy",
     href: "/privacy/",
+    rel: "nofollow",
   },
 ];
 
@@ -36,6 +38,7 @@ export function FooterSection() {
             <a
               key={index}
               href={link.href}
+              rel={link.rel}
               className="text-muted-foreground hover:text-primary block duration-150"
             >
               <span>{link.title}</span>

@@ -1,4 +1,5 @@
 import { env } from "@padyna/env/server";
+import { excludedLegalPathPatterns } from "../excluded-legal-paths";
 import type { CrawlStatusResponse, StartCrawlResponse } from "./types";
 
 export class CrawlError extends Error {
@@ -23,6 +24,7 @@ export async function startCrawl(options: StartCrawlOptions): Promise<StartCrawl
 
   const body: Record<string, unknown> = {
     sitemap: "include",
+    excludePaths: excludedLegalPathPatterns,
     crawlEntireDomain: options.crawlEntireDomain ?? false,
     limit: options.limit ?? 10,
     scrapeOptions: {

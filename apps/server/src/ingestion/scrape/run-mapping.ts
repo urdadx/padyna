@@ -1,4 +1,5 @@
 import { env } from "@padyna/env/server";
+import { isExcludedLegalPath } from "../excluded-legal-paths";
 
 interface MapLink {
   url: string;
@@ -49,5 +50,5 @@ export async function runMapWebsite(url: string, search?: string): Promise<MapLi
     throw new MapError("Mapping failed or returned no data");
   }
 
-  return result.links;
+  return result.links.filter((link) => !isExcludedLegalPath(link.url));
 }

@@ -4,6 +4,9 @@ import "../styles/global.css";
 const pathname = Astro.url.pathname;
 const isLegalPage = /^\/(privacy|terms-of-service)\/?$/.test(pathname);
 const shouldLoadWidget = pathname !== "/widget" && !isLegalPage;
+const robotsDirective = isLegalPage
+  ? "noindex, nofollow, noarchive, nosnippet"
+  : undefined;
 const title = "Padyna - Your customer support on autopilot";
 const description =
   "Instantly answer customer queries with an AI support agent trained on your business";
@@ -21,6 +24,7 @@ const ogImageUrl = new URL("/og.png", Astro.site ?? Astro.url);
     <link rel="canonical" href={canonicalUrl} />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {robotsDirective && <meta name="robots" content={robotsDirective} />}
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:title" content={title} />
