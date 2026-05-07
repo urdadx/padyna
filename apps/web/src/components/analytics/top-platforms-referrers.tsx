@@ -16,15 +16,7 @@ import { getApexDomain } from "@/lib/utils";
 import { GOOGLE_FAVICON_URL } from "@/constants/domains";
 import { TopSkeleton } from "./top-skeleton";
 import { TelegramLinear } from "@/assets/icons/telegram-icon";
-
-const TIME_RANGE_ITEMS = [
-	{ label: "Last 24 hours", value: "24h" },
-	{ label: "Last 7 days", value: "7d" },
-	{ label: "Last 30 days", value: "30d" },
-	{ label: "Last 3 months", value: "90d" },
-] as const;
-
-type TimeRange = (typeof TIME_RANGE_ITEMS)[number]["value"];
+import type { TimeRange } from "./top-countries";
 
 export function TopPlatforms() {
 	const [platformsDialogOpen, setPlatformsDialogOpen] = useState(false);

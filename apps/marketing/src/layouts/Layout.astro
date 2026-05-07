@@ -4,6 +4,11 @@ import "../styles/global.css";
 const pathname = Astro.url.pathname;
 const isLegalPage = /^\/(privacy|terms-of-service)\/?$/.test(pathname);
 const shouldLoadWidget = pathname !== "/widget" && !isLegalPage;
+const title = "Padyna - AI customer support for your business";
+const description =
+  "Instantly answer customer queries with an AI support agent trained on your website, docs, PDF and more.";
+const canonicalUrl = new URL(pathname, Astro.site ?? Astro.url);
+const ogImageUrl = new URL("/og.png", Astro.site ?? Astro.url);
 ---
 
 <!doctype html>
@@ -13,7 +18,18 @@ const shouldLoadWidget = pathname !== "/widget" && !isLegalPage;
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <meta name="generator" content={Astro.generator} />
-    <title>Padyna - AI customer support for your business</title>
+    <link rel="canonical" href={canonicalUrl} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
   </head>
   <body class="min-h-screen bg-white">
     <div

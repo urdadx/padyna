@@ -8,6 +8,8 @@ import mdx from "@astrojs/mdx";
 
 // https://astro.build/config
 export default defineConfig({
+  site: "https://padyna.com",
+
   vite: {
     // @ts-ignore
     plugins: [tailwindcss()],
