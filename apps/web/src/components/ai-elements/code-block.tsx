@@ -317,8 +317,6 @@ export const CodeBlockCopyButton = ({
 		});
 	}
 
-	const Icon = isCopied ? CheckIcon : CopyIcon;
-
 	return (
 		<Button
 			className={cn("shrink-0", className)}
@@ -326,7 +324,12 @@ export const CodeBlockCopyButton = ({
 			size="icon"
 			variant="ghost"
 			{...props}>
-			{children ?? <Icon className="text-muted-foreground" size={14} />}
+			{children ??
+				(isCopied ? (
+					<CheckIcon className="text-muted-foreground" size={14} />
+				) : (
+					<CopyIcon className="text-muted-foreground" size={14} />
+				))}
 		</Button>
 	);
 };
@@ -340,8 +343,13 @@ const CodeBlockFallback = ({ children, ...props }: CodeBlockFallbackProps) => (
 				{children
 					?.toString()
 					.split("\n")
-					.map((line, i) => (
-						<span className="line" key={i}>
+					.reduce<Array<{ key: string; line: string }>>((items, line) => {
+						const occurrence = items.filter((item) => item.line === line).length + 1;
+						items.push({ key: `${line}-${occurrence}`, line });
+						return items;
+					}, [])
+					.map(({ key, line }) => (
+						<span className="line" key={key}>
 							{line}
 						</span>
 					))}

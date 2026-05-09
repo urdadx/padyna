@@ -20,11 +20,17 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
   const sessionIdRef = useRef<string | null>(null);
   const visitorIdRef = useRef<string>("");
   const chatStartedRef = useRef<boolean>(false);
+  const previousChatIdRef = useRef<string | undefined>(chatId);
   const sessionStartTimeRef = useRef<number>(0);
   const isSessionEndedRef = useRef<boolean>(false);
   const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visibilityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const presenceSocketRef = useRef<WebSocket | null>(null);
+
+  if (previousChatIdRef.current !== chatId) {
+    previousChatIdRef.current = chatId;
+    chatStartedRef.current = false;
+  }
 
   const sessionId = sessionIdRef;
   const visitorId = visitorIdRef;
@@ -183,12 +189,6 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
   const resetChatStarted = useCallback(() => {
     chatStartedRef.current = false;
   }, []);
-
-  useEffect(() => {
-    if (chatId) {
-      chatStartedRef.current = false;
-    }
-  }, [chatId]);
 
   // Visibility change listener
   useEffect(() => {

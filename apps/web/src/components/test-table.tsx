@@ -48,38 +48,18 @@ const MOCK_REQUESTS = [
 
 export function TestTable() {
   const [requests, setRequests] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
 
   // Simulate data fetching
   const loadData = () => {
-    setIsLoading(true);
-    setError(false);
-
     setTimeout(() => {
       // Toggle this to test the "No data" or "Error" states
       setRequests(MOCK_REQUESTS);
-      setIsLoading(false);
     }, 1500);
   };
 
   useEffect(() => {
     loadData();
   }, []);
-
-  if (error) {
-    return (
-      <div className="p-8 flex flex-col justify-center items-center gap-4">
-        <div className="text-red-600 text-lg text-center mt-24">
-          Error loading recent requests data. Please try again
-        </div>
-        <Button variant="outline" onClick={loadData} className="flex items-center gap-2 h-10">
-          <RotateCcw className="h-4 w-4" />
-          Try again
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="p-4">

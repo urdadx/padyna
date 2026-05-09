@@ -2,6 +2,8 @@ import { type Dispatch, type ReactNode, type SetStateAction, useMemo } from "rea
 import { ScrollArea } from "../ui/scroll-area";
 import { LineItem } from "./line-item";
 
+const EMPTY_DATA: BarListProps["data"] = [];
+
 interface BarListProps {
   tab: string;
   unit: string;
@@ -25,7 +27,7 @@ interface BarListProps {
 export default function BarList({
   tab = "Websites",
   unit = "visits",
-  data = [],
+  data = EMPTY_DATA,
   barBackground = "bg-blue-500",
   hoverBackground = "hover:bg-gray-100",
   maxValue,
@@ -45,15 +47,15 @@ export default function BarList({
   }, [data, limit]);
 
   const sortedData = useMemo(() => {
-    return [...filteredData].sort((a, b) => b.value - a.value);
+    return filteredData.toSorted((a, b) => b.value - a.value);
   }, [filteredData]);
 
   const bars = (
     <div className="grid gap-2">
-      {sortedData.map((item, idx) => (
-        <LineItem
-          key={idx}
-          {...item}
+		{sortedData.map((item) => (
+		  <LineItem
+			key={item.linkId ?? item.href ?? item.title}
+			{...item}
           maxValue={calculatedMaxValue}
           tab={tab}
           unit={unit}

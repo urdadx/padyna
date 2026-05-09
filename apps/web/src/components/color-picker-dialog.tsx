@@ -18,21 +18,19 @@ interface ColorPickerDialogProps {
 	initialColor?: string;
 }
 
-export const ColorPickerDialog = ({
-	onColorSelect,
-	isUpdating,
-	initialColor,
-}: ColorPickerDialogProps) => {
+function ColorPickerDialogContent({
+  initialColor,
+  isUpdating,
+  onClose,
+  onColorSelect,
+}: {
+  initialColor?: string;
+  isUpdating: boolean;
+  onClose: () => void;
+  onColorSelect: (color: string) => void;
+}) {
 	const [color, setColor] = useState(initialColor || "#6366f1");
 	const [hexInput, setHexInput] = useState(initialColor || "#6366f1");
-	const [isOpen, setIsOpen] = useState(false);
-
-	useEffect(() => {
-		if (initialColor) {
-			setColor(initialColor);
-			setHexInput(initialColor);
-		}
-	}, [initialColor]);
 
 	const isValidHex = (hex: string) => {
 		return /^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex);
@@ -63,77 +61,92 @@ export const ColorPickerDialog = ({
 		if (isValidHex(hexInput)) {
 			const normalizedColor = normalizeHex(hexInput);
 			await onColorSelect(normalizedColor);
-			setIsOpen(false);
+			onClose();
 		}
 	};
+
+	return (
+		<>
+			<DialogHeader>
+				<DialogTitle className="flex text-xl font-semibold items-center gap-2">
+					Pick a color
+				</DialogTitle>
+			</DialogHeader>
+
+			<div className="space-y-6">
+				<div className="flex justify-center">
+					<div className="relative">
+						<HexColorPicker
+							color={color}
+							onChange={handleColorChange}
+							style={{ width: "200px", height: "200px" }}
+						/>
+					</div>
+				</div>
+				<div className="space-y-2">
+					<Label
+						htmlFor="hex-input"
+						className="text-sm font-medium text-gray-700">
+						Or type the color code here👇
+					</Label>
+					<div className="flex gap-2">
+						<Input
+							id="hex-input"
+							value={hexInput}
+							onChange={(e) => handleHexInputChange(e.target.value)}
+							placeholder="#6366f1"
+							className="font-mono"
+						/>
+						<div
+							className="w-10 h-10 rounded-lg border-2 border-gray-200 shrink-0"
+							style={{ backgroundColor: color }}
+						/>
+					</div>
+					{hexInput && !isValidHex(hexInput) && (
+						<p className="text-xs text-red-500">
+							Please enter a valid color code (e.g., #6366f1 or 6366f1)
+						</p>
+					)}
+					<motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+						<Button
+							className="w-full"
+							onClick={handleConfirmColor}
+							disabled={!isValidHex(hexInput) || isUpdating}>
+							{isUpdating ? "Updating..." : "Submit"}
+						</Button>
+					</motion.div>
+				</div>
+			</div>
+		</>
+	);
+}
+
+export const ColorPickerDialog = ({
+	onColorSelect,
+	isUpdating,
+	initialColor,
+}: ColorPickerDialogProps) => {
+	const [isOpen, setIsOpen] = useState(false);
 
 	return (
 		<Dialog open={isOpen} onOpenChange={setIsOpen}>
 			<DialogTrigger className="flex items-center gap-3 tracking-wider font-normal">
 				<div
-					style={{
-						backgroundColor: color,
-					}}
+					style={{ backgroundColor: initialColor || "#6366f1" }}
 					className="w-7 h-7 rounded-md border-2 border-gray-200"
 				/>
-				<span className="text-sm text-gray-600">{color}</span>
+				<span className="text-sm text-gray-600">{initialColor || "#6366f1"}</span>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-md">
-				<DialogHeader>
-					<DialogTitle className="flex text-xl font-semibold items-center gap-2">
-						Pick a color
-					</DialogTitle>
-				</DialogHeader>
-
-				<div className="space-y-6">
-					<div className="flex justify-center">
-						<div className="relative">
-							<HexColorPicker
-								color={color}
-								onChange={handleColorChange}
-								style={{ width: "200px", height: "200px" }}
-							/>
-						</div>
-					</div>
-					<div className="space-y-2">
-						<Label
-							htmlFor="hex-input"
-							className="text-sm font-medium text-gray-700">
-							Or type the color code here👇
-						</Label>
-						<div className="flex gap-2">
-							<Input
-								id="hex-input"
-								value={hexInput}
-								onChange={(e) =>
-									handleHexInputChange(e.target.value)
-								}
-								placeholder="#6366f1"
-								className="font-mono"
-							/>
-							<div
-								className="w-10 h-10 rounded-lg border-2 border-gray-200 shrink-0"
-								style={{ backgroundColor: color }}
-							/>
-						</div>
-						{hexInput && !isValidHex(hexInput) && (
-							<p className="text-xs text-red-500">
-								Please enter a valid color code (e.g., #6366f1 or
-								6366f1)
-							</p>
-						)}
-						<motion.div
-							whileHover={{ scale: 1.02 }}
-							whileTap={{ scale: 0.98 }}>
-							<Button
-								className="w-full"
-								onClick={handleConfirmColor}
-								disabled={!isValidHex(hexInput) || isUpdating}>
-								{isUpdating ? "Updating..." : "Submit"}
-							</Button>
-						</motion.div>
-					</div>
-				</div>
+				{isOpen ? (
+					<ColorPickerDialogContent
+						key={initialColor || "#6366f1"}
+						initialColor={initialColor}
+						isUpdating={isUpdating}
+						onClose={() => setIsOpen(false)}
+						onColorSelect={onColorSelect}
+					/>
+				) : null}
 			</DialogContent>
 		</Dialog>
 	);

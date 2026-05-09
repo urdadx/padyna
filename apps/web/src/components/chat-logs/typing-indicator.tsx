@@ -24,21 +24,21 @@ export const TypingIndicator = ({
 			<div className="flex items-center gap-2">
 				<div className="flex gap-1 items-center">
 					<span
-						className="inline-block size-1 rounded-full bg-current animate-bounce"
+						className="inline-block size-1 rounded-full bg-current animate-pulse"
 						style={{
 							animationDelay: "0ms",
 							animationDuration: "0.6s",
 						}}
 					/>
 					<span
-						className="inline-block size-1 rounded-full bg-current animate-bounce"
+						className="inline-block size-1 rounded-full bg-current animate-pulse"
 						style={{
 							animationDelay: "200ms",
 							animationDuration: "0.6s",
 						}}
 					/>
 					<span
-						className="inline-block size-1 rounded-full bg-current animate-bounce"
+						className="inline-block size-1 rounded-full bg-current animate-pulse"
 						style={{
 							animationDelay: "400ms",
 							animationDuration: "0.6s",

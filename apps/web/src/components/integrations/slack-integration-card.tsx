@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Badge } from "../ui/badge";
@@ -49,18 +49,107 @@ type SlackChannelsResponse = {
 	teamId: string;
 };
 
+type SlackState = {
+	isLoadingStatus: boolean;
+	isConnecting: boolean;
+	isDisconnecting: boolean;
+	isLoadingChannels: boolean;
+	isSavingChannel: boolean;
+	isConnected: boolean;
+	integration: SlackIntegrationStatus | null;
+	channels: SlackChannel[];
+	selectedChannelId: string;
+	channelError: string | null;
+	isSetupDialogOpen: boolean;
+};
+
+type SlackAction =
+	| { type: "merge"; payload: Partial<SlackState> }
+	| { type: "statusFailed" }
+	| {
+			type: "statusLoaded";
+			connected: boolean;
+			integration: SlackIntegrationStatus | null;
+	  }
+	| {
+			type: "channelsLoaded";
+			channelId: string | null;
+			channels: SlackChannel[];
+	  }
+	| { type: "disconnectSuccess" };
+
+const initialSlackState: SlackState = {
+	isLoadingStatus: false,
+	isConnecting: false,
+	isDisconnecting: false,
+	isLoadingChannels: false,
+	isSavingChannel: false,
+	isConnected: false,
+	integration: null,
+	channels: [],
+	selectedChannelId: "",
+	channelError: null,
+	isSetupDialogOpen: false,
+};
+
+function slackReducer(state: SlackState, action: SlackAction): SlackState {
+	switch (action.type) {
+		case "merge":
+			return { ...state, ...action.payload };
+		case "statusLoaded":
+			return {
+				...state,
+				isConnected: action.connected,
+				integration: action.integration,
+				isLoadingStatus: false,
+				isSetupDialogOpen: Boolean(action.integration?.isPending),
+				selectedChannelId: action.integration?.channelId ?? "",
+			};
+		case "statusFailed":
+			return {
+				...state,
+				isConnected: false,
+				integration: null,
+				isLoadingStatus: false,
+				isSetupDialogOpen: false,
+				selectedChannelId: "",
+			};
+		case "channelsLoaded":
+			return {
+				...state,
+				channels: action.channels,
+				isLoadingChannels: false,
+				selectedChannelId: state.selectedChannelId || action.channelId || "",
+			};
+		case "disconnectSuccess":
+			return {
+				...state,
+				channels: [],
+				channelError: null,
+				integration: null,
+				isConnected: false,
+				isDisconnecting: false,
+				isSetupDialogOpen: false,
+				selectedChannelId: "",
+			};
+	}
+}
+
 export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
-	const [isLoadingStatus, setIsLoadingStatus] = useState(false);
-	const [isConnecting, setIsConnecting] = useState(false);
-	const [isDisconnecting, setIsDisconnecting] = useState(false);
-	const [isLoadingChannels, setIsLoadingChannels] = useState(false);
-	const [isSavingChannel, setIsSavingChannel] = useState(false);
-	const [isConnected, setIsConnected] = useState(false);
-	const [integration, setIntegration] = useState<SlackIntegrationStatus | null>(null);
-	const [channels, setChannels] = useState<SlackChannel[]>([]);
-	const [selectedChannelId, setSelectedChannelId] = useState("");
-	const [channelError, setChannelError] = useState<string | null>(null);
-	const [isSetupDialogOpen, setIsSetupDialogOpen] = useState(false);
+	const [state, dispatch] = useReducer(slackReducer, initialSlackState);
+	const {
+		channelError,
+		channels,
+		integration,
+		isConnected,
+		isConnecting,
+		isDisconnecting,
+		isLoadingChannels,
+		isLoadingStatus,
+		isSavingChannel,
+		isSetupDialogOpen,
+		selectedChannelId,
+	} = state;
 
 	const popupRef = useRef<Window | null>(null);
 	const pollTimerRef = useRef<number | null>(null);
@@ -73,23 +162,19 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 	};
 
 	const fetchSlackStatus = async () => {
-		setIsLoadingStatus(true);
+		dispatch({ type: "merge", payload: { isLoadingStatus: true } });
 		try {
 			const response = await api.get<SlackStatusResponse>(
 				"/api/integrations/slack/status",
 			);
 
-			setIsConnected(Boolean(response.data.connected));
-			setIntegration(response.data.integration ?? null);
-			setSelectedChannelId(response.data.integration?.channelId ?? "");
-			setIsSetupDialogOpen(Boolean(response.data.integration?.isPending));
+			dispatch({
+				type: "statusLoaded",
+				connected: Boolean(response.data.connected),
+				integration: response.data.integration ?? null,
+			});
 		} catch {
-			setIsConnected(false);
-			setIntegration(null);
-			setSelectedChannelId("");
-			setIsSetupDialogOpen(false);
-		} finally {
-			setIsLoadingStatus(false);
+			dispatch({ type: "statusFailed" });
 		}
 	};
 
@@ -98,25 +183,31 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 			return;
 		}
 
-		setIsLoadingChannels(true);
-		setChannelError(null);
+		dispatch({
+			type: "merge",
+			payload: { channelError: null, isLoadingChannels: true },
+		});
 
 		try {
 			const response = await api.get<SlackChannelsResponse>(
 				"/api/integrations/slack/channels",
 			);
 
-			setChannels(response.data.channels ?? []);
-			setSelectedChannelId(
-				(currentValue) => currentValue || response.data.channelId || "",
-			);
+			dispatch({
+				type: "channelsLoaded",
+				channelId: response.data.channelId,
+				channels: response.data.channels ?? [],
+			});
 		} catch (error: any) {
-			setChannels([]);
-			setChannelError(
-				error?.response?.data?.message || "Failed to load Slack channels",
-			);
-		} finally {
-			setIsLoadingChannels(false);
+			dispatch({
+				type: "merge",
+				payload: {
+					channels: [],
+					channelError:
+						error?.response?.data?.message || "Failed to load Slack channels",
+					isLoadingChannels: false,
+				},
+			});
 		}
 	};
 
@@ -133,8 +224,7 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 
 	useEffect(() => {
 		if (!integration?.isPending || !isSetupDialogOpen) {
-			setChannels([]);
-			setChannelError(null);
+			dispatch({ type: "merge", payload: { channels: [], channelError: null } });
 			return;
 		}
 
@@ -142,7 +232,7 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 	}, [integration?.id, integration?.isPending, isSetupDialogOpen]);
 
 	const handleSlackConnect = async () => {
-		setIsConnecting(true);
+		dispatch({ type: "merge", payload: { isConnecting: true } });
 		try {
 			const response = await api.get<{ authorizeUrl: string }>(
 				"/api/integrations/slack/connect",
@@ -151,7 +241,7 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 
 			if (!authorizeUrl) {
 				toast.error("Missing Slack authorization URL");
-				setIsConnecting(false);
+				dispatch({ type: "merge", payload: { isConnecting: false } });
 				return;
 			}
 
@@ -163,7 +253,7 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 
 			if (!popup) {
 				toast.error("Popup blocked. Please allow popups and try again.");
-				setIsConnecting(false);
+				dispatch({ type: "merge", payload: { isConnecting: false } });
 				return;
 			}
 
@@ -174,7 +264,7 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 				if (!popupRef.current || popupRef.current.closed) {
 					clearPollTimer();
 					await fetchSlackStatus();
-					setIsConnecting(false);
+					dispatch({ type: "merge", payload: { isConnecting: false } });
 					return;
 				}
 
@@ -185,13 +275,14 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 
 					const pendingIntegration = statusResponse.data.integration;
 					if (statusResponse.data.connected || pendingIntegration?.isPending) {
-						setIsConnected(Boolean(statusResponse.data.connected));
-						setIntegration(pendingIntegration ?? null);
-						setSelectedChannelId(pendingIntegration?.channelId ?? "");
-						setIsSetupDialogOpen(Boolean(pendingIntegration?.isPending));
+						dispatch({
+							type: "statusLoaded",
+							connected: Boolean(statusResponse.data.connected),
+							integration: pendingIntegration ?? null,
+						});
 						popupRef.current.close();
 						clearPollTimer();
-						setIsConnecting(false);
+						dispatch({ type: "merge", payload: { isConnecting: false } });
 
 						if (pendingIntegration?.isPending) {
 							toast.success(
@@ -209,26 +300,21 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 			const message =
 				error?.response?.data?.message || "Failed to start Slack OAuth flow";
 			toast.error(message);
-			setIsConnecting(false);
+			dispatch({ type: "merge", payload: { isConnecting: false } });
 		}
 	};
 
 	const handleSlackDisconnect = async () => {
-		setIsDisconnecting(true);
+		dispatch({ type: "merge", payload: { isDisconnecting: true } });
 		try {
 			await api.delete("/api/integrations/slack/disconnect");
-			setIsConnected(false);
-			setIntegration(null);
-			setIsSetupDialogOpen(false);
-			setChannels([]);
-			setSelectedChannelId("");
-			setChannelError(null);
+			dispatch({ type: "disconnectSuccess" });
 			toast.success("Slack disconnected");
 		} catch (error) {
 			console.log("Error disconnecting Slack integration:", error);
 			toast.error("Failed to disconnect. Please try again.");
 		} finally {
-			setIsDisconnecting(false);
+			dispatch({ type: "merge", payload: { isDisconnecting: false } });
 		}
 	};
 
@@ -238,25 +324,25 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 			return;
 		}
 
-		setIsSavingChannel(true);
+		dispatch({ type: "merge", payload: { isSavingChannel: true } });
 		try {
 			await api.post("/api/integrations/slack/channel", {
 				channelId: selectedChannelId,
 			});
 			await fetchSlackStatus();
-			setIsSetupDialogOpen(false);
+			dispatch({ type: "merge", payload: { isSetupDialogOpen: false } });
 			toast.success("Slack channel configured");
 		} catch (error: any) {
 			const message = error?.response?.data?.message || "Failed to save Slack channel";
 			toast.error(message);
 		} finally {
-			setIsSavingChannel(false);
+			dispatch({ type: "merge", payload: { isSavingChannel: false } });
 		}
 	};
 
 	const handleClick = () => {
 		if (needsChannelSelection) {
-			setIsSetupDialogOpen(true);
+			dispatch({ type: "merge", payload: { isSetupDialogOpen: true } });
 			return;
 		}
 
@@ -276,7 +362,10 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 
 	return (
 		<div className="bg-white rounded-xl p-3 border border-gray-200  w-full max-w-md mx-auto h-full">
-			<AlertDialog open={isSetupDialogOpen} onOpenChange={setIsSetupDialogOpen}>
+			<AlertDialog
+				open={isSetupDialogOpen}
+				onOpenChange={(open) => dispatch({ type: "merge", payload: { isSetupDialogOpen: open } })}
+			>
 				<AlertDialogContent>
 					<AlertDialogHeader className="pb-0">
 						<AlertDialogTitle className="text-xl font-semibold">
@@ -295,7 +384,7 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 							items={channelItems}
 							value={selectedChannelId}
 							onValueChange={(value) =>
-								setSelectedChannelId(value ?? "")
+								dispatch({ type: "merge", payload: { selectedChannelId: value ?? "" } })
 							}
 							disabled={isLoadingChannels || channelItems.length === 0}>
 							<SelectTrigger className="w-full">
@@ -330,7 +419,7 @@ export function SlackIntegrationCard({ data }: { data: IntegrationCardData }) {
 						<Button
 							variant="outline"
 							disabled={isSavingChannel}
-							onClick={() => setIsSetupDialogOpen(false)}>
+							onClick={() => dispatch({ type: "merge", payload: { isSetupDialogOpen: false } })}>
 							Cancel
 						</Button>
 						<Button

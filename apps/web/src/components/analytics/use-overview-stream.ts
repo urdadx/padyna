@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useReducer, useRef } from "react";
 
 export interface OverviewData {
   totalVisits: number;
@@ -19,6 +19,16 @@ interface UseOverviewStreamResult {
   error: string | null;
 }
 
+type OverviewStreamState = {
+  data: OverviewData | null;
+  isConnected: boolean;
+  error: string | null;
+};
+
+function overviewStreamReducer(state: OverviewStreamState, action: Partial<OverviewStreamState>) {
+  return { ...state, ...action };
+}
+
 const MAX_RETRIES = 5;
 const BASE_RETRY_DELAY_MS = 1_000;
 
@@ -26,9 +36,12 @@ export function useOverviewStream({
   timeRange,
   enabled = true,
 }: UseOverviewStreamOptions): UseOverviewStreamResult {
-  const [data, setData] = useState<OverviewData | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, updateState] = useReducer(overviewStreamReducer, {
+    data: null,
+    isConnected: false,
+    error: null,
+  });
+  const { data, error, isConnected } = state;
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
@@ -52,7 +65,7 @@ export function useOverviewStream({
     let reconnectAttempt = 0;
 
     const connect = async () => {
-      if (mountedRef.current) setError(null);
+      if (mountedRef.current) updateState({ error: null });
 
       try {
         const response = await fetch(url, {
@@ -69,8 +82,7 @@ export function useOverviewStream({
         }
 
         if (mountedRef.current) {
-          setIsConnected(true);
-          setError(null);
+          updateState({ isConnected: true, error: null });
         }
 
         reconnectAttempt = 0;
@@ -81,13 +93,7 @@ export function useOverviewStream({
         let buffer = "";
         let eventType = "message";
 
-        while (true) {
-          const { done, value } = await reader.read();
-
-          if (done || abortController.signal.aborted) {
-            break;
-          }
-
+        const processChunk = (value: Uint8Array) => {
           buffer += decoder.decode(value, { stream: true });
 
           const lines = buffer.split("\n");
@@ -102,11 +108,13 @@ export function useOverviewStream({
                 const parsed = JSON.parse(raw);
 
                 if (eventType === "overview") {
-                  if (mountedRef.current) setData(parsed as OverviewData);
+                  if (mountedRef.current) updateState({ data: parsed as OverviewData });
                 } else if (eventType === "error") {
                   console.error("[useOverviewStream] server error event:", parsed);
                   if (mountedRef.current) {
-                    setError((parsed as { error?: string }).error ?? "Unknown server error");
+                    updateState({
+                      error: (parsed as { error?: string }).error ?? "Unknown server error",
+                    });
                   }
                 }
               } catch {}
@@ -116,15 +124,30 @@ export function useOverviewStream({
               eventType = "message";
             }
           }
-        }
+        };
+
+        const readNext = async (): Promise<void> => {
+          const { done, value } = await reader.read();
+
+          if (done || abortController.signal.aborted) {
+            return;
+          }
+
+          processChunk(value);
+          await readNext();
+        };
+
+        await readNext();
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
           return;
         }
 
         if (mountedRef.current) {
-          setIsConnected(false);
-          setError(err instanceof Error ? err.message : "Connection failed");
+          updateState({
+            isConnected: false,
+            error: err instanceof Error ? err.message : "Connection failed",
+          });
         }
 
         if (reconnectAttempt < MAX_RETRIES && !abortController.signal.aborted) {

@@ -18,7 +18,7 @@ export function CalendlyIntegrationCard({ data }: { data: IntegrationCardData })
 	const [isConnecting, setIsConnecting] = useState(false);
 	const [isDisconnecting, setIsDisconnecting] = useState(false);
 	const [isConnected, setIsConnected] = useState(false);
-	const [_syncedEventTypesCount, setSyncedEventTypesCount] = useState(0);
+	const syncedEventTypesCountRef = useRef(0);
 
 	const popupRef = useRef<Window | null>(null);
 	const pollTimerRef = useRef<number | null>(null);
@@ -42,10 +42,10 @@ export function CalendlyIntegrationCard({ data }: { data: IntegrationCardData })
 				: 0;
 
 			setIsConnected(connected);
-			setSyncedEventTypesCount(count ?? 0);
+			syncedEventTypesCountRef.current = count ?? 0;
 		} catch {
 			setIsConnected(false);
-			setSyncedEventTypesCount(0);
+			syncedEventTypesCountRef.current = 0;
 		} finally {
 			setIsLoadingStatus(false);
 		}
@@ -111,7 +111,7 @@ export function CalendlyIntegrationCard({ data }: { data: IntegrationCardData })
 						)
 							? statusResponse.data.integration?.eventTypes.length
 							: 0;
-						setSyncedEventTypesCount(count ?? 0);
+						syncedEventTypesCountRef.current = count ?? 0;
 
 						popupRef.current.close();
 						clearPollTimer();
@@ -135,7 +135,7 @@ export function CalendlyIntegrationCard({ data }: { data: IntegrationCardData })
 		try {
 			await api.delete("/api/integrations/calendly/disconnect");
 			setIsConnected(false);
-			setSyncedEventTypesCount(0);
+			syncedEventTypesCountRef.current = 0;
 			toast.success("Calendly disconnected");
 		} catch (error: any) {
 			console.log("Error disconnecting Calendly integration:", error);

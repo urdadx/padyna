@@ -172,9 +172,13 @@ export function NotionSourceDialog({ open, onOpenChange }: NotionSourceDialogPro
 	const selectedPageList = Object.values(selectedPages);
 	const isSearchingNotion = pagesQuery.isFetching || dataSourcesQuery.isFetching;
 	const isLoadingStatus = statusQuery.isPending && open;
-	const loadingDataSourceIds = openedDataSources
-		.filter((_, index) => dataSourcePageQueries[index]?.isFetching)
-		.map((dataSource) => `data-source:${dataSource.id}`);
+	const loadingDataSourceIds = openedDataSources.reduce<string[]>((items, dataSource, index) => {
+		if (dataSourcePageQueries[index]?.isFetching) {
+			items.push(`data-source:${dataSource.id}`);
+		}
+
+		return items;
+	}, []);
 	const searchErrors = [
 		pagesQuery.error
 			? getErrorMessage(pagesQuery.error, "Failed to search Notion pages")
@@ -284,9 +288,13 @@ export function NotionSourceDialog({ open, onOpenChange }: NotionSourceDialogPro
 	}, [dataSourceQueryById, dataSources, openedDataSourceIds, pages, workspaceName]);
 
 	const checkedTreeItems = useMemo(() => {
-		return Object.entries(treeData.pageByTreeId)
-			.filter(([, page]) => Boolean(selectedPages[page.id]))
-			.map(([treeId]) => treeId);
+		return Object.entries(treeData.pageByTreeId).reduce<string[]>((items, [treeId, page]) => {
+			if (selectedPages[page.id]) {
+				items.push(treeId);
+			}
+
+			return items;
+		}, []);
 	}, [selectedPages, treeData.pageByTreeId]);
 
 	useEffect(() => {
@@ -519,11 +527,7 @@ export function NotionSourceDialog({ open, onOpenChange }: NotionSourceDialogPro
 						<div className="flex h-full min-w-0 flex-col gap-2">
 							<form
 								className="flex flex-col gap-2 px-0.5 py-1 sm:flex-row"
-								onSubmit={(event) => {
-									event.preventDefault();
-									event.stopPropagation();
-									form.handleSubmit();
-								}}>
+								action={() => form.handleSubmit()}>
 								<form.Field name="query">
 									{(field) => (
 										<div className="relative w-full">

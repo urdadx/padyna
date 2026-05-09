@@ -103,17 +103,24 @@ function ChatComposer({
       typingSentRef.current = true;
     }
 
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    typingTimeoutRef.current = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       if (typingSentRef.current) {
         sendTyping(false);
         typingSentRef.current = false;
       }
-      typingTimeoutRef.current = null;
     }, 1_200);
+    typingTimeoutRef.current = timeoutId;
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (typingTimeoutRef.current === timeoutId) {
+        typingTimeoutRef.current = null;
+      }
+      if (typingSentRef.current) {
+        sendTyping(false);
+        typingSentRef.current = false;
+      }
+    };
   }, [
     inputValue,
     isEscalated,
@@ -123,12 +130,6 @@ function ChatComposer({
     sendTyping,
     stopTyping,
   ]);
-
-  useEffect(() => {
-    return () => {
-      stopTyping();
-    };
-  }, [stopTyping]);
 
   const submitMessage = useCallback(async () => {
     const next = inputValue.trim();
@@ -174,7 +175,7 @@ function ChatComposer({
   );
 }
 
-export const ChatConversationPanel = ({ chatId, className }: ChatConversationPanelProps) => {
+const ChatConversationPanelContent = ({ chatId, className }: ChatConversationPanelProps) => {
   const [socketMessages, setSocketMessages] = useState<any[]>([]);
   const lastListInvalidateAtRef = useRef(0);
 
@@ -294,11 +295,6 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
       });
     },
   });
-
-  useEffect(() => {
-    setSocketMessages([]);
-  }, [chatId]);
-
   const baseMessages = useMemo(() => {
     if (!messages) {
       return [];
@@ -428,4 +424,8 @@ export const ChatConversationPanel = ({ chatId, className }: ChatConversationPan
       </ChatContainerRoot>
     </div>
   );
+};
+
+export const ChatConversationPanel = ({ chatId, className }: ChatConversationPanelProps) => {
+  return <ChatConversationPanelContent key={chatId ?? "no-chat"} chatId={chatId} className={className} />;
 };

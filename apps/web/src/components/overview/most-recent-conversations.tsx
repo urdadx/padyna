@@ -56,14 +56,16 @@ const CHANNEL_MAP: Record<string, string> = {
 	messenger: "Messenger",
 };
 
+const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
+	year: "numeric",
+	month: "short",
+	day: "numeric",
+	hour: "2-digit",
+	minute: "2-digit",
+});
+
 function formatDate(date: Date | string): string {
-	return new Intl.DateTimeFormat("en-US", {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	}).format(new Date(date));
+	return DATE_TIME_FORMATTER.format(new Date(date));
 }
 
 function mapConversation(dbConv: DBConversation): Conversation {

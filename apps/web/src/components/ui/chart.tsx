@@ -120,11 +120,12 @@ function ChartTooltipContent({
   }) {
   const { config } = useChart();
 
-  const tooltipLabel = React.useMemo(() => {
-    if (hideLabel || !payload?.length) {
-      return null;
-    }
+  if (!active || !payload?.length) {
+    return null;
+  }
 
+  let tooltipLabel: React.ReactNode = null;
+  if (!hideLabel) {
     const [item] = payload;
     const key = `${labelKey || item?.dataKey || item?.name || "value"}`;
     const itemConfig = getPayloadConfigFromPayload(config, item, key);
@@ -134,20 +135,12 @@ function ChartTooltipContent({
         : itemConfig?.label;
 
     if (labelFormatter) {
-      return (
+      tooltipLabel = (
         <div className={cn("font-medium", labelClassName)}>{labelFormatter(value, payload)}</div>
       );
+    } else if (value) {
+      tooltipLabel = <div className={cn("font-medium", labelClassName)}>{value}</div>;
     }
-
-    if (!value) {
-      return null;
-    }
-
-    return <div className={cn("font-medium", labelClassName)}>{value}</div>;
-  }, [label, labelFormatter, payload, hideLabel, labelClassName, config, labelKey]);
-
-  if (!active || !payload?.length) {
-    return null;
   }
 
   const nestLabel = payload.length === 1 && indicator !== "dot";
@@ -160,18 +153,20 @@ function ChartTooltipContent({
       )}
     >
       {!nestLabel ? tooltipLabel : null}
-      <div className="grid gap-1.5">
-        {payload
-          .filter((item) => item.type !== "none")
-          .map((item, index) => {
-            const key = `${nameKey || item.name || item.dataKey || "value"}`;
-            const itemConfig = getPayloadConfigFromPayload(config, item, key);
-            const indicatorColor = color || item.payload.fill || item.color;
+		<div className="grid gap-1.5">
+		  {payload.reduce<React.ReactNode[]>((items, item, index) => {
+			if (item.type === "none") {
+			  return items;
+			}
 
-            return (
-              <div
-                key={item.dataKey}
-                className={cn(
+			  const key = `${nameKey || item.name || item.dataKey || "value"}`;
+			  const itemConfig = getPayloadConfigFromPayload(config, item, key);
+			  const indicatorColor = color || item.payload.fill || item.color;
+
+			  items.push(
+				<div
+				  key={item.dataKey}
+				  className={cn(
                   "flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground",
                   indicator === "dot" && "items-center",
                 )}
@@ -224,10 +219,12 @@ function ChartTooltipContent({
                     </div>
                   </>
                 )}
-              </div>
-            );
-          })}
-      </div>
+				</div>
+			  );
+
+			  return items;
+			}, [])}
+		</div>
     </div>
   );
 }
@@ -259,33 +256,37 @@ function ChartLegendContent({
         className,
       )}
     >
-      {payload
-        .filter((item) => item.type !== "none")
-        .map((item) => {
-          const key = `${nameKey || item.dataKey || "value"}`;
-          const itemConfig = getPayloadConfigFromPayload(config, item, key);
+      {payload.reduce<React.ReactNode[]>((items, item) => {
+        if (item.type === "none") {
+          return items;
+        }
 
-          return (
-            <div
-              key={item.value}
-              className={cn(
-                "flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground",
-              )}
-            >
-              {itemConfig?.icon && !hideIcon ? (
-                <itemConfig.icon />
-              ) : (
-                <div
-                  className="h-2 w-2 shrink-0 rounded-[2px]"
-                  style={{
-                    backgroundColor: item.color,
-                  }}
-                />
-              )}
-              {itemConfig?.label}
-            </div>
-          );
-        })}
+        const key = `${nameKey || item.dataKey || "value"}`;
+        const itemConfig = getPayloadConfigFromPayload(config, item, key);
+
+        items.push(
+          <div
+            key={item.value}
+            className={cn(
+              "flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground",
+            )}
+          >
+            {itemConfig?.icon && !hideIcon ? (
+              <itemConfig.icon />
+            ) : (
+              <div
+                className="h-2 w-2 shrink-0 rounded-[2px]"
+                style={{
+                  backgroundColor: item.color,
+                }}
+              />
+            )}
+            {itemConfig?.label}
+          </div>,
+        );
+
+        return items;
+      }, [])}
     </div>
   );
 }

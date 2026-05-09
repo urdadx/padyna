@@ -18,7 +18,7 @@ export function GoogleDriveIntegrationCard({ data }: { data: IntegrationCardData
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [_accountEmail, setAccountEmail] = useState<string | null>(null);
+  const accountEmailRef = useRef<string | null>(null);
   const popupRef = useRef<Window | null>(null);
   const pollTimerRef = useRef<number | null>(null);
 
@@ -36,10 +36,10 @@ export function GoogleDriveIntegrationCard({ data }: { data: IntegrationCardData
         "/api/integrations/google-drive/status",
       );
       setIsConnected(Boolean(response.data.connected));
-      setAccountEmail(response.data.integration?.accountEmail ?? null);
+      accountEmailRef.current = response.data.integration?.accountEmail ?? null;
     } catch {
       setIsConnected(false);
-      setAccountEmail(null);
+      accountEmailRef.current = null;
     } finally {
       setIsLoadingStatus(false);
     }
@@ -100,7 +100,7 @@ export function GoogleDriveIntegrationCard({ data }: { data: IntegrationCardData
 
           if (statusResponse.data.connected) {
             setIsConnected(true);
-            setAccountEmail(statusResponse.data.integration?.accountEmail ?? null);
+            accountEmailRef.current = statusResponse.data.integration?.accountEmail ?? null;
             popupRef.current.close();
             clearPollTimer();
             setIsConnecting(false);
@@ -121,7 +121,7 @@ export function GoogleDriveIntegrationCard({ data }: { data: IntegrationCardData
     try {
       await api.delete("/api/integrations/google-drive/disconnect");
       setIsConnected(false);
-      setAccountEmail(null);
+      accountEmailRef.current = null;
       toast.success("Google Drive disconnected");
     } catch {
       toast.error("Failed to disconnect. Please try again.");

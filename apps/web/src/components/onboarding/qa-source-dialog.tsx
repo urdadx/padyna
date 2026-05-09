@@ -16,7 +16,7 @@ import { motion } from "motion/react";
 import api from "../../lib/api";
 import { queryClient, trpc } from "../../utils/trpc";
 import Spinner from "../ui/spinner";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface QASource {
   id?: string;
@@ -30,10 +30,69 @@ interface QASourceDialogProps {
   defaultValues?: QASource;
 }
 
-export function QASourceDialog({ open, onOpenChange, defaultValues }: QASourceDialogProps) {
+function QASourceDialogFields({
+  defaultValues,
+  isEdit,
+  isPending,
+  onSave,
+}: {
+  defaultValues?: QASource;
+  isEdit: boolean;
+  isPending: boolean;
+  onSave: (data: { question: string; answer: string }) => void;
+}) {
   const [question, setQuestion] = useState(defaultValues?.question || "");
   const [answer, setAnswer] = useState(defaultValues?.answer || "");
 
+  return (
+    <>
+      <div className="grid gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="question">Question</Label>
+          <Input
+            id="question"
+            placeholder="Ex: How do I reset my password?"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="answer">Answer</Label>
+          <Textarea
+            id="answer"
+            placeholder="Enter the answer here..."
+            className="min-h-20"
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <DialogFooter>
+        <motion.div className="w-full" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button
+            className="w-full"
+            onClick={() => onSave({ question, answer })}
+            disabled={!question.trim() || !answer.trim() || isPending}
+          >
+            {isPending ? (
+              <>
+                <Spinner className="text-white" />
+                Saving...
+              </>
+            ) : isEdit ? (
+              "Update Q&A"
+            ) : (
+              "Add Q&A"
+            )}
+          </Button>
+        </motion.div>
+      </DialogFooter>
+    </>
+  );
+}
+
+export function QASourceDialog({ open, onOpenChange, defaultValues }: QASourceDialogProps) {
   const isEdit = Boolean(defaultValues?.id);
 
   const { mutate: saveQa, isPending } = useMutation({
@@ -62,17 +121,6 @@ export function QASourceDialog({ open, onOpenChange, defaultValues }: QASourceDi
     },
   });
 
-  useEffect(() => {
-    if (open) {
-      setQuestion(defaultValues?.question || "");
-      setAnswer(defaultValues?.answer || "");
-    }
-  }, [open, defaultValues]);
-
-  const handleSave = () => {
-    saveQa({ question, answer });
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl w-full">
@@ -82,49 +130,15 @@ export function QASourceDialog({ open, onOpenChange, defaultValues }: QASourceDi
             Add a question and its corresponding answer to train your AI.
           </DialogDescription>
         </DialogHeader>
-
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="question">Question</Label>
-            <Input
-              id="question"
-              placeholder="Ex: How do I reset my password?"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="answer">Answer</Label>
-            <Textarea
-              id="answer"
-              placeholder="Enter the answer here..."
-              className="min-h-20"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <motion.div className="w-full" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button
-              className="w-full"
-              onClick={handleSave}
-              disabled={!question.trim() || !answer.trim() || isPending}
-            >
-              {isPending ? (
-                <>
-                  <Spinner className="text-white" />
-                  Saving...
-                </>
-              ) : isEdit ? (
-                "Update Q&A"
-              ) : (
-                "Add Q&A"
-              )}
-            </Button>
-          </motion.div>
-        </DialogFooter>
+        {open ? (
+          <QASourceDialogFields
+            key={`${defaultValues?.id ?? "new"}-${open ? "open" : "closed"}`}
+            defaultValues={defaultValues}
+            isEdit={isEdit}
+            isPending={isPending}
+            onSave={saveQa}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   );

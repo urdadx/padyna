@@ -8,8 +8,6 @@ import {
 } from "../ui/dropdown-menu";
 import { FileLinear } from "@/assets/icons/file-icon";
 import { TextLinear } from "@/assets/icons/text-icon";
-
-import { useState } from "react";
 import { FileUploadDialog } from "../onboarding/file-upload-dialog";
 import { QASourceDialog } from "../onboarding/qa-source-dialog";
 import { TextSourceDialog } from "../onboarding/text-source-dialog";
@@ -20,19 +18,45 @@ import { NotionIcon } from "@/assets/icons/notion-icon";
 import { GoogleDrive } from "@/assets/icons/google-drive-icon";
 import { NotionSourceDialog } from "../onboarding/notion-source-dialog";
 import { GoogleDriveSourceDialog } from "../onboarding/google-drive-source-dialog";
+import { useReducer } from "react";
+
+type AddSourceState = {
+  isAddSourceMenuOpen: boolean;
+  isFileModalOpen: boolean;
+  isGoogleDriveModalOpen: boolean;
+  isLinkModalOpen: boolean;
+  isNotionModalOpen: boolean;
+  isQAModalOpen: boolean;
+  isTextModalOpen: boolean;
+};
+
+function addSourceReducer(state: AddSourceState, action: Partial<AddSourceState>) {
+  return { ...state, ...action };
+}
 
 export const AddSource = () => {
-  const [isAddSourceMenuOpen, setIsAddSourceMenuOpen] = useState(false);
-  const [isFileModalOpen, setIsFileModalOpen] = useState(false);
-  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
-  const [isQAModalOpen, setIsQAModalOpen] = useState(false);
-  const [isTextModalOpen, setIsTextModalOpen] = useState(false);
-  const [isNotionModalOpen, setIsNotionModalOpen] = useState(false);
-  const [isGoogleDriveModalOpen, setIsGoogleDriveModalOpen] = useState(false);
+  const [state, updateState] = useReducer(addSourceReducer, {
+    isAddSourceMenuOpen: false,
+    isFileModalOpen: false,
+    isGoogleDriveModalOpen: false,
+    isLinkModalOpen: false,
+    isNotionModalOpen: false,
+    isQAModalOpen: false,
+    isTextModalOpen: false,
+  });
+  const {
+    isAddSourceMenuOpen,
+    isFileModalOpen,
+    isGoogleDriveModalOpen,
+    isLinkModalOpen,
+    isNotionModalOpen,
+    isQAModalOpen,
+    isTextModalOpen,
+  } = state;
 
   return (
     <>
-      <DropdownMenu open={isAddSourceMenuOpen} onOpenChange={setIsAddSourceMenuOpen}>
+      <DropdownMenu open={isAddSourceMenuOpen} onOpenChange={(open) => updateState({ isAddSourceMenuOpen: open })}>
         <DropdownMenuTrigger>
           <Button className="h-9 text-white w-full sm:w-auto">
             <PlusIcon className="h-4 w-4 text-white" />
@@ -40,18 +64,17 @@ export const AddSource = () => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={() => setIsFileModalOpen(true)}>
+          <DropdownMenuItem onClick={() => updateState({ isFileModalOpen: true })}>
             <FileLinear />
             <span>Files</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setIsLinkModalOpen(true)}>
+          <DropdownMenuItem onClick={() => updateState({ isLinkModalOpen: true })}>
             <GlobeLinear />
             <span>Links</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
-              setIsAddSourceMenuOpen(false);
-              setIsGoogleDriveModalOpen(true);
+              updateState({ isAddSourceMenuOpen: false, isGoogleDriveModalOpen: true });
             }}
           >
             <GoogleDrive />
@@ -59,18 +82,17 @@ export const AddSource = () => {
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
-              setIsAddSourceMenuOpen(false);
-              setIsNotionModalOpen(true);
+              updateState({ isAddSourceMenuOpen: false, isNotionModalOpen: true });
             }}
           >
             <NotionIcon />
             <span>Notion</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setIsQAModalOpen(true)}>
+          <DropdownMenuItem onClick={() => updateState({ isQAModalOpen: true })}>
             <ChatLinear />
             <span>Q&A</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setIsTextModalOpen(true)}>
+          <DropdownMenuItem onClick={() => updateState({ isTextModalOpen: true })}>
             <TextLinear />
             <span>Text snippets</span>
           </DropdownMenuItem>
@@ -79,19 +101,19 @@ export const AddSource = () => {
 
       <FileUploadDialog
         open={isFileModalOpen}
-        onOpenChange={setIsFileModalOpen}
+        onOpenChange={(open) => updateState({ isFileModalOpen: open })}
         onUpload={(files) => {
           console.log("Uploaded files:", files);
         }}
       />
-      <WebSourceDialog open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen} />
-      <NotionSourceDialog open={isNotionModalOpen} onOpenChange={setIsNotionModalOpen} />
+      <WebSourceDialog open={isLinkModalOpen} onOpenChange={(open) => updateState({ isLinkModalOpen: open })} />
+      <NotionSourceDialog open={isNotionModalOpen} onOpenChange={(open) => updateState({ isNotionModalOpen: open })} />
       <GoogleDriveSourceDialog
         open={isGoogleDriveModalOpen}
-        onOpenChange={setIsGoogleDriveModalOpen}
+        onOpenChange={(open) => updateState({ isGoogleDriveModalOpen: open })}
       />
-      <QASourceDialog open={isQAModalOpen} onOpenChange={setIsQAModalOpen} />
-      <TextSourceDialog open={isTextModalOpen} onOpenChange={setIsTextModalOpen} />
+      <QASourceDialog open={isQAModalOpen} onOpenChange={(open) => updateState({ isQAModalOpen: open })} />
+      <TextSourceDialog open={isTextModalOpen} onOpenChange={(open) => updateState({ isTextModalOpen: open })} />
     </>
   );
 };

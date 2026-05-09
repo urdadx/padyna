@@ -19,6 +19,13 @@ import Spinner from "@/components/ui/spinner";
 import api from "@/lib/api";
 import { trpc } from "@/utils/trpc";
 
+const MODIFIED_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+	day: "numeric",
+	month: "numeric",
+	timeZone: "UTC",
+	year: "numeric",
+});
+
 type GoogleDriveResource = {
 	id: string;
 	object: "file" | "folder";
@@ -160,9 +167,13 @@ export function GoogleDriveSourceDialog({ open, onOpenChange }: GoogleDriveSourc
 	const selectedItemList = Object.values(selectedItems);
 	const isLoadingStatus = statusQuery.isPending && open;
 	const isLoadingFiles = rootFilesQuery.isFetching;
-	const loadingFolderItemIds = openedFolderIdList
-		.filter((_, index) => folderQueries[index]?.isFetching)
-		.map((folderId) => `item:${folderId}`);
+	const loadingFolderItemIds = openedFolderIdList.reduce<string[]>((items, folderId, index) => {
+		if (folderQueries[index]?.isFetching) {
+			items.push(`item:${folderId}`);
+		}
+
+		return items;
+	}, []);
 	const statusError = statusQuery.error
 		? getErrorMessage(statusQuery.error, "Failed to check Google Drive connection")
 		: null;
@@ -211,7 +222,7 @@ export function GoogleDriveSourceDialog({ open, onOpenChange }: GoogleDriveSourc
 							? `${children.length} item${children.length === 1 ? "" : "s"}`
 							: "Select or open folder"
 					: item.modifiedTime
-						? `Modified ${new Date(item.modifiedTime).toLocaleDateString()}`
+						? `Modified ${MODIFIED_DATE_FORMATTER.format(new Date(item.modifiedTime))}`
 						: undefined,
 				name: item.name,
 				selectable: isFolder,
@@ -235,9 +246,13 @@ export function GoogleDriveSourceDialog({ open, onOpenChange }: GoogleDriveSourc
 	}, [accountLabel, folderQueryById, rootItems]);
 
 	const checkedTreeItems = useMemo(() => {
-		return Object.entries(treeData.itemByTreeId)
-			.filter(([, item]) => Boolean(selectedItems[item.id]))
-			.map(([treeId]) => treeId);
+		return Object.entries(treeData.itemByTreeId).reduce<string[]>((items, [treeId, item]) => {
+			if (selectedItems[item.id]) {
+				items.push(treeId);
+			}
+
+			return items;
+		}, []);
 	}, [selectedItems, treeData.itemByTreeId]);
 
 	useEffect(() => {
@@ -446,13 +461,9 @@ export function GoogleDriveSourceDialog({ open, onOpenChange }: GoogleDriveSourc
 						</div>
 					) : (
 						<div className="flex h-full min-w-0 flex-col gap-4">
-							<form
-								className="flex flex-col gap-2 px-0.5 pt-1 sm:flex-row"
-								onSubmit={(event) => {
-									event.preventDefault();
-									event.stopPropagation();
-									form.handleSubmit();
-								}}>
+						<form
+							className="flex flex-col gap-2 px-0.5 pt-1 sm:flex-row"
+							action={() => form.handleSubmit()}>
 								<div className="relative w-full">
 									<SearchLinear className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
 									<form.Field name="query">

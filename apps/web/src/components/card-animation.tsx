@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useReducer } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
 	Paperclip,
@@ -27,9 +27,21 @@ const STEPS = [
 	{ icon: PenTool, text: "Writing..." },
 ];
 
+type CardAnimationState = {
+	phase: 1 | 2 | 3;
+	typedChars: number;
+};
+
+function cardAnimationReducer(state: CardAnimationState, action: Partial<CardAnimationState>) {
+	return { ...state, ...action };
+}
+
 export function CardAnimation() {
-	const [phase, setPhase] = useState<1 | 2 | 3>(1);
-	const [typedChars, setTypedChars] = useState(0);
+	const [state, updateState] = useReducer(cardAnimationReducer, {
+		phase: 1,
+		typedChars: 0,
+	});
+	const { phase, typedChars } = state;
 
 	// Phase 1: Typing
 	useEffect(() => {
@@ -37,14 +49,14 @@ export function CardAnimation() {
 			if (typedChars < TEXT_TO_TYPE.length) {
 				const timeout = setTimeout(
 					() => {
-						setTypedChars((prev) => prev + 1);
+						updateState({ typedChars: typedChars + 1 });
 					},
 					Math.random() * 40 + 30,
 				); // Random typing speed
 				return () => clearTimeout(timeout);
 			} else {
 				// Wait briefly after typing is done, then go to Phase 2
-				const timer = setTimeout(() => setPhase(2), 1500);
+				const timer = setTimeout(() => updateState({ phase: 2 }), 1500);
 				return () => clearTimeout(timer);
 			}
 		}
@@ -54,7 +66,7 @@ export function CardAnimation() {
 	useEffect(() => {
 		if (phase === 2) {
 			// 7 steps, ~400ms delay between each step = 2.8s total
-			const timer = setTimeout(() => setPhase(3), STEPS.length * 500 + 1000);
+			const timer = setTimeout(() => updateState({ phase: 3 }), STEPS.length * 500 + 1000);
 			return () => clearTimeout(timer);
 		}
 	}, [phase]);
@@ -168,11 +180,11 @@ export function CardAnimation() {
 							exit="exit"
 							className="flex-1 p-8 flex flex-col justify-center max-w-2xl mx-auto w-full">
 							<div className="space-y-6">
-								{STEPS.map((step, idx) => (
-									<motion.div
-										key={idx}
-										variants={stepVariants}
-										className="flex items-center gap-4 text-gray-700">
+							{STEPS.map((step, idx) => (
+								<motion.div
+									key={step.text}
+									variants={stepVariants}
+									className="flex items-center gap-4 text-gray-700">
 										<div className="w-8 h-8 rounded-full bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
 											<step.icon size={16} />
 										</div>
@@ -293,8 +305,7 @@ export function CardAnimation() {
 			{/* Replay button */}
 			<button
 				onClick={() => {
-					setPhase(1);
-					setTypedChars(0);
+					updateState({ phase: 1, typedChars: 0 });
 				}}
 				className="absolute top-20 right-4 text-gray-400 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
 				title="Replay Animation">

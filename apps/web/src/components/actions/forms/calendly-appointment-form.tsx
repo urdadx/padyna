@@ -3,7 +3,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { addHours, format, setHours, setMinutes } from "date-fns";
 import { ArrowLeft } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import {
 	calendlyAppointmentFormOutputSchema,
 	collectToolOutputs,
@@ -29,6 +29,25 @@ export function getCalendlyAppointmentFormPayloads(
 	return collectToolOutputs(parts, calendlyAppointmentFormOutputSchema);
 }
 
+const TIME_LABEL_REFERENCE_DATE = new Date(Date.UTC(2000, 0, 1));
+
+function getSelectedDateTime(date: Date, hour: number, minute: number) {
+	return setMinutes(setHours(new Date(date), hour), minute);
+}
+
+function getTimeLabel(hour: number, minute: number) {
+	return format(
+		setMinutes(setHours(new Date(TIME_LABEL_REFERENCE_DATE), hour), minute),
+		"HH:mm",
+	);
+}
+
+function getStartOfDay(date: Date) {
+	const value = new Date(date);
+	value.setHours(0, 0, 0, 0);
+	return value;
+}
+
 function buildCalendlyUrl(args: {
 	schedulingUrl?: string | null;
 	date: Date;
@@ -39,10 +58,24 @@ function buildCalendlyUrl(args: {
 		return null;
 	}
 
-	const selectedDateTime = setMinutes(setHours(new Date(args.date), args.hour), args.minute);
+	const selectedDateTime = getSelectedDateTime(args.date, args.hour, args.minute);
 	const isoDateTime = selectedDateTime.toISOString().replace(/\.000Z$/, "+00:00");
 
 	return `${args.schedulingUrl.replace(/\/$/, "")}/${isoDateTime}`;
+}
+
+type AppointmentPickerState = {
+	date: Date | undefined;
+	selectedTime: { hour: number; minute: number } | null;
+	showConfirmation: boolean;
+	showTimePicker: boolean;
+};
+
+function appointmentPickerReducer(
+	state: AppointmentPickerState,
+	action: Partial<AppointmentPickerState>,
+) {
+	return { ...state, ...action };
 }
 
 export function AppointmentPicker({
@@ -50,26 +83,29 @@ export function AppointmentPicker({
 	eventTypeName,
 	onConfirm,
 }: AppointmentPickerProps) {
-	const today = new Date();
-	const [date, setDate] = useState<Date | undefined>(undefined);
-	const [selectedTime, setSelectedTime] = useState<{ hour: number; minute: number } | null>(
-		null,
+	const [currentDate, setCurrentDate] = useState<Date | null>(null);
+	const [state, updateState] = useReducer(appointmentPickerReducer, {
+		date: undefined,
+		selectedTime: null,
+		showConfirmation: false,
+		showTimePicker: false,
+	});
+	const { date, selectedTime, showConfirmation, showTimePicker } = state;
+
+	useEffect(() => {
+		setCurrentDate(new Date());
+	}, []);
+
+	const today = useMemo(
+		() => (currentDate ? getStartOfDay(currentDate) : undefined),
+		[currentDate],
 	);
-	const [showTimePicker, setShowTimePicker] = useState(false);
-	const [showConfirmation, setShowConfirmation] = useState(false);
 
 	const timeSlots = useMemo(() => {
 		const slots = [];
 		for (let hour = 9; hour < 17; hour++) {
 			for (let minute = 0; minute < 60; minute += 30) {
-				slots.push({
-					hour,
-					minute,
-					label: format(
-						setMinutes(setHours(new Date(), hour), minute),
-						"HH:mm",
-					),
-				});
+				slots.push({ hour, minute, label: getTimeLabel(hour, minute) });
 			}
 		}
 		return slots;
@@ -77,17 +113,14 @@ export function AppointmentPicker({
 
 	const selectedTimeLabel = useMemo(() => {
 		if (!selectedTime) return null;
-		return format(
-			setMinutes(setHours(new Date(), selectedTime.hour), selectedTime.minute),
-			"HH:mm",
-		);
+		return getTimeLabel(selectedTime.hour, selectedTime.minute);
 	}, [selectedTime]);
 
 	const isPastSelection = useMemo(() => {
-		if (!date || !selectedTime) return false;
-		const dt = setMinutes(setHours(new Date(date), selectedTime.hour), selectedTime.minute);
-		return dt < new Date();
-	}, [date, selectedTime]);
+		if (!date || !selectedTime || !currentDate) return false;
+		const dt = getSelectedDateTime(date, selectedTime.hour, selectedTime.minute);
+		return dt < currentDate;
+	}, [currentDate, date, selectedTime]);
 
 	return (
 		<div>
@@ -118,11 +151,9 @@ export function AppointmentPicker({
 										return;
 									}
 
-									const selectedDateTime = setMinutes(
-										setHours(
-											new Date(date),
-											selectedTime.hour,
-										),
+									const selectedDateTime = getSelectedDateTime(
+										date,
+										selectedTime.hour,
 										selectedTime.minute,
 									);
 									const endDateTime = addHours(
@@ -154,8 +185,10 @@ export function AppointmentPicker({
 								variant="ghost"
 								className=" w-full"
 								onClick={() => {
-									setShowConfirmation(false);
-									setShowTimePicker(true);
+									updateState({
+										showConfirmation: false,
+										showTimePicker: true,
+									});
 								}}>
 								<ArrowLeft className="h-4 w-4" />
 								Change time
@@ -176,12 +209,14 @@ export function AppointmentPicker({
 									return;
 								}
 
-								setDate(newDate);
-								setSelectedTime(null);
-								setShowTimePicker(true);
+								updateState({
+									date: newDate,
+									selectedTime: null,
+									showTimePicker: true,
+								});
 							}}
 							className="w-full"
-							disabled={[{ before: today }]}
+							disabled={today ? [{ before: today }] : undefined}
 						/>
 						{!schedulingUrl ? (
 							<p className="px-2 pb-2 text-xs text-muted-foreground">
@@ -196,7 +231,7 @@ export function AppointmentPicker({
 							<Button
 								variant="ghost"
 								size="sm"
-								onClick={() => setShowTimePicker(false)}>
+								onClick={() => updateState({ showTimePicker: false })}>
 								<ArrowLeft className="h-4 w-4" />
 							</Button>
 							<p className="text-center text-sm font-medium">
@@ -218,8 +253,10 @@ export function AppointmentPicker({
 										size="sm"
 										className="w-full"
 										onClick={() => {
-											setSelectedTime({ hour, minute });
-											setShowConfirmation(true);
+											updateState({
+												selectedTime: { hour, minute },
+												showConfirmation: true,
+											});
 										}}>
 										{label}
 									</Button>

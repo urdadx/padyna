@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from "react";
+import { useId, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 
 import api from "@/lib/api";
@@ -52,9 +52,7 @@ export const JiraIssueForm = ({ payload }: JiraIssueFormProps) => {
 		},
 	});
 
-	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-
+	const handleSubmit = () => {
 		if (!details.trim() || createIssueMutation.isPending) {
 			return;
 		}
@@ -69,7 +67,7 @@ export const JiraIssueForm = ({ payload }: JiraIssueFormProps) => {
 	return (
 		<form
 			className="rounded-xl border border-gray-200 bg-background p-4"
-			onSubmit={handleSubmit}>
+			action={handleSubmit}>
 			<div className="mb-5 flex flex-col gap-1">
 				<h2 className="text-lg font-semibold">Create a support ticket</h2>
 				<small className="text-sm text-muted-foreground">

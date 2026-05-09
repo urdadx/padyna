@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { endOfDay, format, startOfDay } from "date-fns";
 import { ArrowLeft } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Spinner from "@/components/ui/spinner";
 import { CheckMarkIcon } from "@/assets/icons/checkmark-icon";
 import {
@@ -52,6 +52,20 @@ type CalBookingApiResponse = {
 	confirmationFailed?: boolean;
 };
 
+function getStartOfCurrentDay(date: Date) {
+	const value = new Date(date);
+	value.setHours(0, 0, 0, 0);
+	return value;
+}
+
+function formatSlotLabel(slotTime: string) {
+	return format(new Date(slotTime), "HH:mm");
+}
+
+function formatBookingLabel(slotTime: string) {
+	return format(new Date(slotTime), "EEEE, MMMM d 'at' HH:mm");
+}
+
 function getApiErrorMessage(error: unknown, fallbackMessage: string) {
 	if (isAxiosError<CalBookingApiError>(error)) {
 		const firstFieldError = error.response?.data?.fields
@@ -74,7 +88,7 @@ export function CalAppointmentPicker({
 	duration = 30,
 	onConfirm,
 }: CalAppointmentPickerProps) {
-	const today = new Date();
+	const [currentDate, setCurrentDate] = useState<Date | null>(null);
 	const [date, setDate] = useState<Date | undefined>(undefined);
 	const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 	const [showTimePicker, setShowTimePicker] = useState(false);
@@ -88,6 +102,15 @@ export function CalAppointmentPicker({
 		start: string;
 		confirmationFailed: boolean;
 	} | null>(null);
+
+	useEffect(() => {
+		setCurrentDate(new Date());
+	}, []);
+
+	const today = useMemo(
+		() => (currentDate ? getStartOfCurrentDay(currentDate) : undefined),
+		[currentDate],
+	);
 
 	const {
 		data: slotsData,
@@ -120,6 +143,18 @@ export function CalAppointmentPicker({
 	});
 
 	const timeSlots = slotsData?.slots || [];
+	const slotItems = useMemo(
+		() => timeSlots.map((slot) => ({ ...slot, label: formatSlotLabel(slot.time) })),
+		[timeSlots],
+	);
+	const bookingResultLabel = useMemo(
+		() => (bookingResult ? formatBookingLabel(bookingResult.start) : null),
+		[bookingResult],
+	);
+	const selectedDateLabel = useMemo(
+		() => (date ? format(date, "EEEE, MMMM d") : null),
+		[date],
+	);
 	const attendeeTimeZone = useMemo(
 		() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
 		[],
@@ -190,9 +225,9 @@ export function CalAppointmentPicker({
 	};
 
 	const isPastSelection = useMemo(() => {
-		if (!selectedSlot) return false;
-		return new Date(selectedSlot) < new Date();
-	}, [selectedSlot]);
+		if (!selectedSlot || !currentDate) return false;
+		return new Date(selectedSlot) < currentDate;
+	}, [currentDate, selectedSlot]);
 
 	return (
 		<div>
@@ -203,12 +238,7 @@ export function CalAppointmentPicker({
 						<p className="mb-2 text-sm font-medium">
 							Your appointment has been confirmed.
 						</p>
-						<p className="mb-1 text-sm text-muted-foreground">
-							{format(
-								new Date(bookingResult.start),
-								"EEEE, MMMM d 'at' HH:mm",
-							)}
-						</p>
+						<p className="mb-1 text-sm text-muted-foreground">{bookingResultLabel}</p>
 						<p className="mb-4 text-xs text-muted-foreground">
 							{bookingResult.confirmationFailed
 								? "The booking was created, but Cal.com still needs to confirm it."
@@ -322,7 +352,7 @@ export function CalAppointmentPicker({
 								}
 							}}
 							className="w-full"
-							disabled={[{ before: today }]}
+							disabled={today ? [{ before: today }] : undefined}
 						/>
 						{(!username || !eventSlug) && (
 							<p className="px-2 pb-2 text-xs text-muted-foreground">
@@ -343,7 +373,7 @@ export function CalAppointmentPicker({
 								<ArrowLeft className="h-4 w-4" />
 							</Button>
 							<p className="text-sm text-center font-medium">
-								{date && format(date, "EEEE, MMMM d")}
+								{selectedDateLabel}
 							</p>
 							<div className="w-8" />
 						</div>
@@ -376,7 +406,7 @@ export function CalAppointmentPicker({
 						) : (
 							<ScrollArea className="h-75 w-full">
 								<div className="grid gap-1.5 sm:grid-cols-2">
-									{timeSlots.map((slot) => (
+									{slotItems.map((slot) => (
 										<Button
 											key={slot.time}
 											variant={
@@ -391,10 +421,7 @@ export function CalAppointmentPicker({
 												setShowTimePicker(false);
 												setShowAttendeeForm(true);
 											}}>
-											{format(
-												new Date(slot.time),
-												"HH:mm",
-											)}
+											{slot.label}
 										</Button>
 									))}
 								</div>

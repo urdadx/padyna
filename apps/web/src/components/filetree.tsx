@@ -26,6 +26,7 @@ interface FileTreeProps {
 }
 
 const indent = 18;
+const EMPTY_IDS: string[] = [];
 
 function isFolder(item: Item) {
   return item.type === "folder" || Boolean(item.children?.length);
@@ -118,10 +119,10 @@ function getVisibleItems(
 export function FileTree({
   items,
   rootItemId,
-  checkedItems = [],
+  checkedItems = EMPTY_IDS,
   onCheckedItemsChange,
   onFolderClick,
-  loadingItemIds = [],
+  loadingItemIds = EMPTY_IDS,
   emptyMessage = "No files found.",
 }: FileTreeProps) {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(() => new Set([rootItemId]));

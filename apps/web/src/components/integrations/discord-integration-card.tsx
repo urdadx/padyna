@@ -18,7 +18,7 @@ export function DiscordIntegrationCard({ data }: { data: IntegrationCardData }) 
 	const [isConnecting, setIsConnecting] = useState(false);
 	const [isDisconnecting, setIsDisconnecting] = useState(false);
 	const [isConnected, setIsConnected] = useState(false);
-	const [_guildId, setGuildId] = useState<string | null>(null);
+	const guildIdRef = useRef<string | null>(null);
 
 	const popupRef = useRef<Window | null>(null);
 	const pollTimerRef = useRef<number | null>(null);
@@ -38,10 +38,10 @@ export function DiscordIntegrationCard({ data }: { data: IntegrationCardData }) 
 			);
 
 			setIsConnected(Boolean(response.data.connected));
-			setGuildId(response.data.integration?.guildId ?? null);
+			guildIdRef.current = response.data.integration?.guildId ?? null;
 		} catch {
 			setIsConnected(false);
-			setGuildId(null);
+			guildIdRef.current = null;
 		} finally {
 			setIsLoadingStatus(false);
 		}
@@ -102,7 +102,7 @@ export function DiscordIntegrationCard({ data }: { data: IntegrationCardData }) 
 
 					if (statusResponse.data.connected) {
 						setIsConnected(true);
-						setGuildId(statusResponse.data.integration?.guildId ?? null);
+						guildIdRef.current = statusResponse.data.integration?.guildId ?? null;
 						popupRef.current.close();
 						clearPollTimer();
 						setIsConnecting(false);
@@ -125,7 +125,7 @@ export function DiscordIntegrationCard({ data }: { data: IntegrationCardData }) 
 		try {
 			await api.delete("/api/integrations/discord/disconnect");
 			setIsConnected(false);
-			setGuildId(null);
+			guildIdRef.current = null;
 			toast.success("Discord disconnected");
 		} catch (error: any) {
 			console.log("Error disconnecting Discord integration:", error);

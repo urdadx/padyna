@@ -8,7 +8,7 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useReducer, useState } from "react";
 
 export type InlineCitationProps = ComponentProps<"span">;
 
@@ -62,6 +62,22 @@ const useCarouselApi = () => {
   const context = useContext(CarouselApiContext);
   return context;
 };
+
+type CarouselIndexState = {
+  count: number;
+  current: number;
+};
+
+function getCarouselIndexState(api: CarouselApi): CarouselIndexState {
+  return {
+    count: api.scrollSnapList().length,
+    current: api.selectedScrollSnap() + 1,
+  };
+}
+
+function carouselIndexReducer(_state: CarouselIndexState, nextState: CarouselIndexState) {
+  return nextState;
+}
 
 export type InlineCitationCarouselProps = ComponentProps<typeof Carousel>;
 
@@ -119,19 +135,20 @@ export const InlineCitationCarouselIndex = ({
   ...props
 }: InlineCitationCarouselIndexProps) => {
   const api = useCarouselApi();
-  const [current, setCurrent] = useState(0);
-  const [count, setCount] = useState(0);
+  const [{ current, count }, setCarouselIndexState] = useReducer(carouselIndexReducer, {
+    count: 0,
+    current: 0,
+  });
 
   useEffect(() => {
     if (!api) {
       return;
     }
 
-    setCount(api.scrollSnapList().length);
-    setCurrent(api.selectedScrollSnap() + 1);
+    setCarouselIndexState(getCarouselIndexState(api));
 
     const handleSelect = () => {
-      setCurrent(api.selectedScrollSnap() + 1);
+      setCarouselIndexState(getCarouselIndexState(api));
     };
 
     api.on("select", handleSelect);

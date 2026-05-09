@@ -19,6 +19,17 @@ import { RemoveMember } from "./remove-member";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { useSession } from "@/lib/auth-client";
 
+const JOINED_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+	day: "numeric",
+	month: "short",
+	timeZone: "UTC",
+	year: "numeric",
+});
+
+function formatJoinedDate(value: Date | string) {
+	return JOINED_DATE_FORMATTER.format(new Date(value));
+}
+
 export function TeamMembersTable() {
 	const { data: session } = useSession();
 	const activeOrganizationId = session?.session.activeOrganization;
@@ -62,9 +73,7 @@ export function TeamMembersTable() {
 										</div>
 										<span className="mt-0.5 text-muted-foreground text-xs">
 											Joined on{" "}
-											{new Date(
-												member.createdAt,
-											).toLocaleDateString()}
+											{formatJoinedDate(member.createdAt)}
 										</span>
 									</div>
 								</div>
@@ -147,6 +156,7 @@ export function TeamMembersTable() {
 			</Table>
 
 			<EditMemberDetails
+				key={editingMember?.id ?? "no-member"}
 				isDialogOpen={!!editingMember}
 				setIsDialogOpen={(open) => !open && setEditingMember(null)}
 				member={editingMember}

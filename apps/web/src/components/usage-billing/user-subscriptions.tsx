@@ -15,6 +15,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const PAGE_SIZE = 5;
+const SUBSCRIPTION_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+	day: "numeric",
+	month: "short",
+	timeZone: "UTC",
+	year: "numeric",
+});
+const USD_FORMATTER = new Intl.NumberFormat("en-US", {
+	style: "currency",
+	currency: "USD",
+});
 
 export function UserSubscriptions() {
 	const isMobile = useIsMobile();
@@ -34,19 +44,11 @@ export function UserSubscriptions() {
 
 	const formatDate = (date: Date | string | null | undefined) => {
 		if (!date) return "N/A";
-		const options: Intl.DateTimeFormatOptions = {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-		};
-		return new Date(date).toLocaleDateString(undefined, options);
+		return SUBSCRIPTION_DATE_FORMATTER.format(new Date(date));
 	};
 
 	const formatCurrency = (amount: number) => {
-		return new Intl.NumberFormat("en-US", {
-			style: "currency",
-			currency: "USD",
-		}).format(amount);
+		return USD_FORMATTER.format(amount);
 	};
 
 	return (

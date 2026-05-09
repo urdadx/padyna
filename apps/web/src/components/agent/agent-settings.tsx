@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { InfoIcon, MoreHorizontal, Plus } from "lucide-react";
@@ -31,6 +31,20 @@ export const AGENT_USECASES = [
 
 type Usecase = (typeof AGENT_USECASES)[number]["value"];
 
+function withOccurrenceKeys(values: string[]) {
+	const seen = new Map<string, number>();
+	return values.map((value, index) => {
+		const occurrence = (seen.get(value) ?? 0) + 1;
+		seen.set(value, occurrence);
+
+		return {
+			index,
+			key: `${value}-${occurrence}`,
+			value,
+		};
+	});
+}
+
 export function AgentSettingsPanel() {
 	const { data: session } = useSession();
 	const chatbotId = session?.session.activeChatbot;
@@ -44,7 +58,9 @@ export function AgentSettingsPanel() {
 		return <AgentLoadingSkeleton />;
 	}
 
-	return <AgentForm chatbot={chatbot} chatbotId={chatbotId} />;
+	const formKey = JSON.stringify(getFormState(chatbot));
+
+	return <AgentForm key={formKey} chatbot={chatbot} chatbotId={chatbotId} />;
 }
 
 function getFormState(chatbot: any) {
@@ -68,10 +84,14 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 	const [isBrandingDialogOpen, setIsBrandingDialogOpen] = useState(false);
 
 	const [form, setForm] = useState(() => getFormState(chatbot));
-
-	useEffect(() => {
-		setForm(getFormState(chatbot));
-	}, [chatbot]);
+	const suggestedMessageItems = useMemo(
+		() => withOccurrenceKeys(form.suggestedMessages),
+		[form.suggestedMessages],
+	);
+	const allowedDomainItems = useMemo(
+		() => withOccurrenceKeys(form.allowedDomains),
+		[form.allowedDomains],
+	);
 
 	const updateMutation = useMutation({
 		...trpc.agentsettings.updateChatbot.mutationOptions(),
@@ -295,16 +315,16 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 						<Label className="text-muted-foreground font-medium">
 							Suggested messages
 						</Label>
-						{form.suggestedMessages.map((msg: string, idx: number) => (
-							<div key={idx} className="flex items-center gap-1">
+						{suggestedMessageItems.map(({ index, key, value }) => (
+							<div key={key} className="flex items-center gap-1">
 								<Input
-									value={msg}
+									value={value}
 									placeholder="Enter a suggested message..."
 									onChange={(e) => {
 										const next = [
 											...form.suggestedMessages,
 										];
-										next[idx] = e.target.value;
+										next[index] = e.target.value;
 										setForm((p) => ({
 											...p,
 											suggestedMessages: next,
@@ -324,7 +344,7 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 										const next =
 											form.suggestedMessages.filter(
 												(_: any, i: number) =>
-													i !== idx,
+													i !== index,
 											);
 										setForm((p) => ({
 											...p,
@@ -367,14 +387,14 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 								</TooltipContent>
 							</Tooltip>
 						</Label>
-						{form.allowedDomains.map((domain: string, idx: number) => (
-							<div key={idx} className="flex items-center gap-1">
+						{allowedDomainItems.map(({ index, key, value }) => (
+							<div key={key} className="flex items-center gap-1">
 								<Input
-									value={domain}
+									value={value}
 									placeholder="Enter an allowed url..."
 									onChange={(e) => {
 										const next = [...form.allowedDomains];
-										next[idx] = e.target.value;
+										next[index] = e.target.value;
 										setForm((p) => ({
 											...p,
 											allowedDomains: next,
@@ -391,12 +411,12 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 									variant="ghost"
 									size="icon"
 									onClick={() => {
-										const next = form.allowedDomains.filter(
-											(_: any, i: number) => i !== idx,
-										);
-										setForm((p) => ({
-											...p,
-											allowedDomains: next,
+											const next = form.allowedDomains.filter(
+												(_: any, i: number) => i !== index,
+											);
+											setForm((p) => ({
+												...p,
+												allowedDomains: next,
 										}));
 										save({ allowedDomains: next });
 									}}>

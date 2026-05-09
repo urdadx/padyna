@@ -18,7 +18,7 @@ export function NotionIntegrationCard({ data }: { data: IntegrationCardData }) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [_workspaceName, setWorkspaceName] = useState<string | null>(null);
+  const workspaceNameRef = useRef<string | null>(null);
 
   const popupRef = useRef<Window | null>(null);
   const pollTimerRef = useRef<number | null>(null);
@@ -35,10 +35,10 @@ export function NotionIntegrationCard({ data }: { data: IntegrationCardData }) {
     try {
       const response = await api.get<NotionStatusResponse>("/api/integrations/notion/status");
       setIsConnected(Boolean(response.data.connected));
-      setWorkspaceName(response.data.integration?.workspaceName ?? null);
+      workspaceNameRef.current = response.data.integration?.workspaceName ?? null;
     } catch {
       setIsConnected(false);
-      setWorkspaceName(null);
+      workspaceNameRef.current = null;
     } finally {
       setIsLoadingStatus(false);
     }
@@ -97,7 +97,7 @@ export function NotionIntegrationCard({ data }: { data: IntegrationCardData }) {
 
           if (statusResponse.data.connected) {
             setIsConnected(true);
-            setWorkspaceName(statusResponse.data.integration?.workspaceName ?? null);
+            workspaceNameRef.current = statusResponse.data.integration?.workspaceName ?? null;
             popupRef.current.close();
             clearPollTimer();
             setIsConnecting(false);
@@ -119,7 +119,7 @@ export function NotionIntegrationCard({ data }: { data: IntegrationCardData }) {
     try {
       await api.delete("/api/integrations/notion/disconnect");
       setIsConnected(false);
-      setWorkspaceName(null);
+      workspaceNameRef.current = null;
       toast.success("Notion disconnected");
     } catch (error: any) {
       console.log("Error disconnecting Notion integration:", error);

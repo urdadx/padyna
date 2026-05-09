@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { useNavigate } from "@tanstack/react-router";
@@ -117,12 +117,10 @@ export function CalendlyActionForm({
     },
   });
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("Action name is required");
-      return;
+	const handleSubmit = () => {
+		if (!name.trim()) {
+			toast.error("Action name is required");
+			return;
     }
 
     if (!selectedEventType) {

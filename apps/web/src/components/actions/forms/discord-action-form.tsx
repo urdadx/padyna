@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useReducer } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { useNavigate } from "@tanstack/react-router";
@@ -48,6 +48,21 @@ type CreateDiscordActionResponse = {
   };
 };
 
+type DiscordActionFormState = {
+  name: string;
+  channelId: string;
+  description: string;
+  enabled: boolean;
+  selectedAudience: (typeof audienceItems)[number]["value"];
+};
+
+function discordActionFormReducer(
+  state: DiscordActionFormState,
+  action: Partial<DiscordActionFormState>,
+) {
+  return { ...state, ...action };
+}
+
 export function DiscordActionForm({
   mode = "create",
   actionId,
@@ -55,13 +70,14 @@ export function DiscordActionForm({
 }: ActionFormProps<DiscordActionConfig>) {
   const isEditMode = mode === "edit";
   const navigate = useNavigate();
-  const [name, setName] = useState(initialAction?.name ?? "");
-  const [channelId, setChannelId] = useState(initialAction?.config.channelId ?? "");
-  const [description, setDescription] = useState(initialAction?.description ?? "");
-  const [enabled, setEnabled] = useState(initialAction?.enabled ?? true);
-  const [selectedAudience, setSelectedAudience] = useState<(typeof audienceItems)[number]["value"]>(
-    initialAction?.config.audience ?? audienceItems[0].value,
-  );
+  const [formState, updateFormState] = useReducer(discordActionFormReducer, {
+    name: initialAction?.name ?? "",
+    channelId: initialAction?.config.channelId ?? "",
+    description: initialAction?.description ?? "",
+    enabled: initialAction?.enabled ?? true,
+    selectedAudience: initialAction?.config.audience ?? audienceItems[0].value,
+  });
+  const { name, channelId, description, enabled, selectedAudience } = formState;
 
   const {
     data,
@@ -124,12 +140,10 @@ export function DiscordActionForm({
     },
   });
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("Action name is required");
-      return;
+	const handleSubmit = () => {
+		if (!name.trim()) {
+			toast.error("Action name is required");
+			return;
     }
 
     if (!selectedChannel) {
@@ -149,7 +163,7 @@ export function DiscordActionForm({
     <ActionFormShell
       title={isEditMode ? "Edit Discord action" : "Send Discord messages"}
       enabled={enabled}
-      onEnabledChange={setEnabled}
+      onEnabledChange={(nextEnabled) => updateFormState({ enabled: nextEnabled })}
       onSubmit={handleSubmit}
       isSubmitting={saveActionMutation.isPending}
       submitLabel={isEditMode ? "Save changes" : "Save action"}
@@ -165,7 +179,7 @@ export function DiscordActionForm({
           id="name"
           placeholder="Enter action name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => updateFormState({ name: e.target.value })}
         />
       </div>
 
@@ -181,7 +195,7 @@ export function DiscordActionForm({
         <Select
           items={channelItems}
           value={channelId}
-          onValueChange={(value) => setChannelId(value ?? "")}
+          onValueChange={(value) => updateFormState({ channelId: value ?? "" })}
           disabled={isLoadingChannels || channels.length === 0}
         >
           <SelectTrigger className="w-full" id="discord-channel">
@@ -213,9 +227,10 @@ export function DiscordActionForm({
           items={audienceItems as unknown as { label: string; value: string }[]}
           value={selectedAudience}
           onValueChange={(value) =>
-            setSelectedAudience(
-              (value as (typeof audienceItems)[number]["value"]) ?? audienceItems[0].value,
-            )
+            updateFormState({
+              selectedAudience:
+                (value as (typeof audienceItems)[number]["value"]) ?? audienceItems[0].value,
+            })
           }
         >
           <SelectTrigger className="w-full" id="discord-audience">
@@ -247,7 +262,7 @@ export function DiscordActionForm({
           className="w-full"
           placeholder="Enter a description for when to use this action"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => updateFormState({ description: e.target.value })}
         />
       </div>
     </ActionFormShell>

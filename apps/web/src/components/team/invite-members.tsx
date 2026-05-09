@@ -86,10 +86,9 @@ export const InviteMembers = ({ isDialogOpen, setIsDialogOpen }: InviteMembersPr
     },
   });
 
-  const handleInvite = (e: React.FormEvent) => {
-    e.preventDefault();
-    inviteMember();
-  };
+	const handleInvite = () => {
+		inviteMember();
+	};
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -100,7 +99,7 @@ export const InviteMembers = ({ isDialogOpen, setIsDialogOpen }: InviteMembersPr
             Enter the details below to invite a new team member.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleInvite} className="grid gap-6">
+				<form action={handleInvite} className="grid gap-6">
           <div className="flex flex-col gap-3">
             <Label className="text-muted-foreground font-medium">Email address</Label>
             <Input

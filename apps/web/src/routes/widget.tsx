@@ -23,14 +23,12 @@ function WidgetRoute() {
 	const { chatId, resetChatId } = useChatGeneration(`chatId_${platform}`);
 
 	useEffect(() => {
-		const previousBodyOverflow = document.body.style.overflow;
-		const previousHtmlOverflow = document.documentElement.style.overflow;
-		document.body.style.overflow = "hidden";
-		document.documentElement.style.overflow = "hidden";
+		document.body.classList.add("overflow-hidden");
+		document.documentElement.classList.add("overflow-hidden");
 
 		return () => {
-			document.body.style.overflow = previousBodyOverflow;
-			document.documentElement.style.overflow = previousHtmlOverflow;
+			document.body.classList.remove("overflow-hidden");
+			document.documentElement.classList.remove("overflow-hidden");
 		};
 	}, []);
 

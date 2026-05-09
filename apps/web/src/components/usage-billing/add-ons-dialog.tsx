@@ -16,17 +16,19 @@ import { BoltIcon } from "@/assets/icons/bolt-duotone";
 import { useNavigate, useRouteContext } from "@tanstack/react-router";
 import { env } from "@padyna/env/web";
 import { ADDON_PRODUCT_IDS } from "@/lib/plan-slugs";
+import { useRef } from "react";
 
 export const AddOnsDialog = ({
-	defaultValue,
+	defaultValue: initialAddon,
 	isMobile = false,
 }: {
 	defaultValue: keyof typeof ADDON_PRODUCT_IDS;
 	isMobile?: boolean;
 	onOpenChange?: (value: boolean) => void;
 }) => {
+	const initialAddonRef = useRef(initialAddon);
 	const [selectedAddon, setSelectedAddon] = useState<keyof typeof ADDON_PRODUCT_IDS | null>(
-		defaultValue,
+		initialAddonRef.current,
 	);
 	const [isCheckingOut, setIsCheckingOut] = useState(false);
 	const { session } = useRouteContext({ from: "/(admin)" });

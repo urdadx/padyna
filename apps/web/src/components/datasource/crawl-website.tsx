@@ -60,7 +60,12 @@ export const CrawlWebsite = ({ onSuccess, onStarted }: CrawlWebsiteProps) => {
 
 	const pollCrawlStatus = async (id: string) => {
 		activeCrawlIdRef.current = id;
-		while (activeCrawlIdRef.current === id) {
+
+		const checkStatus = async (): Promise<void> => {
+			if (activeCrawlIdRef.current !== id) {
+				return;
+			}
+
 			const response = await api.get(`/api/ingestion/crawl/${id}`);
 			const status = response.data as CrawlResult;
 
@@ -92,7 +97,7 @@ export const CrawlWebsite = ({ onSuccess, onStarted }: CrawlWebsiteProps) => {
 					toast.dismiss(CRAWL_TOAST_ID);
 				}
 
-				break;
+				return;
 			}
 
 			if (status.status === "failed" || status.status === "cancelled") {
@@ -100,7 +105,7 @@ export const CrawlWebsite = ({ onSuccess, onStarted }: CrawlWebsiteProps) => {
 					id: CRAWL_TOAST_ID,
 				});
 				toast.dismiss(CRAWL_TOAST_ID);
-				break;
+				return;
 			}
 
 			toast.loading(
@@ -120,7 +125,10 @@ export const CrawlWebsite = ({ onSuccess, onStarted }: CrawlWebsiteProps) => {
 			);
 
 			await new Promise((resolve) => setTimeout(resolve, 3000));
-		}
+			await checkStatus();
+		};
+
+		await checkStatus();
 
 		if (isMountedRef.current && activeCrawlIdRef.current === id) {
 			setIsPolling(false);

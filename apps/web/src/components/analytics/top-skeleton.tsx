@@ -1,6 +1,8 @@
 import { Skeleton } from "../ui/skeleton";
 import { Tabs, TabsContent, TabsList } from "../ui/tabs";
 
+const TOP_SKELETON_ROW_IDS = ["row-1", "row-2", "row-3", "row-4"];
+
 export function TopSkeleton() {
   return (
     <div className="h-87.5 w-full z-0 rounded-xl border bg-white flex flex-col overflow-hidden">
@@ -16,8 +18,8 @@ export function TopSkeleton() {
           <TabsContent value="countries" className="h-full m-0 p-0">
             <div className="h-full flex flex-col">
               <div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3">
+				{TOP_SKELETON_ROW_IDS.map((rowId) => (
+				  <div key={rowId} className="flex items-center gap-3">
                     <Skeleton className="h-10 flex-1 ml-auto" />
                   </div>
                 ))}
@@ -28,8 +30,8 @@ export function TopSkeleton() {
           <TabsContent value="devices" className="h-full m-0 p-0">
             <div className="h-full flex flex-col">
               <div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3">
+				{TOP_SKELETON_ROW_IDS.map((rowId) => (
+				  <div key={rowId} className="flex items-center gap-3">
                     <Skeleton className="h-10 flex-1 ml-auto" />
                   </div>
                 ))}
@@ -40,8 +42,8 @@ export function TopSkeleton() {
           <TabsContent value="os" className="h-full m-0 p-0">
             <div className="h-full flex flex-col">
               <div className="flex-1 min-h-0 px-4 pt-4 overflow-hidden space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3">
+				{TOP_SKELETON_ROW_IDS.map((rowId) => (
+				  <div key={rowId} className="flex items-center gap-3">
                     <Skeleton className="h-10 flex-1 ml-auto" />
                   </div>
                 ))}

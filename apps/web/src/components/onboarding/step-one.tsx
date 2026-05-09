@@ -35,7 +35,7 @@ interface CrawlResult {
 export const StepOne = ({ onContinue }: { onContinue: () => void }) => {
   const [debouncedWebsiteDomain, setDebouncedWebsiteDomain] = useState("");
   const [isFaviconLoading, setIsFaviconLoading] = useState(false);
-  const [_crawlStatus, setCrawlStatus] = useState<CrawlResult | null>(null);
+  const crawlStatusRef = useRef<CrawlResult | null>(null);
   const [isPolling, setIsPolling] = useState(false);
 
   const isMountedRef = useRef(true);
@@ -54,13 +54,11 @@ export const StepOne = ({ onContinue }: { onContinue: () => void }) => {
   });
 
   const pollCrawlStatus = async (id: string, onComplete: () => void) => {
-    while (true) {
+    const checkStatus = async (): Promise<void> => {
       const response = await api.get(`/api/ingestion/crawl/${id}`);
       const status = response.data as CrawlResult;
 
-      if (isMountedRef.current) {
-        setCrawlStatus(status);
-      }
+      crawlStatusRef.current = status;
 
       if (status.status === "completed") {
         if (status.processed?.status === "success") {
@@ -72,21 +70,24 @@ export const StepOne = ({ onContinue }: { onContinue: () => void }) => {
           toast.error("Failed to process website content.");
           onComplete();
         }
-        break;
+        return;
       }
 
       if (status.status === "failed" || status.status === "cancelled") {
         toast.error(`Website crawl ${status.status}.`);
         onComplete();
-        break;
+        return;
       }
 
       await new Promise((resolve) => setTimeout(resolve, 3000));
-    }
+      await checkStatus();
+    };
+
+    await checkStatus();
 
     if (isMountedRef.current) {
       setIsPolling(false);
-      setCrawlStatus(null);
+      crawlStatusRef.current = null;
     }
   };
 
@@ -155,15 +156,12 @@ export const StepOne = ({ onContinue }: { onContinue: () => void }) => {
     ? `${GOOGLE_FAVICON_URL}${debouncedWebsiteDomain}`
     : undefined;
 
-  return (
-    <>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          form.handleSubmit();
-        }}
-        className="p-6 md:p-12 flex flex-col items-center justify-center h-full max-w-lg mx-auto"
-      >
+	return (
+		<>
+			<form
+				action={() => form.handleSubmit()}
+				className="p-6 md:p-12 flex flex-col items-center justify-center h-full max-w-lg mx-auto"
+			>
         <FieldGroup>
           <div className="flex flex-col gap-2 text-start">
             <AvatarStack

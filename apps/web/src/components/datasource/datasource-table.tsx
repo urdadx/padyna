@@ -468,8 +468,7 @@ export function DataSourceTable() {
 					onSelectAll={() => table.toggleAllPageRowsSelected(!isAllSelected)}
 					onCopyUrls={() => {
 						const urls = selectedRows
-							.map((row) => row.original.url)
-							.filter(Boolean)
+							.flatMap((row) => (row.original.url ? [row.original.url] : []))
 							.join("\n");
 						if (urls) {
 							navigator.clipboard.writeText(urls);

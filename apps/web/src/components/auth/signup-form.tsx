@@ -129,11 +129,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"form">
 
 	return (
 		<form
-			onSubmit={(e) => {
-				e.preventDefault();
-				e.stopPropagation();
-				form.handleSubmit();
-			}}
+			action={() => form.handleSubmit()}
 			className={cn("flex flex-col gap-4", className)}
 			{...props}>
 			<FieldGroup className="">

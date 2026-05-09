@@ -19,7 +19,7 @@ export function JiraIntegrationCard({ data }: { data: IntegrationCardData }) {
 	const [isConnecting, setIsConnecting] = useState(false);
 	const [isDisconnecting, setIsDisconnecting] = useState(false);
 	const [isConnected, setIsConnected] = useState(false);
-	const [_siteName, setSiteName] = useState<string | null>(null);
+	const siteNameRef = useRef<string | null>(null);
 
 	const popupRef = useRef<Window | null>(null);
 	const pollTimerRef = useRef<number | null>(null);
@@ -39,14 +39,14 @@ export function JiraIntegrationCard({ data }: { data: IntegrationCardData }) {
 			);
 
 			setIsConnected(Boolean(response.data.connected));
-			setSiteName(response.data.integration?.siteName ?? null);
+			siteNameRef.current = response.data.integration?.siteName ?? null;
 
 			if (response.data.integration?.tokenExpired) {
 				toast.error("Your Jira connection expired. Reconnect the integration.");
 			}
 		} catch (error: any) {
 			setIsConnected(false);
-			setSiteName(null);
+			siteNameRef.current = null;
 
 			if (error?.response?.status === 401) {
 				toast.error(
@@ -114,7 +114,7 @@ export function JiraIntegrationCard({ data }: { data: IntegrationCardData }) {
 
 					if (statusResponse.data.connected) {
 						setIsConnected(true);
-						setSiteName(statusResponse.data.integration?.siteName ?? null);
+						siteNameRef.current = statusResponse.data.integration?.siteName ?? null;
 						popupRef.current.close();
 						clearPollTimer();
 						setIsConnecting(false);
@@ -137,7 +137,7 @@ export function JiraIntegrationCard({ data }: { data: IntegrationCardData }) {
 		try {
 			await api.delete("/api/integrations/jira/disconnect");
 			setIsConnected(false);
-			setSiteName(null);
+			siteNameRef.current = null;
 			toast.success("Jira disconnected");
 		} catch (error: any) {
 			console.log("Error disconnecting Jira integration:", error);

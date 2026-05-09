@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -41,16 +41,18 @@ export const EditMemberDetails = ({
 	setIsDialogOpen,
 	member,
 }: EditMemberDetailsProps) => {
-	const [role, setRole] = useState("");
+	const [role, setRole] = useState((member?.role as "admin" | "member" | undefined) ?? "member");
 	const { session } = useRouteContext({ from: "/(admin)" });
 	const queryClient = useQueryClient();
 	const organizationId = session?.session.activeOrganization || undefined;
 
-	useEffect(() => {
-		if (member) {
-			setRole(member.role || "member");
+	const handleOpenChange = (open: boolean) => {
+		if (!open) {
+			setRole((member?.role as "admin" | "member" | undefined) ?? "member");
 		}
-	}, [member]);
+
+		setIsDialogOpen(open);
+	};
 
 	const { mutate: updateMemberRole, isPending } = useMutation({
 		mutationFn: async () => {
@@ -79,13 +81,12 @@ export const EditMemberDetails = ({
 		},
 	});
 
-	const handleSave = (e: React.FormEvent) => {
-		e.preventDefault();
+	const handleSave = () => {
 		updateMemberRole();
 	};
 
 	return (
-		<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+		<Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
 			<DialogContent className="w-full sm:max-w-lg">
 				<DialogHeader>
 					<DialogTitle className="text-xl font-semibold">
@@ -95,7 +96,7 @@ export const EditMemberDetails = ({
 						Select an option below to assign a new role for this user
 					</DialogDescription>
 				</DialogHeader>
-				<form onSubmit={handleSave} className="grid gap-6">
+				<form action={handleSave} className="grid gap-6">
 					<div className="flex flex-col gap-4">
 						<Label className="text-muted-foreground font-medium">
 							Select Role

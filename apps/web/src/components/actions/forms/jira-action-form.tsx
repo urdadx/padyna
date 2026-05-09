@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useReducer } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { useNavigate } from "@tanstack/react-router";
@@ -46,6 +46,18 @@ type CreateJiraActionResponse = {
   };
 };
 
+type JiraActionFormState = {
+  name: string;
+  projectId: string;
+  issueTypeId: string;
+  description: string;
+  enabled: boolean;
+};
+
+function jiraActionFormReducer(state: JiraActionFormState, action: Partial<JiraActionFormState>) {
+  return { ...state, ...action };
+}
+
 export function JiraActionForm({
   mode = "create",
   actionId,
@@ -53,11 +65,14 @@ export function JiraActionForm({
 }: ActionFormProps<JiraActionConfig>) {
   const isEditMode = mode === "edit";
   const navigate = useNavigate();
-  const [name, setName] = useState(initialAction?.name ?? "");
-  const [projectId, setProjectId] = useState(initialAction?.config.projectId ?? "");
-  const [issueTypeId, setIssueTypeId] = useState(initialAction?.config.issueTypeId ?? "");
-  const [description, setDescription] = useState(initialAction?.description ?? "");
-  const [enabled, setEnabled] = useState(initialAction?.enabled ?? true);
+  const [formState, updateFormState] = useReducer(jiraActionFormReducer, {
+    name: initialAction?.name ?? "",
+    projectId: initialAction?.config.projectId ?? "",
+    issueTypeId: initialAction?.config.issueTypeId ?? "",
+    description: initialAction?.description ?? "",
+    enabled: initialAction?.enabled ?? true,
+  });
+  const { name, projectId, issueTypeId, description, enabled } = formState;
   const hasMountedProjectRef = useRef(false);
 
   const {
@@ -94,7 +109,7 @@ export function JiraActionForm({
       return;
     }
 
-    setIssueTypeId("");
+    updateFormState({ issueTypeId: "" });
   }, [projectId]);
 
   const projects = projectsData?.values ?? [];
@@ -160,12 +175,10 @@ export function JiraActionForm({
     },
   });
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("Action name is required");
-      return;
+	const handleSubmit = () => {
+		if (!name.trim()) {
+			toast.error("Action name is required");
+			return;
     }
 
     if (!selectedProject) {
@@ -190,7 +203,7 @@ export function JiraActionForm({
     <ActionFormShell
       title={isEditMode ? "Edit Jira action" : "Create Jira tickets"}
       enabled={enabled}
-      onEnabledChange={setEnabled}
+      onEnabledChange={(nextEnabled) => updateFormState({ enabled: nextEnabled })}
       onSubmit={handleSubmit}
       isSubmitting={saveActionMutation.isPending}
       submitLabel={isEditMode ? "Save changes" : "Save action"}
@@ -206,7 +219,7 @@ export function JiraActionForm({
           id="name"
           placeholder="Enter action name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => updateFormState({ name: e.target.value })}
         />
       </div>
 
@@ -224,7 +237,7 @@ export function JiraActionForm({
         <Select
           items={projectItems}
           value={projectId}
-          onValueChange={(value) => setProjectId(value ?? "")}
+          onValueChange={(value) => updateFormState({ projectId: value ?? "" })}
           disabled={isLoadingProjects || projectItems.length === 0}
         >
           <SelectTrigger className="w-full" id="jira-project">
@@ -257,7 +270,7 @@ export function JiraActionForm({
         <Select
           items={issueTypeItems}
           value={issueTypeId}
-          onValueChange={(value) => setIssueTypeId(value ?? "")}
+          onValueChange={(value) => updateFormState({ issueTypeId: value ?? "" })}
           disabled={!projectId || isLoadingIssueTypes || issueTypeItems.length === 0}
         >
           <SelectTrigger className="w-full" id="jira-issue-type">
@@ -291,7 +304,7 @@ export function JiraActionForm({
           className="w-full"
           placeholder="Enter a description for when to use this action"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => updateFormState({ description: e.target.value })}
         />
       </div>
     </ActionFormShell>

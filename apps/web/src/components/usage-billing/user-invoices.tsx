@@ -6,19 +6,31 @@ import { Button } from "../ui/button";
 import Spinner from "../ui/spinner";
 import { cn } from "@/lib/utils";
 
+const CURRENCY_FORMATTERS = new Map<string, Intl.NumberFormat>();
+const INVOICE_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  timeZone: "UTC",
+});
+
 function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-  }).format(amount / 100);
+  const currencyCode = currency.toUpperCase();
+  let formatter = CURRENCY_FORMATTERS.get(currencyCode);
+
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currencyCode,
+    });
+    CURRENCY_FORMATTERS.set(currencyCode, formatter);
+  }
+
+  return formatter.format(amount / 100);
 }
 
 function formatDate(date: Date | string): string {
-  return new Date(date).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return INVOICE_DATE_FORMATTER.format(new Date(date));
 }
 
 const PAGE_SIZE = 5;

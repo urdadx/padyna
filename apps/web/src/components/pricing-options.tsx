@@ -133,8 +133,8 @@ function PlanCard({
         <CardContent className="space-y-4 grow p-4">
           <hr className="border-dashed" />
           <ul className="list-outside space-y-3 text-sm">
-            {plan.features.map((item, index) => (
-              <li key={index} className="flex items-start gap-2">
+			{plan.features.map((item) => (
+			  <li key={item} className="flex items-start gap-2">
                 <Check className="size-3 mt-0.5 text-primary shrink-0" />
                 <span>{item}</span>
               </li>

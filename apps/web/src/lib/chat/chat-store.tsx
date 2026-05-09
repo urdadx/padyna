@@ -101,19 +101,15 @@ function ChatBridge<TMessage extends UIMessage>({
     pendingMessagesRef.current = null;
   }, [store]);
 
-  useEffect(() => {
-    pendingMessagesRef.current = messages;
-
-    if (throttleMs <= 0 || status !== "streaming") {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-      flushMessages();
-      return;
-    }
-
+  const clearFlushTimer = useCallback(() => {
     if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const scheduleFlush = useCallback(() => {
+    if (timerRef.current || throttleMs <= 0) {
       return;
     }
 
@@ -121,7 +117,19 @@ function ChatBridge<TMessage extends UIMessage>({
       timerRef.current = null;
       flushMessages();
     }, throttleMs);
-  }, [messages, status, throttleMs, flushMessages]);
+  }, [flushMessages, throttleMs]);
+
+  useEffect(() => {
+    pendingMessagesRef.current = messages;
+
+    if (throttleMs <= 0 || status !== "streaming") {
+      clearFlushTimer();
+      flushMessages();
+      return;
+    }
+
+    scheduleFlush();
+  }, [messages, status, throttleMs, flushMessages, clearFlushTimer, scheduleFlush]);
 
   useEffect(() => {
     store.setState({ id, status, error });
@@ -133,13 +141,10 @@ function ChatBridge<TMessage extends UIMessage>({
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
+      clearFlushTimer();
       flushMessages();
     };
-  }, [flushMessages]);
+  }, [clearFlushTimer, flushMessages]);
 
   return null;
 }

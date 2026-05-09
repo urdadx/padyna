@@ -100,6 +100,16 @@ function AgentPreviewPanelContent() {
 		"--ring": primaryColor,
 	} as React.CSSProperties;
 
+	const suggestedMessageItems = useMemo(() => {
+		const seen = new Map<string, number>();
+		return suggestedMessages.map((message) => {
+			const occurrence = (seen.get(message) ?? 0) + 1;
+			seen.set(message, occurrence);
+
+			return { key: `${message}-${occurrence}`, message };
+		});
+	}, [suggestedMessages]);
+
 	return (
 		<div className="relative grid h-full min-h-0 min-w-0 w-full place-items-center overflow-x-hidden px-4 py-6 md:px-8">
 			<div className="mx-auto flex h-full min-h-0 min-w-0 w-full max-w-102 items-center justify-center overflow-x-hidden">
@@ -148,13 +158,13 @@ function AgentPreviewPanelContent() {
 							<ConversationScrollButton />
 						</Conversation>
 						<div className="p-4 space-y-3 rounded-b-xl border-t bg-gray-50/40 ">
-							{suggestedMessages.length > 0 && (
+							{suggestedMessageItems.length > 0 && (
 								<div className="">
 									<Suggestions>
-										{suggestedMessages.map((msg, idx) => (
+										{suggestedMessageItems.map(({ key, message }) => (
 											<Suggestion
-												key={`${msg}-${idx}`}
-												suggestion={msg}
+												key={key}
+												suggestion={message}
 												disabled={isStreaming}
 												onClick={(suggestion) => {
 													void submitMessage(
@@ -169,8 +179,7 @@ function AgentPreviewPanelContent() {
 
 							<form
 								className="flex items-end gap-2"
-								onSubmit={(event) => {
-									event.preventDefault();
+								action={() => {
 									void submitMessage(input);
 								}}>
 								<Input

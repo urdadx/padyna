@@ -105,10 +105,10 @@ export const CreateActionDialog = () => {
 					<div className="px-6 pt-2 pb-6">
 						<div className="flex flex-col gap-3">
 							{filteredActions.length > 0 ? (
-								filteredActions.map((action, index) => (
-									<ActionCard
-										key={index}
-										href={action.href}
+							filteredActions.map((action) => (
+								<ActionCard
+									key={action.href}
+									href={action.href}
 										search={action.search}
 										comingSoon={action.comingSoon}
 										icon={action.icon}

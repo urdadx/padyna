@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -63,12 +63,10 @@ export function CalActionForm({ mode = "create", actionId, initialAction }: Acti
     },
   });
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("Action name is required");
-      return;
+	const handleSubmit = () => {
+		if (!name.trim()) {
+			toast.error("Action name is required");
+			return;
     }
 
     if (!calUrl.trim()) {

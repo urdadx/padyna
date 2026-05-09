@@ -1,5 +1,7 @@
 import type { CSSProperties, PropsWithChildren } from "react";
 
+const PLACEHOLDER_CARD_IDS = ["placeholder-1", "placeholder-2", "placeholder-3", "placeholder-4", "placeholder-5", "placeholder-6"];
+
 export function NoConversationPlaceholder() {
   return (
     <div className="flex flex-col w-full max-w-md items-center justify-center gap-6 rounded-lg px-4 py-4">
@@ -8,8 +10,8 @@ export function NoConversationPlaceholder() {
           style={{ "--scroll": "-50%" } as CSSProperties}
           className="animate-infinite-scroll-y flex flex-col animation-duration-[10s]"
         >
-          {[...Array(6)].map((_, idx) => (
-            <Card key={idx}>
+			{PLACEHOLDER_CARD_IDS.map((cardId) => (
+			  <Card key={cardId}>
               <CardContent />
             </Card>
           ))}

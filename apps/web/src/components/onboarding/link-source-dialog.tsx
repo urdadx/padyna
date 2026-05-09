@@ -20,30 +20,59 @@ interface LinkSourceDialogProps {
   defaultLinks?: string[];
 }
 
+const EMPTY_LINKS: string[] = [];
+
 export function LinkSourceDialog({
   open,
   onOpenChange,
   onSave,
-  defaultLinks = [],
+  defaultLinks: initialLinks = EMPTY_LINKS,
 }: LinkSourceDialogProps) {
-  const [links, setLinks] = React.useState<string[]>(defaultLinks);
-  const [newLink, setNewLink] = React.useState("");
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open ? (
+        <LinkSourceDialogContent
+          key={`${initialLinks.join("|")}-${open ? "open" : "closed"}`}
+          onOpenChange={onOpenChange}
+          onSave={onSave}
+          seedLinks={initialLinks}
+        />
+      ) : null}
+    </Dialog>
+  );
+}
 
-  React.useEffect(() => {
-    if (open) {
-      setLinks(defaultLinks);
-    }
-  }, [open, defaultLinks]);
+function LinkSourceDialogContent({
+  seedLinks,
+  onOpenChange,
+  onSave,
+}: {
+  seedLinks: string[];
+  onOpenChange: (open: boolean) => void;
+  onSave: (links: string[]) => void;
+}) {
+  const initialLinksRef = React.useRef(seedLinks);
+  const [links, setLinks] = React.useState<string[]>(() => initialLinksRef.current);
+  const [newLink, setNewLink] = React.useState("");
+  const linkItems = React.useMemo(() => {
+    const seen = new Map<string, number>();
+    return links.map((link, index) => {
+      const occurrence = (seen.get(link) ?? 0) + 1;
+      seen.set(link, occurrence);
+
+      return { index, key: `${link}-${occurrence}`, link };
+    });
+  }, [links]);
 
   const addLink = () => {
     if (newLink && !links.includes(newLink)) {
-      setLinks([...links, newLink]);
+      setLinks((currentLinks) => [...currentLinks, newLink]);
       setNewLink("");
     }
   };
 
   const removeLink = (index: number) => {
-    setLinks(links.filter((_, i) => i !== index));
+    setLinks((currentLinks) => currentLinks.filter((_, i) => i !== index));
   };
 
   const handleSave = () => {
@@ -60,7 +89,6 @@ export function LinkSourceDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl w-full">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Add Links</DialogTitle>
@@ -87,10 +115,10 @@ export function LinkSourceDialog({
             </div>
           </div>
 
-          {links.length > 0 && (
+          {linkItems.length > 0 && (
             <div className="flex flex-col gap-2 max-h-50 overflow-y-auto pr-2">
-              {links.map((link, index) => (
-                <div key={index} className="flex items-center justify-between">
+              {linkItems.map(({ index, key, link }) => (
+                <div key={key} className="flex items-center justify-between">
                   <div className="flex items-center gap-3 overflow-hidden">
                     <Globe className="h-5 w-5 shrink-0 text-muted-foreground" />
                     <span className="truncate text-sm font-medium">{link}</span>
@@ -115,6 +143,5 @@ export function LinkSourceDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
   );
 }

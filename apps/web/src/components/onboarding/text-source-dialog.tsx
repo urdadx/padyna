@@ -16,7 +16,7 @@ import { motion } from "motion/react";
 import api from "../../lib/api";
 import { queryClient, trpc } from "../../utils/trpc";
 import Spinner from "../ui/spinner";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface TextSource {
   id?: string;
@@ -30,10 +30,65 @@ interface TextSourceDialogProps {
   defaultValues?: TextSource;
 }
 
-export function TextSourceDialog({ open, onOpenChange, defaultValues }: TextSourceDialogProps) {
+function TextSourceDialogFields({
+  defaultValues,
+  isEdit,
+  isPending,
+  onSave,
+}: {
+  defaultValues?: TextSource;
+  isEdit: boolean;
+  isPending: boolean;
+  onSave: (data: { content: string; title?: string }) => void;
+}) {
   const [title, setTitle] = useState(defaultValues?.title || "");
   const [content, setContent] = useState(defaultValues?.content || "");
 
+  return (
+    <>
+      <div className="grid gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="title">Title</Label>
+          <Input
+            id="title"
+            placeholder="Ex: Refund Policy"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="content">Content</Label>
+          <Textarea
+            id="content"
+            placeholder="Enter your content here..."
+            className="min-h-20"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <DialogFooter>
+        <motion.div className="w-full" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button className="w-full" onClick={() => onSave({ content, title })} disabled={!content.trim() || isPending}>
+            {isPending ? (
+              <>
+                <Spinner className="text-white" />
+                Saving...
+              </>
+            ) : isEdit ? (
+              "Update Text Source"
+            ) : (
+              "Add Text Source"
+            )}
+          </Button>
+        </motion.div>
+      </DialogFooter>
+    </>
+  );
+}
+
+export function TextSourceDialog({ open, onOpenChange, defaultValues }: TextSourceDialogProps) {
   const isEdit = Boolean(defaultValues?.id);
 
   const { mutate: saveText, isPending } = useMutation({
@@ -64,17 +119,6 @@ export function TextSourceDialog({ open, onOpenChange, defaultValues }: TextSour
     },
   });
 
-  useEffect(() => {
-    if (open) {
-      setTitle(defaultValues?.title || "");
-      setContent(defaultValues?.content || "");
-    }
-  }, [open, defaultValues]);
-
-  const handleSave = () => {
-    saveText({ content, title });
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl w-full">
@@ -84,45 +128,15 @@ export function TextSourceDialog({ open, onOpenChange, defaultValues }: TextSour
             Add plain text sources to train your agent with specific information
           </DialogDescription>
         </DialogHeader>
-
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              placeholder="Ex: Refund Policy"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="content">Content</Label>
-            <Textarea
-              id="content"
-              placeholder="Enter your content here..."
-              className="min-h-20"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <motion.div className="w-full" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button className="w-full" onClick={handleSave} disabled={!content.trim() || isPending}>
-              {isPending ? (
-                <>
-                  <Spinner className="text-white" />
-                  Saving...
-                </>
-              ) : isEdit ? (
-                "Update Text Source"
-              ) : (
-                "Add Text Source"
-              )}
-            </Button>
-          </motion.div>
-        </DialogFooter>
+        {open ? (
+          <TextSourceDialogFields
+            key={`${defaultValues?.id ?? "new"}-${open ? "open" : "closed"}`}
+            defaultValues={defaultValues}
+            isEdit={isEdit}
+            isPending={isPending}
+            onSave={saveText}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   );

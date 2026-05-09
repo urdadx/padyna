@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useReducer } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { useNavigate } from "@tanstack/react-router";
@@ -73,6 +73,22 @@ type CreateClickUpActionResponse = {
   };
 };
 
+type ClickUpActionFormState = {
+  name: string;
+  workspaceId: string;
+  spaceId: string;
+  listId: string;
+  description: string;
+  enabled: boolean;
+};
+
+function clickUpActionFormReducer(
+  state: ClickUpActionFormState,
+  action: Partial<ClickUpActionFormState>,
+) {
+  return { ...state, ...action };
+}
+
 export function ClickUpActionForm({
   mode = "create",
   actionId,
@@ -80,12 +96,15 @@ export function ClickUpActionForm({
 }: ActionFormProps<ClickUpActionConfig>) {
   const isEditMode = mode === "edit";
   const navigate = useNavigate();
-  const [name, setName] = useState(initialAction?.name ?? "");
-  const [workspaceId, setWorkspaceId] = useState(initialAction?.config.workspaceId ?? "");
-  const [spaceId, setSpaceId] = useState(initialAction?.config.spaceId ?? "");
-  const [listId, setListId] = useState(initialAction?.config.listId ?? "");
-  const [description, setDescription] = useState(initialAction?.description ?? "");
-  const [enabled, setEnabled] = useState(initialAction?.enabled ?? true);
+  const [formState, updateFormState] = useReducer(clickUpActionFormReducer, {
+    name: initialAction?.name ?? "",
+    workspaceId: initialAction?.config.workspaceId ?? "",
+    spaceId: initialAction?.config.spaceId ?? "",
+    listId: initialAction?.config.listId ?? "",
+    description: initialAction?.description ?? "",
+    enabled: initialAction?.enabled ?? true,
+  });
+  const { name, workspaceId, spaceId, listId, description, enabled } = formState;
   const hasMountedWorkspaceRef = useRef(false);
   const hasMountedSpaceRef = useRef(false);
 
@@ -155,8 +174,7 @@ export function ClickUpActionForm({
       return;
     }
 
-    setSpaceId("");
-    setListId("");
+    updateFormState({ spaceId: "", listId: "" });
   }, [workspaceId]);
 
   useEffect(() => {
@@ -165,7 +183,7 @@ export function ClickUpActionForm({
       return;
     }
 
-    setListId("");
+    updateFormState({ listId: "" });
   }, [spaceId]);
 
   const workspaces = workspacesData?.teams ?? [];
@@ -257,12 +275,10 @@ export function ClickUpActionForm({
     },
   });
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("Action name is required");
-      return;
+	const handleSubmit = () => {
+		if (!name.trim()) {
+			toast.error("Action name is required");
+			return;
     }
 
     if (!selectedWorkspace) {
@@ -292,7 +308,7 @@ export function ClickUpActionForm({
     <ActionFormShell
       title={isEditMode ? "Edit ClickUp action" : "Create ClickUp tasks"}
       enabled={enabled}
-      onEnabledChange={setEnabled}
+      onEnabledChange={(nextEnabled) => updateFormState({ enabled: nextEnabled })}
       onSubmit={handleSubmit}
       isSubmitting={saveActionMutation.isPending}
       submitLabel={isEditMode ? "Save changes" : "Save action"}
@@ -308,7 +324,7 @@ export function ClickUpActionForm({
           id="name"
           placeholder="Enter action name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => updateFormState({ name: e.target.value })}
         />
       </div>
 
@@ -324,7 +340,7 @@ export function ClickUpActionForm({
         <Select
           items={workspaceItems}
           value={workspaceId}
-          onValueChange={(value) => setWorkspaceId(value ?? "")}
+          onValueChange={(value) => updateFormState({ workspaceId: value ?? "" })}
           disabled={isLoadingWorkspaces || workspaces.length === 0}
         >
           <SelectTrigger className="w-full" id="clickup-workspace">
@@ -357,7 +373,7 @@ export function ClickUpActionForm({
         <Select
           items={spaceItems}
           value={spaceId}
-          onValueChange={(value) => setSpaceId(value ?? "")}
+          onValueChange={(value) => updateFormState({ spaceId: value ?? "" })}
           disabled={!workspaceId || isLoadingSpaces || spaces.length === 0}
         >
           <SelectTrigger className="w-full" id="clickup-space">
@@ -388,7 +404,7 @@ export function ClickUpActionForm({
         <Select
           items={listItems}
           value={listId}
-          onValueChange={(value) => setListId(value ?? "")}
+          onValueChange={(value) => updateFormState({ listId: value ?? "" })}
           disabled={!spaceId || (isLoadingFolders && isLoadingLists) || listItems.length === 0}
         >
           <SelectTrigger className="w-full" id="clickup-list">
@@ -422,7 +438,7 @@ export function ClickUpActionForm({
           className="w-full"
           placeholder="Enter a description for when to use this action"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => updateFormState({ description: e.target.value })}
         />
       </div>
     </ActionFormShell>

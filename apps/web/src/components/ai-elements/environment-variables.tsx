@@ -39,13 +39,14 @@ export type EnvironmentVariablesProps = HTMLAttributes<HTMLDivElement> & {
 
 export const EnvironmentVariables = ({
   showValues: controlledShowValues,
-  defaultShowValues = false,
+  defaultShowValues: initialShowValues = false,
   onShowValuesChange,
   className,
   children,
   ...props
 }: EnvironmentVariablesProps) => {
-  const [internalShowValues, setInternalShowValues] = useState(defaultShowValues);
+  const initialShowValuesRef = useRef(initialShowValues);
+  const [internalShowValues, setInternalShowValues] = useState(initialShowValuesRef.current);
   const showValues = controlledShowValues ?? internalShowValues;
 
   const setShowValues = useCallback(
@@ -275,8 +276,6 @@ export const EnvironmentVariableCopyButton = ({
     [],
   );
 
-  const Icon = isCopied ? CheckIcon : CopyIcon;
-
   return (
     <Button
       className={cn("size-6 shrink-0", className)}
@@ -285,7 +284,7 @@ export const EnvironmentVariableCopyButton = ({
       variant="ghost"
       {...props}
     >
-      {children ?? <Icon size={12} />}
+      {children ?? (isCopied ? <CheckIcon size={12} /> : <CopyIcon size={12} />)}
     </Button>
   );
 };

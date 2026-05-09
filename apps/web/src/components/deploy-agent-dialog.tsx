@@ -18,6 +18,14 @@ import { TelegramInstructions } from "./telegram-instructions";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSession } from "@/lib/auth-client";
 
+const DeployTriggerButton = () => (
+	<Button className="text-white hover:text-white" variant="default">
+		<HugeRocket color="white" />
+		<span className="flex sm:hidden">Deploy</span>
+		<span className="hidden sm:flex">Deploy your agent</span>
+	</Button>
+);
+
 export const DeployAgentDialog = () => {
 	const isMobile = useIsMobile();
 	const { data: session } = useSession();
@@ -31,18 +39,12 @@ export const DeployAgentDialog = () => {
 	});
 
 	if (!chatbot || isLoading) {
-		const TriggerButton = (
-			<Button className="text-white hover:text-white" variant="default">
-				<HugeRocket color="white" />
-				<span className="flex sm:hidden">Deploy</span>
-				<span className="hidden sm:flex">Deploy your agent</span>
-			</Button>
-		);
-
 		if (isMobile) {
 			return (
 				<Drawer open={isOpen} onOpenChange={setIsOpen}>
-					<DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
+					<DrawerTrigger>
+						<DeployTriggerButton />
+					</DrawerTrigger>
 					<DrawerContent className="p-4">
 						<div className="flex items-center justify-center p-8">
 							<Spinner />
@@ -54,7 +56,9 @@ export const DeployAgentDialog = () => {
 
 		return (
 			<Dialog open={isOpen} onOpenChange={setIsOpen}>
-				<DialogTrigger>{TriggerButton}</DialogTrigger>
+				<DialogTrigger>
+					<DeployTriggerButton />
+				</DialogTrigger>
 				<DialogContent
 					showCloseButton={false}
 					className="w-full p-0 max-w-4xl! onboarding-height bg-gray-50 rounded-xl overflow-hidden">
@@ -65,14 +69,6 @@ export const DeployAgentDialog = () => {
 			</Dialog>
 		);
 	}
-
-	const TriggerButton = (
-		<Button className="text-white hover:text-white" variant="default">
-			<HugeRocket color="white" />
-			<span className="flex sm:hidden">Deploy</span>
-			<span className="hidden sm:flex">Deploy your agent</span>
-		</Button>
-	);
 
 	const NavButtons = (
 		<div
@@ -181,7 +177,9 @@ export const DeployAgentDialog = () => {
 	if (isMobile) {
 		return (
 			<Drawer open={isOpen} onOpenChange={setIsOpen}>
-				<DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
+				<DrawerTrigger>
+					<DeployTriggerButton />
+				</DrawerTrigger>
 				<DrawerContent className="max-h-[90vh] bg-gray-50 flex flex-col">
 					<DrawerHeader className="shrink-0 pb-2"></DrawerHeader>
 					<div className="sticky top-0 z-10 bg-gray-50 pt-0 pb-2 px-4 shadow-sm">
@@ -222,7 +220,9 @@ export const DeployAgentDialog = () => {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={setIsOpen}>
-			<DialogTrigger>{TriggerButton}</DialogTrigger>
+			<DialogTrigger>
+				<DeployTriggerButton />
+			</DialogTrigger>
 			<DialogContent
 				showCloseButton={false}
 				className="w-full p-0 max-w-4xl! onboarding-height bg-gray-50 rounded-xl overflow-visible">

@@ -148,16 +148,12 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
     },
   });
 
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        form.handleSubmit();
-      }}
-      className={cn("flex flex-col gap-4", className)}
-      {...props}
-    >
+	return (
+		<form
+			action={() => form.handleSubmit()}
+			className={cn("flex flex-col gap-4", className)}
+			{...props}
+		>
       <FieldGroup className="">
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-3xl font-semibold">Sign in to your account</h1>

@@ -32,6 +32,11 @@ type DetailItem = {
 	icon?: React.ElementType;
 };
 
+const CHAT_DETAILS_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+	dateStyle: "medium",
+	timeStyle: "short",
+});
+
 function formatDate(value: Date | string | null | undefined) {
 	if (!value) {
 		return "Not available";
@@ -42,10 +47,7 @@ function formatDate(value: Date | string | null | undefined) {
 		return "Not available";
 	}
 
-	return new Intl.DateTimeFormat("en-US", {
-		dateStyle: "medium",
-		timeStyle: "short",
-	}).format(date);
+	return CHAT_DETAILS_DATE_FORMATTER.format(date);
 }
 
 function DetailRow({

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useReducer } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { useNavigate } from "@tanstack/react-router";
@@ -47,6 +47,21 @@ type CreateSlackActionResponse = {
   };
 };
 
+type SlackActionFormState = {
+  name: string;
+  channelId: string;
+  description: string;
+  enabled: boolean;
+  selectedAudience: (typeof audienceItems)[number]["value"];
+};
+
+function slackActionFormReducer(
+  state: SlackActionFormState,
+  action: Partial<SlackActionFormState>,
+) {
+  return { ...state, ...action };
+}
+
 export function SlackActionForm({
   mode = "create",
   actionId,
@@ -54,13 +69,14 @@ export function SlackActionForm({
 }: ActionFormProps<SlackActionConfig>) {
   const isEditMode = mode === "edit";
   const navigate = useNavigate();
-  const [name, setName] = useState(initialAction?.name ?? "");
-  const [channelId, setChannelId] = useState(initialAction?.config.channelId ?? "");
-  const [description, setDescription] = useState(initialAction?.description ?? "");
-  const [enabled, setEnabled] = useState(initialAction?.enabled ?? true);
-  const [selectedAudience, setSelectedAudience] = useState<(typeof audienceItems)[number]["value"]>(
-    initialAction?.config.audience ?? audienceItems[0].value,
-  );
+  const [formState, updateFormState] = useReducer(slackActionFormReducer, {
+    name: initialAction?.name ?? "",
+    channelId: initialAction?.config.channelId ?? "",
+    description: initialAction?.description ?? "",
+    enabled: initialAction?.enabled ?? true,
+    selectedAudience: initialAction?.config.audience ?? audienceItems[0].value,
+  });
+  const { name, channelId, description, enabled, selectedAudience } = formState;
 
   const {
     data,
@@ -123,12 +139,10 @@ export function SlackActionForm({
     },
   });
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("Action name is required");
-      return;
+	const handleSubmit = () => {
+		if (!name.trim()) {
+			toast.error("Action name is required");
+			return;
     }
 
     if (!selectedChannel) {
@@ -148,7 +162,7 @@ export function SlackActionForm({
     <ActionFormShell
       title={isEditMode ? "Edit Slack action" : "Send Slack message"}
       enabled={enabled}
-      onEnabledChange={setEnabled}
+      onEnabledChange={(nextEnabled) => updateFormState({ enabled: nextEnabled })}
       onSubmit={handleSubmit}
       isSubmitting={saveActionMutation.isPending}
       submitLabel={isEditMode ? "Save changes" : "Save action"}
@@ -164,7 +178,7 @@ export function SlackActionForm({
           id="name"
           placeholder="Enter action name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => updateFormState({ name: e.target.value })}
         />
       </div>
 
@@ -180,7 +194,7 @@ export function SlackActionForm({
         <Select
           items={channelItems}
           value={channelId}
-          onValueChange={(value) => setChannelId(value ?? "")}
+          onValueChange={(value) => updateFormState({ channelId: value ?? "" })}
           disabled={isLoadingChannels || channels.length === 0}
         >
           <SelectTrigger className="w-full" id="slack-channel">
@@ -211,9 +225,10 @@ export function SlackActionForm({
           items={audienceItems}
           value={selectedAudience}
           onValueChange={(value) =>
-            setSelectedAudience(
-              (value as (typeof audienceItems)[number]["value"]) ?? audienceItems[0].value,
-            )
+            updateFormState({
+              selectedAudience:
+                (value as (typeof audienceItems)[number]["value"]) ?? audienceItems[0].value,
+            })
           }
         >
           <SelectTrigger className="w-full">
@@ -245,7 +260,7 @@ export function SlackActionForm({
           className="w-full"
           placeholder="Enter a description for when to use this action"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => updateFormState({ description: e.target.value })}
         />
       </div>
     </ActionFormShell>

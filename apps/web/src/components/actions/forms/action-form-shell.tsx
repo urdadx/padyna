@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import type { FormEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -11,7 +11,7 @@ type ActionFormShellProps = {
 	title: string;
 	enabled: boolean;
 	onEnabledChange: (enabled: boolean) => void;
-	onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+	onSubmit: () => void;
 	isSubmitting?: boolean;
 	submitLabel?: string;
 	children: ReactNode;
@@ -49,7 +49,7 @@ export function ActionFormShell({
 					</TooltipContent>
 				</Tooltip>
 			</div>
-			<form onSubmit={onSubmit} className="space-y-6 sm:space-y-7">
+			<form action={onSubmit} className="space-y-6 sm:space-y-7">
 				{children}
 				<div className="flex justify-end">
 					<Button type="submit" variant="default" disabled={isSubmitting}>

@@ -9,7 +9,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { PlaneBold } from "@/assets/icons/plane-icon";
 import { Provider, useChat } from "@padyna/store";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/utils/trpc";
 import { DefaultChatTransport } from "ai";
@@ -111,25 +111,16 @@ function WidgetPreviewContent({
 	chatId,
 	resetChatId,
 }: WidgetPreviewProps) {
-	const queryParams = useMemo(() => {
-		const params = new URLSearchParams();
+	const params = new URLSearchParams();
+	if (hostOrigin) {
+		params.set("hostOrigin", hostOrigin);
+	}
+	if (platform) {
+		params.set("platform", platform);
+	}
+	const queryParams = params.toString();
 
-		if (hostOrigin) {
-			params.set("hostOrigin", hostOrigin);
-		}
-
-		if (platform) {
-			params.set("platform", platform);
-		}
-
-		const value = params.toString();
-		return value ? `?${value}` : "";
-	}, [hostOrigin, platform]);
-
-	const chatApi = useMemo(
-		() => `${env.VITE_SERVER_URL}/api/widget/${widgetId}/chat${queryParams}`,
-		[widgetId, queryParams],
-	);
+	const chatApi = `${env.VITE_SERVER_URL}/api/widget/${widgetId}/chat${queryParams ? `?${queryParams}` : ""}`;
 
 	const transport = useMemo(
 		() =>
@@ -141,7 +132,6 @@ function WidgetPreviewContent({
 	);
 
 	const [input, setInput] = useState("");
-	const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const initQueryKey = ["widget-init", widgetId, chatId, hostOrigin, platform];
 
@@ -278,23 +268,28 @@ function WidgetPreviewContent({
 	});
 
 	useEffect(() => {
-		if (!isEscalated || !liveChat.hasJoined) return;
+		const stopTyping = () => {
+			liveChat.sendTyping(false);
+		};
 
-		if (typingTimeoutRef.current) {
-			clearTimeout(typingTimeoutRef.current);
-			typingTimeoutRef.current = null;
+		if (!isEscalated || !liveChat.hasJoined) {
+			return stopTyping;
 		}
 
 		if (input.trim().length === 0) {
-			liveChat.sendTyping(false);
-			return;
+			stopTyping();
+			return stopTyping;
 		}
 
 		liveChat.sendTyping(true);
-		typingTimeoutRef.current = setTimeout(() => {
+		const timeoutId = setTimeout(() => {
 			liveChat.sendTyping(false);
-			typingTimeoutRef.current = null;
 		}, 1_200);
+
+		return () => {
+			clearTimeout(timeoutId);
+			stopTyping();
+		};
 	}, [input, isEscalated, liveChat]);
 
 	const { submit } = useSubmitMessage({
@@ -344,6 +339,16 @@ function WidgetPreviewContent({
 		hasLiveChatToken: !!initData?.liveChatToken,
 		canSendMessages: liveChat.canSendMessages,
 	});
+
+	const suggestedMessageItems = useMemo(() => {
+		const seen = new Map<string, number>();
+		return (widgetConfig?.suggestedMessages ?? []).map((message) => {
+			const occurrence = (seen.get(message) ?? 0) + 1;
+			seen.set(message, occurrence);
+
+			return { key: `${message}-${occurrence}`, message };
+		});
+	}, [widgetConfig?.suggestedMessages]);
 
 	if (isLoading) {
 		return (
@@ -411,13 +416,12 @@ function WidgetPreviewContent({
 				</Conversation>
 
 				<div className="p-4 space-y-3 border-t bg-gray-50/40">
-					{widgetConfig?.suggestedMessages &&
-						widgetConfig.suggestedMessages.length > 0 && (
+					{suggestedMessageItems.length > 0 && (
 							<Suggestions>
-								{widgetConfig.suggestedMessages.map((msg, idx) => (
+								{suggestedMessageItems.map(({ key, message }) => (
 									<Suggestion
-										key={`${msg}-${idx}`}
-										suggestion={msg}
+										key={key}
+										suggestion={message}
 										disabled={!canSendMessage}
 										onClick={(suggestion) =>
 											void submit(suggestion)
@@ -429,8 +433,7 @@ function WidgetPreviewContent({
 
 					<form
 						className="flex items-end gap-2"
-						onSubmit={(e) => {
-							e.preventDefault();
+						action={() => {
 							void submit(input);
 						}}>
 						<Input
