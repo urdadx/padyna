@@ -11,6 +11,7 @@ import {
 import { chunkText, estimateContentTokens } from "../chunking";
 import { embedTexts } from "../embeddings";
 import { hashText } from "../file/hash";
+import { convertFileWithMarkItDown } from "../file/markitdown";
 import {
   GOOGLE_DOC_MIME_TYPE,
   type GoogleDriveFile,
@@ -46,9 +47,17 @@ function getNormalizedMimeType(file: GoogleDriveFile) {
 }
 
 async function extractTextFromGoogleDriveFile(file: GoogleDriveFile, content: ArrayBuffer) {
-  const buffer = Buffer.from(content);
   const name = file.name.toLowerCase();
   const mimeType = getNormalizedMimeType(file);
+  const markdown = await convertFileWithMarkItDown(
+    new File([content], file.name, { type: mimeType }),
+  );
+
+  if (markdown) {
+    return markdown;
+  }
+
+  const buffer = Buffer.from(content);
 
   if (
     file.mimeType === GOOGLE_DOC_MIME_TYPE ||

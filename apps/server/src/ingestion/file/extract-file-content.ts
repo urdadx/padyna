@@ -3,6 +3,7 @@ import mammoth from "mammoth";
 import pdfParse from "pdf-parse";
 
 import type { ExtractedFileContent, SupportedFileExtension } from "./types";
+import { convertFileWithMarkItDown } from "./markitdown";
 
 function getExtension(fileName: string): SupportedFileExtension | null {
   const extension = fileName.split(".").pop()?.toLowerCase();
@@ -29,7 +30,11 @@ export async function extractFileContent(file: File): Promise<ExtractedFileConte
 
   let contentText = "";
 
-  if (fileExtension === "pdf") {
+  contentText = (await convertFileWithMarkItDown(file)) ?? "";
+
+  if (contentText) {
+    contentText = contentText.trim();
+  } else if (fileExtension === "pdf") {
     const pdfBuffer = Buffer.from(await file.arrayBuffer());
     const parsed = await pdfParse(pdfBuffer);
     contentText = (parsed.text ?? "").trim();

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { InfoIcon, MoreHorizontal, Plus } from "lucide-react";
@@ -411,12 +411,13 @@ function AgentForm({ chatbot, chatbotId }: { chatbot: any; chatbotId: string }) 
 									variant="ghost"
 									size="icon"
 									onClick={() => {
-											const next = form.allowedDomains.filter(
-												(_: any, i: number) => i !== index,
-											);
-											setForm((p) => ({
-												...p,
-												allowedDomains: next,
+										const next = form.allowedDomains.filter(
+											(_: any, i: number) =>
+												i !== index,
+										);
+										setForm((p) => ({
+											...p,
+											allowedDomains: next,
 										}));
 										save({ allowedDomains: next });
 									}}>
