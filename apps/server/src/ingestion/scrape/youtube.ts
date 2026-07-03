@@ -68,16 +68,16 @@ async function waitForProcess(
   }
 }
 
-export async function fetchYouTubeTranscriptWithYtDlp(url: string): Promise<string | null> {
+export async function convertYouTubeWithMarkItDown(url: string): Promise<string | null> {
   if (!isYouTubeUrl(url)) {
     return null;
   }
 
   const pythonPath = process.env.MARKITDOWN_PYTHON || DEFAULT_PYTHON;
-  const scriptPath = join(process.cwd(), "scripts", "youtube-transcript.py");
+  const scriptPath = join(process.cwd(), "scripts", "markitdown-convert.py");
 
   try {
-    const proc = Bun.spawn([pythonPath, scriptPath, url], {
+    const proc = Bun.spawn([pythonPath, scriptPath, "--url", url], {
       cwd: process.cwd(),
       stdout: "pipe",
       stderr: "pipe",
@@ -93,19 +93,17 @@ export async function fetchYouTubeTranscriptWithYtDlp(url: string): Promise<stri
 
     if (exitCode !== 0 || !content) {
       console.warn(
-        `YouTube transcript fetch failed for ${url}: ${stderr.trim() || `exit code ${exitCode}`}`,
+        `MarkItDown failed for YouTube URL ${url}: ${stderr.trim() || `exit code ${exitCode}`}`,
       );
       return null;
     }
 
-    console.info(`Fetched YouTube transcript with yt-dlp for ${url} (${content.length} chars)`);
-    console.info(
-      `--- YouTube transcript markdown start: ${url} ---\n${content}\n--- YouTube transcript markdown end: ${url} ---`,
-    );
+    console.info(`MarkItDown converted YouTube URL ${url} (${content.length} chars)`);
+
     return content;
   } catch (error) {
     console.warn(
-      `YouTube transcript fetch failed for ${url}:`,
+      `MarkItDown failed for YouTube URL ${url}:`,
       error instanceof Error ? error.message : error,
     );
     return null;

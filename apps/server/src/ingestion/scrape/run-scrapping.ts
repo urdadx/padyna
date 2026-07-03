@@ -1,6 +1,6 @@
 import { env } from "@padyna/env/server";
 import { type ScrapedContent } from "./types";
-import { fetchYouTubeTitle, fetchYouTubeTranscriptWithYtDlp, isYouTubeUrl } from "./youtube";
+import { convertYouTubeWithMarkItDown, fetchYouTubeTitle, isYouTubeUrl } from "./youtube";
 
 interface ScrapeResponse {
   success: boolean;
@@ -19,7 +19,7 @@ export class ScrapeError extends Error {
 
 export async function runLinkScrape(url: string): Promise<ScrapedContent> {
   if (isYouTubeUrl(url)) {
-    const markdown = await fetchYouTubeTranscriptWithYtDlp(url);
+    const markdown = await convertYouTubeWithMarkItDown(url);
 
     if (!markdown) {
       throw new ScrapeError("No transcript could be extracted from this YouTube video");

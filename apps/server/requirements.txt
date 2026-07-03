@@ -1,2 +1,1 @@
-markitdown[pdf,docx]>=0.1.3
-yt-dlp>=2026.6.9
+markitdown[pdf,docx,youtube-transcription]>=0.1.3
