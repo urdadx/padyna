@@ -4,6 +4,7 @@ import { extname, join } from "node:path";
 import { tmpdir } from "node:os";
 
 const MARKITDOWN_TIMEOUT_MS = 30_000;
+const DEFAULT_MARKITDOWN_PYTHON = join(process.cwd(), ".venv", "bin", "python");
 
 async function waitForProcess(
   proc: ReturnType<typeof Bun.spawn>,
@@ -28,6 +29,26 @@ async function waitForProcess(
   }
 }
 
+async function runConverter(pythonPath: string, scriptPath: string, tempPath: string) {
+  const proc = Bun.spawn([pythonPath, scriptPath, tempPath], {
+    cwd: process.cwd(),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+
+  const [exitCode, stdout, stderr] = await Promise.all([
+    waitForProcess(proc, MARKITDOWN_TIMEOUT_MS),
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ]);
+
+  return {
+    exitCode,
+    stdout: stdout.trim(),
+    stderr: stderr.trim(),
+  };
+}
+
 export async function convertFileWithMarkItDown(file: File): Promise<string | null> {
   const extension = extname(file.name).toLowerCase();
   const tempDir = join(tmpdir(), "padyna-markitdown");
@@ -38,30 +59,20 @@ export async function convertFileWithMarkItDown(file: File): Promise<string | nu
 
   try {
     await Bun.write(tempPath, file);
+    const pythonPath = process.env.MARKITDOWN_PYTHON || DEFAULT_MARKITDOWN_PYTHON;
+    const result = await runConverter(pythonPath, scriptPath, tempPath);
 
-    const proc = Bun.spawn(["uv", "run", "python", scriptPath, tempPath], {
-      cwd: process.cwd(),
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-
-    const [exitCode, stdout, stderr] = await Promise.all([
-      waitForProcess(proc, MARKITDOWN_TIMEOUT_MS),
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-    ]);
-
-    const content = stdout.trim();
-
-    if (exitCode !== 0 || !content) {
-      console.warn(
-        `MarkItDown failed for ${file.name}: ${stderr.trim() || `exit code ${exitCode}`}`,
+    if (result.exitCode === 0 && result.stdout) {
+      console.info(
+        `MarkItDown converted ${file.name} using ${pythonPath} (${result.stdout.length} chars)`,
       );
-      return null;
+      return result.stdout;
     }
 
-    console.info(`MarkItDown converted ${file.name} (${content.length} chars)`);
-    return content;
+    console.warn(
+      `MarkItDown failed for ${file.name}: ${result.stderr || `exit code ${result.exitCode}`}`,
+    );
+    return null;
   } catch (error) {
     console.warn(
       `MarkItDown failed for ${file.name}:`,
