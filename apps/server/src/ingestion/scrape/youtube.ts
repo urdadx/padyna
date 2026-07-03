@@ -2,7 +2,7 @@ import { join } from "node:path";
 
 const YOUTUBE_TRANSCRIPT_TIMEOUT_MS = 30_000;
 const YOUTUBE_METADATA_TIMEOUT_MS = 5_000;
-const DEFAULT_MARKITDOWN_PYTHON = join(process.cwd(), ".venv", "bin", "python");
+const DEFAULT_PYTHON = join(process.cwd(), ".venv", "bin", "python");
 
 function normalizeHost(hostname: string) {
   return hostname.toLowerCase().replace(/^www\./, "");
@@ -68,12 +68,12 @@ async function waitForProcess(
   }
 }
 
-export async function convertYouTubeWithMarkItDown(url: string): Promise<string | null> {
+export async function fetchYouTubeTranscriptWithYtDlp(url: string): Promise<string | null> {
   if (!isYouTubeUrl(url)) {
     return null;
   }
 
-  const pythonPath = process.env.MARKITDOWN_PYTHON || DEFAULT_MARKITDOWN_PYTHON;
+  const pythonPath = process.env.MARKITDOWN_PYTHON || DEFAULT_PYTHON;
   const scriptPath = join(process.cwd(), "scripts", "youtube-transcript.py");
 
   try {
@@ -98,7 +98,7 @@ export async function convertYouTubeWithMarkItDown(url: string): Promise<string 
       return null;
     }
 
-    console.info(`Fetched YouTube transcript for ${url} (${content.length} chars)`);
+    console.info(`Fetched YouTube transcript with yt-dlp for ${url} (${content.length} chars)`);
     console.info(
       `--- YouTube transcript markdown start: ${url} ---\n${content}\n--- YouTube transcript markdown end: ${url} ---`,
     );
