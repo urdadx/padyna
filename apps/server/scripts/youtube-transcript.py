@@ -5,7 +5,7 @@ import sys
 from urllib.parse import parse_qs, urlparse
 
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api.proxies import GenericProxyConfig
+from youtube_transcript_api.proxies import WebshareProxyConfig
 
 
 def get_video_id(value: str) -> str | None:
@@ -30,11 +30,21 @@ def get_video_id(value: str) -> str | None:
 
 
 def get_proxy_config():
-    http_proxy = os.getenv("YOUTUBE_PROXY_HTTP")
-    https_proxy = os.getenv("YOUTUBE_PROXY_HTTPS")
+    username = os.getenv("YOUTUBE_WEBSHARE_PROXY_USERNAME")
+    password = os.getenv("YOUTUBE_WEBSHARE_PROXY_PASSWORD")
 
-    if http_proxy or https_proxy:
-        return GenericProxyConfig(http_url=http_proxy, https_url=https_proxy)
+    if username and password:
+        locations = os.getenv("YOUTUBE_WEBSHARE_PROXY_LOCATIONS")
+        filter_ip_locations = (
+            [location.strip() for location in locations.split(",") if location.strip()]
+            if locations
+            else None
+        )
+        return WebshareProxyConfig(
+            proxy_username=username,
+            proxy_password=password,
+            filter_ip_locations=filter_ip_locations,
+        )
 
     return None
 
