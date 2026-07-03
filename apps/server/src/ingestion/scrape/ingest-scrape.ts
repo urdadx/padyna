@@ -12,6 +12,7 @@ import {
 import type { IngestLinkInput, IngestedLinkResult } from "./types";
 
 function normalizeMimeType(url: string) {
+  if (url.includes("youtube.com") || url.includes("youtu.be")) return "text/markdown";
   if (url.endsWith(".pdf")) return "application/pdf";
   return "text/html";
 }
@@ -35,12 +36,13 @@ export async function ingestLink(input: IngestLinkInput): Promise<IngestedLinkRe
     datasourceId = await createDatasourceRecord({
       chatbotId,
       organizationId,
-      sourceName: url,
+      sourceName: scrapedContent.metadata?.title || url,
       sourceType: "link",
       url,
       sizeBytes,
       mimeType: normalizeMimeType(url),
       contentHash: urlHash,
+      extraMetadata: scrapedContent.metadata,
     });
   } catch (error) {
     console.error("Failed to create datasource record for link:", error);

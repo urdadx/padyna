@@ -1,7 +1,3 @@
-import { Buffer } from "node:buffer";
-import mammoth from "mammoth";
-import pdfParse from "pdf-parse";
-
 import type { ExtractedFileContent, SupportedFileExtension } from "./types";
 import { convertFileWithMarkItDown } from "./markitdown";
 
@@ -28,26 +24,10 @@ export async function extractFileContent(file: File): Promise<ExtractedFileConte
     throw new Error(`Unsupported file extension for ${file.name}`);
   }
 
-  let contentText = "";
-
-  contentText = (await convertFileWithMarkItDown(file)) ?? "";
-
-  if (contentText) {
-    contentText = contentText.trim();
-  } else if (fileExtension === "pdf") {
-    const pdfBuffer = Buffer.from(await file.arrayBuffer());
-    const parsed = await pdfParse(pdfBuffer);
-    contentText = (parsed.text ?? "").trim();
-  } else if (fileExtension === "docx") {
-    const docxBuffer = Buffer.from(await file.arrayBuffer());
-    const parsed = await mammoth.extractRawText({ buffer: docxBuffer });
-    contentText = (parsed.value ?? "").trim();
-  } else {
-    contentText = (await file.text()).trim();
-  }
+  const contentText = (await convertFileWithMarkItDown(file))?.trim() ?? "";
 
   if (!contentText) {
-    throw new Error(`File ${file.name} is empty.`);
+    throw new Error(`MarkItDown could not extract content from ${file.name}.`);
   }
 
   return {

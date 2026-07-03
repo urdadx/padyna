@@ -1,6 +1,3 @@
-import { Buffer } from "node:buffer";
-import mammoth from "mammoth";
-import pdfParse from "pdf-parse";
 import {
   createDatasourceRecord,
   incrementChatbotDatasourceCount,
@@ -47,33 +44,16 @@ function getNormalizedMimeType(file: GoogleDriveFile) {
 }
 
 async function extractTextFromGoogleDriveFile(file: GoogleDriveFile, content: ArrayBuffer) {
-  const name = file.name.toLowerCase();
   const mimeType = getNormalizedMimeType(file);
   const markdown = await convertFileWithMarkItDown(
     new File([content], file.name, { type: mimeType }),
   );
 
-  if (markdown) {
-    return markdown;
+  if (!markdown) {
+    throw new Error(`MarkItDown could not extract content from ${file.name}`);
   }
 
-  const buffer = Buffer.from(content);
-
-  if (
-    file.mimeType === GOOGLE_DOC_MIME_TYPE ||
-    mimeType.includes("wordprocessingml") ||
-    name.endsWith(".docx")
-  ) {
-    const result = await mammoth.extractRawText({ buffer });
-    return result.value.trim();
-  }
-
-  if (mimeType === "application/pdf" || name.endsWith(".pdf")) {
-    const parsed = await pdfParse(buffer);
-    return (parsed.text ?? "").trim();
-  }
-
-  return new TextDecoder().decode(content).trim();
+  return markdown;
 }
 
 export async function ingestGoogleDriveFile(

@@ -26,7 +26,7 @@ export function WebSourceDialog({ open, onOpenChange }: WebSourceProps) {
         </DialogHeader>
         <Tabs className="w-full">
           <TabsList className="w-fit justify-start text-foreground h-auto gap-2 bg-gray-50 rounded-md p-2">
-            <TabsTrigger value="scrape">Single page</TabsTrigger>
+            <TabsTrigger value="scrape">Single URL</TabsTrigger>
             <TabsTrigger value="crawl">Crawl an entire website</TabsTrigger>
           </TabsList>
           <TabsContent value="scrape">
