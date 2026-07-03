@@ -1,9 +1,11 @@
 import argparse
+import os
 import re
 import sys
 from urllib.parse import parse_qs, urlparse
 
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.proxies import GenericProxyConfig
 
 
 def get_video_id(value: str) -> str | None:
@@ -27,14 +29,31 @@ def get_video_id(value: str) -> str | None:
     return None
 
 
+def get_proxy_config():
+    http_proxy = os.getenv("YOUTUBE_PROXY_HTTP")
+    https_proxy = os.getenv("YOUTUBE_PROXY_HTTPS")
+
+    if http_proxy or https_proxy:
+        return GenericProxyConfig(http_url=http_proxy, https_url=https_proxy)
+
+    return None
+
+
+def get_languages() -> tuple[str, ...]:
+    value = os.getenv("YOUTUBE_TRANSCRIPT_LANGUAGES", "en")
+    languages = tuple(language.strip() for language in value.split(",") if language.strip())
+    return languages or ("en",)
+
+
 def fetch_transcript(video_id: str) -> list[str]:
-    api = YouTubeTranscriptApi()
+    api = YouTubeTranscriptApi(proxy_config=get_proxy_config())
+    languages = get_languages()
 
     try:
-        transcript = api.fetch(video_id, languages=("en",))
+        transcript = api.fetch(video_id, languages=languages)
     except Exception:
         transcript_list = api.list(video_id)
-        transcript = transcript_list.find_transcript(["en"]).fetch()
+        transcript = transcript_list.find_transcript(list(languages)).fetch()
 
     lines: list[str] = []
     for snippet in transcript:
