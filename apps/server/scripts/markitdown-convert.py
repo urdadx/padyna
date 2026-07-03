@@ -5,7 +5,9 @@ from markitdown import MarkItDown
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Convert a local document or URL to Markdown.")
+    parser = argparse.ArgumentParser(
+        description="Convert a local document or URL to Markdown."
+    )
     parser.add_argument("input", help="Path or URL to convert")
     parser.add_argument(
         "--url",
@@ -15,7 +17,11 @@ def main() -> int:
     args = parser.parse_args()
 
     converter = MarkItDown(enable_plugins=False)
-    result = converter.convert_url(args.input) if args.url else converter.convert_local(args.input)
+    result = (
+        converter.convert_url(args.input)
+        if args.url
+        else converter.convert_local(args.input)
+    )
     content = (result.text_content or "").strip()
 
     if not content:

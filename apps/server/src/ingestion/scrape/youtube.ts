@@ -1,6 +1,6 @@
 import { join } from "node:path";
 
-const MARKITDOWN_YOUTUBE_TIMEOUT_MS = 30_000;
+const YOUTUBE_TRANSCRIPT_TIMEOUT_MS = 30_000;
 const YOUTUBE_METADATA_TIMEOUT_MS = 5_000;
 const DEFAULT_MARKITDOWN_PYTHON = join(process.cwd(), ".venv", "bin", "python");
 
@@ -57,7 +57,7 @@ async function waitForProcess(
       new Promise<number>((_, reject) => {
         timeout = setTimeout(() => {
           proc.kill();
-          reject(new Error(`YouTube transcript conversion timed out after ${timeoutMs}ms`));
+          reject(new Error(`YouTube transcript fetch timed out after ${timeoutMs}ms`));
         }, timeoutMs);
       }),
     ]);
@@ -74,17 +74,17 @@ export async function convertYouTubeWithMarkItDown(url: string): Promise<string 
   }
 
   const pythonPath = process.env.MARKITDOWN_PYTHON || DEFAULT_MARKITDOWN_PYTHON;
-  const scriptPath = join(process.cwd(), "scripts", "markitdown-convert.py");
+  const scriptPath = join(process.cwd(), "scripts", "youtube-transcript.py");
 
   try {
-    const proc = Bun.spawn([pythonPath, scriptPath, "--url", url], {
+    const proc = Bun.spawn([pythonPath, scriptPath, url], {
       cwd: process.cwd(),
       stdout: "pipe",
       stderr: "pipe",
     });
 
     const [exitCode, stdout, stderr] = await Promise.all([
-      waitForProcess(proc, MARKITDOWN_YOUTUBE_TIMEOUT_MS),
+      waitForProcess(proc, YOUTUBE_TRANSCRIPT_TIMEOUT_MS),
       new Response(proc.stdout).text(),
       new Response(proc.stderr).text(),
     ]);
@@ -93,19 +93,19 @@ export async function convertYouTubeWithMarkItDown(url: string): Promise<string 
 
     if (exitCode !== 0 || !content) {
       console.warn(
-        `MarkItDown failed for YouTube URL ${url}: ${stderr.trim() || `exit code ${exitCode}`}`,
+        `YouTube transcript fetch failed for ${url}: ${stderr.trim() || `exit code ${exitCode}`}`,
       );
       return null;
     }
 
-    console.info(`MarkItDown converted YouTube URL ${url} (${content.length} chars)`);
+    console.info(`Fetched YouTube transcript for ${url} (${content.length} chars)`);
     console.info(
       `--- YouTube transcript markdown start: ${url} ---\n${content}\n--- YouTube transcript markdown end: ${url} ---`,
     );
     return content;
   } catch (error) {
     console.warn(
-      `MarkItDown failed for YouTube URL ${url}:`,
+      `YouTube transcript fetch failed for ${url}:`,
       error instanceof Error ? error.message : error,
     );
     return null;
