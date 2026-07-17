@@ -78,13 +78,16 @@ export function extractSources(
 
       for (const r of results) {
         const sourceName = r?.sourceName;
+        const datasourceId = r?.datasourceId;
         const url = r?.url;
         const sourceType = r?.sourceType;
 
         if (typeof sourceName !== "string") continue;
 
-        if (seen.has(sourceName)) continue;
-        seen.add(sourceName);
+        const sourceKey =
+          typeof datasourceId === "string" ? datasourceId : `${sourceType}:${url}:${sourceName}`;
+        if (seen.has(sourceKey)) continue;
+        seen.add(sourceKey);
 
         sources.push({
           url: url || (sourceType === "link" ? sourceName : "#"),

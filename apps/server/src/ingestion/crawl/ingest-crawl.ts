@@ -6,9 +6,8 @@ import type { CrawlInput, CrawlResult, ProcessedCrawlResult } from "./types";
 import {
   createDatasourceRecord,
   incrementChatbotDatasourceCount,
-  insertDatasourceChunks,
   markDatasourceFailed,
-  markDatasourceSynced,
+  replaceDatasourceChunksAndMarkSynced,
 } from "@padyna/db/ingestion-files";
 import { startCrawl } from "./run-crawl";
 
@@ -97,40 +96,44 @@ export async function processCompletedCrawl(
       const tokenCount = estimateContentTokens(contentText);
 
       const chunks = chunkText(contentText);
+      const chunkTitle = pageData.metadata?.title || pageUrl;
 
       if (chunks.length === 0) {
         await markDatasourceFailed(datasourceId, "No chunks created from content");
         continue;
       }
 
-      const { embeddings: embeddingVectors, dimensions } = await embedTexts(
-        chunks.map((c) => c.content),
-      );
+      const {
+        embeddings: embeddingVectors,
+        dimensions,
+        model,
+      } = await embedTexts(chunks.map((chunk) => `${chunkTitle}\n\n${chunk.content}`));
 
-      await insertDatasourceChunks(
+      await replaceDatasourceChunksAndMarkSynced(
         chunks.map((chunk, index) => ({
           datasourceId: datasourceId,
           chatbotId,
           organizationId,
           chunkIndex: chunk.chunkIndex,
+          title: chunkTitle,
           content: chunk.content,
           contentHash: hashText(chunk.content),
           tokenCount: chunk.tokenCount,
           charCount: chunk.charCount,
           embedding: embeddingVectors[index]!,
+          embeddingModel: model,
           embeddingDimensions: dimensions,
         })),
+        {
+          datasourceId,
+          contentText,
+          contentHash,
+          tokenCount,
+          charCount,
+          chunkCount: chunks.length,
+          mimeType: "text/markdown",
+        },
       );
-
-      await markDatasourceSynced({
-        datasourceId,
-        contentText,
-        contentHash,
-        tokenCount,
-        charCount,
-        chunkCount: chunks.length,
-        mimeType: "text/markdown",
-      });
 
       datasourceIds.push(datasourceId);
       totalChunks += chunks.length;

@@ -2,7 +2,6 @@ import { ToolLoopAgent, stepCountIs } from "ai";
 import { KnowledgeBaseTool } from "./knowledge-base-tool";
 import { EscalateToHumanTool } from "./escalate-tool";
 import { type AgentUseCase, getAgentPrompt } from "./prompt";
-import { createCached } from "@ai-sdk-tools/cache";
 import { openai } from "@ai-sdk/openai";
 import type { ActionProvider } from "@padyna/api/actions/contracts";
 import { listEnabledAgentActions } from "../actions/db";
@@ -14,8 +13,6 @@ import { JiraActionTool } from "../actions/jira-action-tool";
 import { SlackActionTool } from "../actions/slack-action-tool";
 
 const CHAT_MODEL = "gpt-5.4-mini";
-
-const cached = createCached();
 
 interface CreateSupportChatAgentInput {
   chatbotId: string;
@@ -66,24 +63,20 @@ export async function createSupportChatAgent(input: CreateSupportChatAgentInput)
   const actionTools = Object.fromEntries(actionToolEntries) as Record<string, ActionTool>;
 
   const tools = {
-    knowledge_base: cached(
-      KnowledgeBaseTool({
-        chatbotId: input.chatbotId,
-        organizationId: input.organizationId,
-      }),
-    ),
+    knowledge_base: KnowledgeBaseTool({
+      chatbotId: input.chatbotId,
+      organizationId: input.organizationId,
+    }),
     ...(input.allowEscalation === false
       ? {}
       : {
-          escalate_to_human: cached(
-            EscalateToHumanTool({
-              chatbotId: input.chatbotId,
-              chatbotName: input.chatbotName,
-              organizationId: input.organizationId,
-              conversationId: input.conversationId,
-              userId: input.userId,
-            }),
-          ),
+          escalate_to_human: EscalateToHumanTool({
+            chatbotId: input.chatbotId,
+            chatbotName: input.chatbotName,
+            organizationId: input.organizationId,
+            conversationId: input.conversationId,
+            userId: input.userId,
+          }),
         }),
     ...actionTools,
   };

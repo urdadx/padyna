@@ -97,9 +97,6 @@ export const datasourceRouter = router({
       z.object({
         id: z.uuid(),
         sourceName: z.string().optional(),
-        question: z.string().optional(),
-        answer: z.string().optional(),
-        contentText: z.string().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -123,9 +120,6 @@ export const datasourceRouter = router({
         .update(datasources)
         .set({
           ...(input.sourceName && { sourceName: input.sourceName }),
-          ...(input.question !== undefined && { question: input.question }),
-          ...(input.answer !== undefined && { answer: input.answer }),
-          ...(input.contentText !== undefined && { contentText: input.contentText }),
         })
         .where(eq(datasources.id, input.id))
         .returning();

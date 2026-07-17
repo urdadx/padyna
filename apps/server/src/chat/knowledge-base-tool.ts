@@ -1,11 +1,13 @@
 import { tool } from "ai";
 import { getPgPool } from "@padyna/db";
 import { z } from "zod";
-import { retrieveHybridChunks } from "../search/hybrid-retrieval";
+import { retrieveHybridChunks, type HybridRetrievalMetrics } from "../search/hybrid-retrieval";
+import { estimateContentTokens } from "../ingestion/chunking";
 
 const DEFAULT_RESULTS = 6;
 const MAX_RESULTS = 10;
 const MAX_WEIGHT_PER_SOURCE = 3;
+const MAX_CONTEXT_TOKENS = 2_400;
 
 function clampResults(limit?: number) {
   if (!limit || Number.isNaN(limit)) {
@@ -75,28 +77,56 @@ export function KnowledgeBaseTool(input: CreateKnowledgeBaseToolInput) {
       query: z.string().min(1).describe("What to search for in the knowledge base"),
       maxResults: z.number().int().min(1).max(MAX_RESULTS).optional(),
     }),
-    execute: async ({ query, maxResults }) => {
+    execute: async ({ query, maxResults }, { abortSignal }) => {
+      let retrievalMetrics: HybridRetrievalMetrics | undefined;
       const rows = await retrieveHybridChunks({
         query,
         chatbotId: input.chatbotId,
         organizationId: input.organizationId,
         limit: clampResults(maxResults),
+        abortSignal,
+        onMetrics: (metrics) => {
+          retrievalMetrics = metrics;
+        },
       });
 
-      if (rows.length > 0) {
-        void incrementReferencedDatasources(input.chatbotId, input.organizationId, rows).catch(
-          (error) => {
-            console.error("Failed to increment referenced datasources", error);
-          },
-        );
+      if (
+        retrievalMetrics &&
+        (retrievalMetrics.totalMs > 1_000 || retrievalMetrics.degradedToFullText)
+      ) {
+        console.info("Knowledge base retrieval metrics", retrievalMetrics);
+      }
+
+      let contextTokens = 0;
+      const contextRows = rows.filter((row) => {
+        const rowTokens = estimateContentTokens(row.content);
+        if (contextTokens > 0 && contextTokens + rowTokens > MAX_CONTEXT_TOKENS) {
+          return false;
+        }
+        contextTokens += rowTokens;
+        return true;
+      });
+
+      if (contextRows.length > 0) {
+        void incrementReferencedDatasources(
+          input.chatbotId,
+          input.organizationId,
+          contextRows,
+        ).catch((error) => {
+          console.error("Failed to increment referenced datasources", error);
+        });
       }
 
       return {
-        results: rows.map((row) => ({
+        results: contextRows.map((row) => ({
+          chunkId: row.chunkId,
+          datasourceId: row.datasourceId,
           sourceName: row.sourceName,
           sourceType: row.sourceType,
           url: row.url,
           content: row.content,
+          semanticScore: row.semanticScore,
+          fullTextScore: row.fullTextScore,
         })),
       };
     },

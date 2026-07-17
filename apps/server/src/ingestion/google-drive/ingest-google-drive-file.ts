@@ -1,9 +1,8 @@
 import {
   createDatasourceRecord,
   incrementChatbotDatasourceCount,
-  insertDatasourceChunks,
   markDatasourceFailed,
-  markDatasourceSynced,
+  replaceDatasourceChunksAndMarkSynced,
 } from "@padyna/db/ingestion-files";
 import { chunkText, estimateContentTokens } from "../chunking";
 import { embedTexts } from "../embeddings";
@@ -105,32 +104,35 @@ export async function ingestGoogleDriveFile(
     });
 
     const chunks = chunkText(contentText);
-    const { embeddings, dimensions } = await embedTexts(chunks.map((chunk) => chunk.content));
+    const { embeddings, dimensions, model } = await embedTexts(
+      chunks.map((chunk) => `${input.file.name}\n\n${chunk.content}`),
+    );
 
-    await insertDatasourceChunks(
+    await replaceDatasourceChunksAndMarkSynced(
       chunks.map((chunk, index) => ({
         datasourceId,
         chatbotId: input.chatbotId,
         organizationId: input.organizationId,
         chunkIndex: chunk.chunkIndex,
+        title: input.file.name,
         content: chunk.content,
         contentHash: hashText(chunk.content),
         tokenCount: chunk.tokenCount,
         charCount: chunk.charCount,
         embedding: embeddings[index] ?? [],
+        embeddingModel: model,
         embeddingDimensions: dimensions,
       })),
+      {
+        datasourceId,
+        contentText,
+        contentHash,
+        tokenCount: estimateContentTokens(contentText),
+        charCount: contentText.length,
+        chunkCount: chunks.length,
+        mimeType,
+      },
     );
-
-    await markDatasourceSynced({
-      datasourceId,
-      contentText,
-      contentHash,
-      tokenCount: estimateContentTokens(contentText),
-      charCount: contentText.length,
-      chunkCount: chunks.length,
-      mimeType,
-    });
 
     await incrementChatbotDatasourceCount(input.chatbotId, input.organizationId);
 

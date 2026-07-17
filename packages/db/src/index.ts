@@ -14,7 +14,14 @@ let pgPool: Pool | null = null;
 
 export function getPgPool(): Pool {
   if (!pgPool) {
-    pgPool = new Pool({ connectionString: env.DATABASE_URL });
+    pgPool = new Pool({
+      connectionString: env.DATABASE_URL,
+      max: 10,
+      connectionTimeoutMillis: 5_000,
+      idleTimeoutMillis: 30_000,
+      query_timeout: 5_000,
+      statement_timeout: 5_000,
+    });
   }
   return pgPool;
 }

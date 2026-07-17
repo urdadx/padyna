@@ -2,18 +2,19 @@ import { chunkText, estimateContentTokens } from "../chunking";
 import { embedTexts } from "../embeddings";
 import { hashText } from "../file/hash";
 import { db } from "@padyna/db";
-import { eq } from "drizzle-orm";
-import { datasourceChunks, datasources } from "@padyna/db/schema/datasource";
+import { and, eq } from "drizzle-orm";
+import { datasources } from "@padyna/db/schema/datasource";
 import {
-  insertDatasourceChunks,
   markDatasourceFailed,
-  markDatasourceSynced,
+  replaceDatasourceChunksAndMarkSynced,
 } from "@padyna/db/ingestion-files";
 
 export interface UpdateTextInput {
   id: string;
   content: string;
   title?: string;
+  chatbotId: string;
+  organizationId: string;
 }
 
 export interface UpdateTextResult {
@@ -24,7 +25,7 @@ export interface UpdateTextResult {
 }
 
 export async function updateText(input: UpdateTextInput): Promise<UpdateTextResult> {
-  const { id, content, title } = input;
+  const { id, content, title, chatbotId, organizationId } = input;
 
   if (!content || !content.trim()) {
     return {
@@ -40,7 +41,11 @@ export async function updateText(input: UpdateTextInput): Promise<UpdateTextResu
 
   try {
     const existing = await db.query.datasources.findFirst({
-      where: eq(datasources.id, id),
+      where: and(
+        eq(datasources.id, id),
+        eq(datasources.chatbotId, chatbotId),
+        eq(datasources.organizationId, organizationId),
+      ),
     });
 
     if (!existing) {
@@ -52,53 +57,45 @@ export async function updateText(input: UpdateTextInput): Promise<UpdateTextResu
       };
     }
 
-    await db.delete(datasourceChunks).where(eq(datasourceChunks.datasourceId, id));
-
-    await db
-      .update(datasources)
-      .set({
-        sourceName: title || content.slice(0, 100),
-        contentText: content,
-        contentHash,
-        sizeBytes,
-        ingestStatus: "processing",
-        updatedAt: new Date(),
-      })
-      .where(eq(datasources.id, id));
-
     const charCount = content.length;
     const tokenCount = estimateContentTokens(content);
 
     const chunks = chunkText(content);
+    const chunkTitle = title || content.slice(0, 100);
 
-    const { embeddings: embeddingVectors, dimensions } = await embedTexts(
-      chunks.map((c) => c.content),
-    );
+    const {
+      embeddings: embeddingVectors,
+      dimensions,
+      model,
+    } = await embedTexts(chunks.map((chunk) => `${chunkTitle}\n\n${chunk.content}`));
 
-    await insertDatasourceChunks(
+    await replaceDatasourceChunksAndMarkSynced(
       chunks.map((chunk, index) => ({
         datasourceId: id,
         chatbotId: existing.chatbotId,
         organizationId: existing.organizationId,
         chunkIndex: chunk.chunkIndex,
+        title: chunkTitle,
         content: chunk.content,
         contentHash: hashText(chunk.content),
         tokenCount: chunk.tokenCount,
         charCount: chunk.charCount,
         embedding: embeddingVectors[index]!,
+        embeddingModel: model,
         embeddingDimensions: dimensions,
       })),
+      {
+        datasourceId: id,
+        contentText: content,
+        contentHash,
+        tokenCount,
+        charCount,
+        chunkCount: chunks.length,
+        mimeType: "text/plain",
+        sourceName: chunkTitle,
+        sizeBytes,
+      },
     );
-
-    await markDatasourceSynced({
-      datasourceId: id,
-      contentText: content,
-      contentHash,
-      tokenCount,
-      charCount,
-      chunkCount: chunks.length,
-      mimeType: "text/plain",
-    });
 
     return {
       datasourceId: id,

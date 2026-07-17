@@ -4,6 +4,8 @@ import { db } from ".";
 import { chatbot } from "./schema/chatbot";
 import { datasourceChunks, datasources } from "./schema/datasource";
 
+const CHUNK_INSERT_BATCH_SIZE = 250;
+
 interface CreateDatasourceInput {
   chatbotId: string;
   organizationId: string;
@@ -21,7 +23,7 @@ interface CreateDatasourceInput {
   extraMetadata?: Record<string, unknown>;
 }
 
-interface UpdateDatasourceSuccessInput {
+export interface UpdateDatasourceSuccessInput {
   datasourceId: string;
   contentText: string;
   contentHash: string;
@@ -29,6 +31,10 @@ interface UpdateDatasourceSuccessInput {
   charCount: number;
   chunkCount: number;
   mimeType: string;
+  sourceName?: string;
+  sizeBytes?: number;
+  question?: string;
+  answer?: string;
 }
 
 interface InsertChunkInput {
@@ -36,11 +42,13 @@ interface InsertChunkInput {
   chatbotId: string;
   organizationId: string;
   chunkIndex: number;
+  title: string;
   content: string;
   contentHash: string;
   tokenCount: number;
   charCount: number;
   embedding: number[];
+  embeddingModel: string;
   embeddingDimensions: number;
 }
 
@@ -88,7 +96,6 @@ export async function createDatasourceRecord(input: CreateDatasourceInput) {
     await db
       .update(datasources)
       .set({
-        ingestStatus: "processing",
         lastErrorAt: null,
         errorMessage: null,
         updatedAt: new Date(),
@@ -103,8 +110,6 @@ export async function createDatasourceRecord(input: CreateDatasourceInput) {
         ...(input.extraMetadata ? { extraMetadata: input.extraMetadata } : {}),
       })
       .where(eq(datasources.id, existingId));
-
-    await db.delete(datasourceChunks).where(eq(datasourceChunks.datasourceId, existingId));
 
     return existingId;
   }
@@ -142,7 +147,13 @@ export async function markDatasourceFailed(datasourceId: string, message: string
   await db
     .update(datasources)
     .set({
-      ingestStatus: "failed",
+      ingestStatus: sql<"synced" | "failed">`case
+        when exists (
+          select 1 from ${datasourceChunks}
+          where ${datasourceChunks.datasourceId} = ${datasourceId}
+        ) then 'synced'
+        else 'failed'
+      end`,
       errorMessage: message,
       lastErrorAt: new Date(),
       updatedAt: new Date(),
@@ -150,47 +161,69 @@ export async function markDatasourceFailed(datasourceId: string, message: string
     .where(eq(datasources.id, datasourceId));
 }
 
-export async function insertDatasourceChunks(chunks: InsertChunkInput[]) {
+export async function replaceDatasourceChunksAndMarkSynced(
+  chunks: InsertChunkInput[],
+  input: UpdateDatasourceSuccessInput,
+) {
   if (chunks.length === 0) {
-    return;
+    throw new Error("Cannot replace a datasource with an empty chunk set.");
   }
 
-  await db.insert(datasourceChunks).values(
-    chunks.map((chunk) => ({
-      datasourceId: chunk.datasourceId,
-      chatbotId: chunk.chatbotId,
-      organizationId: chunk.organizationId,
-      chunkIndex: chunk.chunkIndex,
-      content: chunk.content,
-      contentHash: chunk.contentHash,
-      tokenCount: chunk.tokenCount,
-      charCount: chunk.charCount,
-      embedding: chunk.embedding,
-      embeddingModel: "deterministic-hash-v1",
-      embeddingDimensions: chunk.embeddingDimensions,
-      lastEmbeddedAt: new Date(),
-    })),
-  );
-}
+  const datasourceId = chunks[0]!.datasourceId;
+  if (chunks.some((chunk) => chunk.datasourceId !== datasourceId)) {
+    throw new Error("A chunk replacement must target exactly one datasource.");
+  }
+  if (input.datasourceId !== datasourceId) {
+    throw new Error("Chunk and datasource updates must target the same datasource.");
+  }
 
-export async function markDatasourceSynced(input: UpdateDatasourceSuccessInput) {
-  await db
-    .update(datasources)
-    .set({
-      ingestStatus: "synced",
-      contentText: input.contentText,
-      contentHash: input.contentHash,
-      tokenCount: input.tokenCount,
-      charCount: input.charCount,
-      chunkCount: input.chunkCount,
-      mimeType: input.mimeType,
-      lastSyncedAt: new Date(),
-      errorMessage: null,
-      errorCode: null,
-      lastErrorAt: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(datasources.id, input.datasourceId));
+  const values = chunks.map((chunk) => ({
+    datasourceId: chunk.datasourceId,
+    chatbotId: chunk.chatbotId,
+    organizationId: chunk.organizationId,
+    chunkIndex: chunk.chunkIndex,
+    title: chunk.title,
+    content: chunk.content,
+    contentHash: chunk.contentHash,
+    tokenCount: chunk.tokenCount,
+    charCount: chunk.charCount,
+    embedding: chunk.embedding,
+    embeddingModel: chunk.embeddingModel,
+    embeddingDimensions: chunk.embeddingDimensions,
+    lastEmbeddedAt: new Date(),
+  }));
+
+  await db.transaction(async (transaction) => {
+    await transaction
+      .delete(datasourceChunks)
+      .where(eq(datasourceChunks.datasourceId, datasourceId));
+    for (let index = 0; index < values.length; index += CHUNK_INSERT_BATCH_SIZE) {
+      await transaction
+        .insert(datasourceChunks)
+        .values(values.slice(index, index + CHUNK_INSERT_BATCH_SIZE));
+    }
+    await transaction
+      .update(datasources)
+      .set({
+        ingestStatus: "synced",
+        contentText: input.contentText,
+        contentHash: input.contentHash,
+        tokenCount: input.tokenCount,
+        charCount: input.charCount,
+        chunkCount: input.chunkCount,
+        mimeType: input.mimeType,
+        ...(input.sourceName !== undefined ? { sourceName: input.sourceName } : {}),
+        ...(input.sizeBytes !== undefined ? { sizeBytes: input.sizeBytes } : {}),
+        ...(input.question !== undefined ? { question: input.question } : {}),
+        ...(input.answer !== undefined ? { answer: input.answer } : {}),
+        lastSyncedAt: new Date(),
+        errorMessage: null,
+        errorCode: null,
+        lastErrorAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(datasources.id, input.datasourceId));
+  });
 }
 
 export async function incrementChatbotDatasourceCount(chatbotId: string, organizationId: string) {

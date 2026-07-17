@@ -1,152 +1,345 @@
 import type { TextChunk } from "./file/types";
 
-const CHUNK_SIZE = 1200;
-const CHUNK_OVERLAP = 200;
-const IDEAL_PARAGRAPH_SIZE = 900;
+const CHUNK_TOKEN_BUDGET = 300;
+const OVERLAP_TOKEN_BUDGET = 50;
 
 const sentenceSegmenter =
   typeof Intl !== "undefined" && "Segmenter" in Intl
-    ? new Intl.Segmenter("en", { granularity: "sentence" })
+    ? new Intl.Segmenter(undefined, { granularity: "sentence" })
     : null;
 
-function estimateTokenCount(text: string) {
-  const normalized = text.trim();
-  if (!normalized) {
-    return 0;
+const wordSegmenter =
+  typeof Intl !== "undefined" && "Segmenter" in Intl
+    ? new Intl.Segmenter(undefined, { granularity: "word" })
+    : null;
+
+const approximateTokenPattern = /[\p{L}\p{M}\p{N}]+|[^\s]/gu;
+const wordLikePattern = /^[\p{L}\p{M}\p{N}]+$/u;
+const textEncoder = new TextEncoder();
+
+/**
+ * A dependency-free token approximation. Word-like runs use roughly one token
+ * per four UTF-8 bytes, while punctuation and symbols count as one token each.
+ */
+function approximateTokenCount(text: string) {
+  let count = 0;
+
+  for (const match of text.matchAll(approximateTokenPattern)) {
+    const part = match[0];
+    count += wordLikePattern.test(part)
+      ? Math.max(1, Math.ceil(textEncoder.encode(part).length / 4))
+      : 1;
   }
-  return normalized.split(/\s+/).length;
+
+  return count;
 }
 
-function splitLongSegment(text: string, maxLength: number) {
+function splitOversizedPart(part: string, maxTokens: number) {
   const pieces: string[] = [];
-  let remainder = text.trim();
+  let current = "";
 
-  while (remainder.length > maxLength) {
-    let cutPoint = remainder.lastIndexOf(" ", maxLength);
-    if (cutPoint < Math.floor(maxLength * 0.5)) {
-      cutPoint = maxLength;
+  for (const character of part) {
+    const candidate = `${current}${character}`;
+    if (current && approximateTokenCount(candidate) > maxTokens) {
+      pieces.push(current);
+      current = character;
+    } else {
+      current = candidate;
     }
-
-    pieces.push(remainder.slice(0, cutPoint).trim());
-    remainder = remainder.slice(cutPoint).trim();
   }
 
-  if (remainder) {
-    pieces.push(remainder);
+  if (current) {
+    pieces.push(current);
   }
 
   return pieces;
 }
 
-function splitIntoSentenceUnits(paragraph: string) {
+function splitTextToBudget(text: string, maxTokens: number) {
+  if (approximateTokenCount(text) <= maxTokens) {
+    return [text];
+  }
+
+  const parts = wordSegmenter
+    ? Array.from(wordSegmenter.segment(text), ({ segment }) => segment)
+    : (text.match(/\S+\s*|\s+/gu) ?? [text]);
+  const pieces: string[] = [];
+  let current = "";
+
+  for (const part of parts) {
+    if (approximateTokenCount(part) > maxTokens) {
+      if (current.trim()) {
+        pieces.push(current.trimEnd());
+        current = "";
+      }
+      pieces.push(...splitOversizedPart(part, maxTokens));
+      continue;
+    }
+
+    const candidate = `${current}${part}`;
+    if (current.trim() && approximateTokenCount(candidate) > maxTokens) {
+      pieces.push(current.trimEnd());
+      current = part.trimStart();
+    } else {
+      current = candidate;
+    }
+  }
+
+  if (current.trim()) {
+    pieces.push(current.trimEnd());
+  }
+
+  return pieces.filter((piece) => piece.trim());
+}
+
+function splitIntoSentenceUnits(text: string) {
   if (sentenceSegmenter) {
-    const segments = Array.from(sentenceSegmenter.segment(paragraph), (segment) =>
-      segment.segment.trim(),
-    ).filter(Boolean);
+    const segments = Array.from(sentenceSegmenter.segment(text), ({ segment }) => segment).filter(
+      (segment) => segment.trim(),
+    );
     if (segments.length > 0) {
       return segments;
     }
   }
 
-  return paragraph
-    .split(/(?<=[.!?])\s+/)
-    .map((part) => part.trim())
-    .filter(Boolean);
+  const segments = text.match(/.*?(?:[.!?。！？]+(?:\s+|$)|$)/gu) ?? [];
+  return segments.filter((segment) => segment.trim());
 }
 
-function extractOverlap(text: string, maxLength: number) {
-  if (maxLength <= 0) {
-    return "";
+type BlockKind = "prose" | "heading" | "list" | "table" | "quote" | "code";
+
+interface SemanticBlock {
+  kind: BlockKind;
+  text: string;
+  fence?: string;
+}
+
+function classifyLine(line: string): BlockKind {
+  if (/^\s{0,3}#{1,6}\s/.test(line) || /^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+    return "heading";
+  }
+  if (/^\s*(?:[-+*]|\d+[.)])\s+/.test(line)) {
+    return "list";
+  }
+  if (/^\s*>/.test(line)) {
+    return "quote";
+  }
+  if (/^\s*\|.*\|\s*$/.test(line)) {
+    return "table";
+  }
+  if (/^(?: {4}|\t)/.test(line)) {
+    return "code";
+  }
+  return "prose";
+}
+
+function parseSemanticBlocks(text: string) {
+  const blocks: SemanticBlock[] = [];
+  const lines = text.split("\n");
+  let currentKind: BlockKind | null = null;
+  let currentLines: string[] = [];
+
+  const flush = () => {
+    if (currentKind && currentLines.length > 0) {
+      blocks.push({ kind: currentKind, text: currentLines.join("\n") });
+    }
+    currentKind = null;
+    currentLines = [];
+  };
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
+
+    if (fenceMatch) {
+      flush();
+      const fence = fenceMatch[1] ?? "```";
+      const fenceLines = [line];
+
+      for (index += 1; index < lines.length; index += 1) {
+        const fenceLine = lines[index] ?? "";
+        fenceLines.push(fenceLine);
+        const trimmed = fenceLine.trim();
+        if (
+          trimmed.length >= fence.length &&
+          Array.from(trimmed).every((character) => character === fence[0])
+        ) {
+          break;
+        }
+      }
+
+      blocks.push({ kind: "code", text: fenceLines.join("\n"), fence });
+      continue;
+    }
+
+    if (!line.trim()) {
+      flush();
+      continue;
+    }
+
+    let kind = classifyLine(line);
+    if (currentKind === "list" && /^\s{2,}\S/.test(line)) {
+      kind = "list";
+    }
+
+    if (currentKind && kind !== currentKind) {
+      flush();
+    }
+    currentKind = kind;
+    currentLines.push(line);
   }
 
-  if (text.length <= maxLength) {
-    return text;
+  flush();
+  return blocks;
+}
+
+function splitLinesToBudget(lines: string[], maxTokens: number) {
+  const pieces: string[] = [];
+  let current = "";
+
+  for (const line of lines) {
+    const candidate = current ? `${current}\n${line}` : line;
+    if (approximateTokenCount(candidate) <= maxTokens) {
+      current = candidate;
+      continue;
+    }
+
+    if (current) {
+      pieces.push(current);
+      current = "";
+    }
+
+    if (approximateTokenCount(line) <= maxTokens) {
+      current = line;
+    } else {
+      pieces.push(...splitTextToBudget(line, maxTokens));
+    }
   }
 
-  let startIndex = text.length - maxLength;
-  while (startIndex > 0 && !/\s/.test(text[startIndex] ?? "")) {
-    startIndex -= 1;
+  if (current) {
+    pieces.push(current);
   }
 
-  return text.slice(startIndex).trim();
+  return pieces;
+}
+
+function splitFencedBlock(block: SemanticBlock) {
+  const lines = block.text.split("\n");
+  const opening = lines[0] ?? block.fence ?? "```";
+  const fence = block.fence ?? "```";
+  const lastLine = lines.at(-1)?.trim() ?? "";
+  const isClosed =
+    lines.length > 1 &&
+    lastLine.length >= fence.length &&
+    Array.from(lastLine).every((character) => character === fence[0]);
+  const closing = isClosed ? (lines.at(-1) ?? fence) : "";
+  const body = lines.slice(1, isClosed ? -1 : undefined);
+  const wrapperTokens = approximateTokenCount(`${opening}\n${closing}`);
+  const bodyBudget = CHUNK_TOKEN_BUDGET - wrapperTokens;
+
+  if (bodyBudget <= 0) {
+    return splitTextToBudget(block.text, CHUNK_TOKEN_BUDGET);
+  }
+
+  const bodyPieces = splitLinesToBudget(body, bodyBudget);
+  if (bodyPieces.length === 0) {
+    return [block.text];
+  }
+
+  return bodyPieces.map((bodyPiece) => `${opening}\n${bodyPiece}${closing ? `\n${closing}` : ""}`);
+}
+
+interface ChunkUnit {
+  fragment: string;
+}
+
+function createChunkUnits(blocks: SemanticBlock[]) {
+  const units: ChunkUnit[] = [];
+
+  for (const block of blocks) {
+    let pieces: string[];
+
+    if (block.fence && approximateTokenCount(block.text) > CHUNK_TOKEN_BUDGET) {
+      pieces = splitFencedBlock(block);
+    } else if (block.kind !== "prose") {
+      pieces =
+        approximateTokenCount(block.text) <= CHUNK_TOKEN_BUDGET
+          ? [block.text]
+          : splitLinesToBudget(block.text.split("\n"), CHUNK_TOKEN_BUDGET);
+    } else {
+      pieces = splitIntoSentenceUnits(block.text).flatMap((sentence) =>
+        splitTextToBudget(sentence, CHUNK_TOKEN_BUDGET),
+      );
+    }
+
+    for (let index = 0; index < pieces.length; index += 1) {
+      const blockSeparator = units.length > 0 && index === 0 ? "\n\n" : "";
+      units.push({ fragment: `${blockSeparator}${pieces[index] ?? ""}` });
+    }
+  }
+
+  return units;
+}
+
+function renderUnits(units: ChunkUnit[]) {
+  return units
+    .map(({ fragment }) => fragment)
+    .join("")
+    .replace(/^\n+|\n+$/g, "");
 }
 
 export function splitIntoChunks(input: string) {
-  const normalizedText = input.replace(/\r\n/g, "\n").trim();
-  if (!normalizedText) {
+  const normalizedText = input.replace(/\r\n?/g, "\n");
+  if (!normalizedText.trim()) {
     return [];
   }
 
-  const semanticSegments = normalizedText
-    .split(/\n{2,}/)
-    .map((paragraph) =>
-      paragraph
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .join(" "),
-    )
-    .filter(Boolean)
-    .flatMap((paragraph) => {
-      if (paragraph.length <= IDEAL_PARAGRAPH_SIZE) {
-        return [paragraph];
-      }
-
-      return splitIntoSentenceUnits(paragraph).flatMap((sentence) =>
-        splitLongSegment(sentence, Math.max(CHUNK_SIZE - CHUNK_OVERLAP, 300)),
-      );
-    });
-
+  const units = createChunkUnits(parseSemanticBlocks(normalizedText));
   const chunks: string[] = [];
-  let currentChunk = "";
+  let currentUnits: ChunkUnit[] = [];
 
-  for (const segment of semanticSegments) {
-    if (!currentChunk) {
-      currentChunk = segment;
+  for (const unit of units) {
+    const candidateUnits = [...currentUnits, unit];
+    if (approximateTokenCount(renderUnits(candidateUnits)) <= CHUNK_TOKEN_BUDGET) {
+      currentUnits = candidateUnits;
       continue;
     }
 
-    const candidateChunk = `${currentChunk}\n\n${segment}`;
-    if (candidateChunk.length <= CHUNK_SIZE) {
-      currentChunk = candidateChunk;
-      continue;
+    if (currentUnits.length > 0) {
+      chunks.push(renderUnits(currentUnits));
     }
 
-    chunks.push(currentChunk);
-
-    const overlap = extractOverlap(currentChunk, CHUNK_OVERLAP);
-    const allowedOverlapLength = Math.max(CHUNK_SIZE - segment.length - 2, 0);
-    const adjustedOverlap = overlap
-      ? extractOverlap(overlap, Math.min(CHUNK_OVERLAP, allowedOverlapLength))
-      : "";
-
-    currentChunk = adjustedOverlap ? `${adjustedOverlap}\n\n${segment}` : segment;
-
-    if (currentChunk.length > CHUNK_SIZE) {
-      const [firstPart, ...remainingParts] = splitLongSegment(currentChunk, CHUNK_SIZE);
-      if (firstPart) {
-        chunks.push(firstPart);
+    let overlapUnits: ChunkUnit[] = [];
+    for (let index = currentUnits.length - 1; index >= 0; index -= 1) {
+      const overlapCandidate = [currentUnits[index] as ChunkUnit, ...overlapUnits];
+      if (
+        approximateTokenCount(renderUnits(overlapCandidate)) > OVERLAP_TOKEN_BUDGET ||
+        approximateTokenCount(renderUnits([...overlapCandidate, unit])) > CHUNK_TOKEN_BUDGET
+      ) {
+        break;
       }
-      currentChunk = remainingParts.join("\n\n").trim();
+      overlapUnits = overlapCandidate;
     }
+
+    currentUnits = [...overlapUnits, unit];
   }
 
-  if (currentChunk) {
-    chunks.push(currentChunk);
+  if (currentUnits.length > 0) {
+    chunks.push(renderUnits(currentUnits));
   }
 
-  return chunks.filter(Boolean);
+  return chunks.filter((chunk) => chunk.trim());
 }
 
 export function chunkText(contentText: string): TextChunk[] {
   return splitIntoChunks(contentText).map((content, chunkIndex) => ({
     chunkIndex,
     content,
-    tokenCount: estimateTokenCount(content),
+    tokenCount: approximateTokenCount(content),
     charCount: content.length,
   }));
 }
 
 export function estimateContentTokens(contentText: string) {
-  return estimateTokenCount(contentText);
+  return approximateTokenCount(contentText);
 }

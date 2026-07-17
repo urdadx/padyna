@@ -7,10 +7,12 @@
     "check-types": "tsc -b",
     "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
     "dev": "bun run --hot src/index.ts",
-    "start": "bun run dist/index.mjs"
+    "evaluate-search": "bun run src/search/evaluate-retrieval.ts",
+    "generate-search-evaluation": "bun run src/search/generate-evaluation.ts",
+    "start": "bun run dist/index.mjs",
+    "test": "bun test"
   },
   "dependencies": {
-    "@ai-sdk-tools/cache": "^1.2.0",
     "@ai-sdk/anthropic": "^3.0.63",
     "@ai-sdk/openai": "^3.0.33",
     "@chat-adapter/discord": "^4.23.0",

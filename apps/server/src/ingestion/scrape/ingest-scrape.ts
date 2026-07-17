@@ -5,9 +5,8 @@ import { runLinkScrape } from "./run-scrapping";
 import {
   createDatasourceRecord,
   incrementChatbotDatasourceCount,
-  insertDatasourceChunks,
   markDatasourceFailed,
-  markDatasourceSynced,
+  replaceDatasourceChunksAndMarkSynced,
 } from "@padyna/db/ingestion-files";
 import type { IngestLinkInput, IngestedLinkResult } from "./types";
 
@@ -61,35 +60,39 @@ export async function ingestLink(input: IngestLinkInput): Promise<IngestedLinkRe
     const tokenCount = estimateContentTokens(contentText);
 
     const chunks = chunkText(contentText);
+    const chunkTitle = scrapedContent.metadata?.title || url;
 
-    const { embeddings: embeddingVectors, dimensions } = await embedTexts(
-      chunks.map((c) => c.content),
-    );
+    const {
+      embeddings: embeddingVectors,
+      dimensions,
+      model,
+    } = await embedTexts(chunks.map((chunk) => `${chunkTitle}\n\n${chunk.content}`));
 
-    await insertDatasourceChunks(
+    await replaceDatasourceChunksAndMarkSynced(
       chunks.map((chunk, index) => ({
         datasourceId: datasourceId,
         chatbotId,
         organizationId,
         chunkIndex: chunk.chunkIndex,
+        title: chunkTitle,
         content: chunk.content,
         contentHash: hashText(chunk.content),
         tokenCount: chunk.tokenCount,
         charCount: chunk.charCount,
         embedding: embeddingVectors[index]!,
+        embeddingModel: model,
         embeddingDimensions: dimensions,
       })),
+      {
+        datasourceId,
+        contentText,
+        contentHash,
+        tokenCount,
+        charCount,
+        chunkCount: chunks.length,
+        mimeType: "text/markdown",
+      },
     );
-
-    await markDatasourceSynced({
-      datasourceId,
-      contentText,
-      contentHash,
-      tokenCount,
-      charCount,
-      chunkCount: chunks.length,
-      mimeType: "text/markdown",
-    });
 
     await incrementChatbotDatasourceCount(chatbotId, organizationId);
 

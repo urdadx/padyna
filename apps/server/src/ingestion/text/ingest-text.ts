@@ -4,9 +4,8 @@ import { hashText } from "../file/hash";
 import {
   createDatasourceRecord,
   incrementChatbotDatasourceCount,
-  insertDatasourceChunks,
   markDatasourceFailed,
-  markDatasourceSynced,
+  replaceDatasourceChunksAndMarkSynced,
 } from "@padyna/db/ingestion-files";
 
 export interface IngestTextInput {
@@ -64,35 +63,39 @@ export async function ingestText(input: IngestTextInput): Promise<IngestedTextRe
     const tokenCount = estimateContentTokens(content);
 
     const chunks = chunkText(content);
+    const chunkTitle = title || content.slice(0, 100);
 
-    const { embeddings: embeddingVectors, dimensions } = await embedTexts(
-      chunks.map((c) => c.content),
-    );
+    const {
+      embeddings: embeddingVectors,
+      dimensions,
+      model,
+    } = await embedTexts(chunks.map((chunk) => `${chunkTitle}\n\n${chunk.content}`));
 
-    await insertDatasourceChunks(
+    await replaceDatasourceChunksAndMarkSynced(
       chunks.map((chunk, index) => ({
         datasourceId: datasourceId,
         chatbotId,
         organizationId,
         chunkIndex: chunk.chunkIndex,
+        title: chunkTitle,
         content: chunk.content,
         contentHash: hashText(chunk.content),
         tokenCount: chunk.tokenCount,
         charCount: chunk.charCount,
         embedding: embeddingVectors[index]!,
+        embeddingModel: model,
         embeddingDimensions: dimensions,
       })),
+      {
+        datasourceId,
+        contentText: content,
+        contentHash,
+        tokenCount,
+        charCount,
+        chunkCount: chunks.length,
+        mimeType: "text/plain",
+      },
     );
-
-    await markDatasourceSynced({
-      datasourceId,
-      contentText: content,
-      contentHash,
-      tokenCount,
-      charCount,
-      chunkCount: chunks.length,
-      mimeType: "text/plain",
-    });
 
     await incrementChatbotDatasourceCount(chatbotId, organizationId);
 

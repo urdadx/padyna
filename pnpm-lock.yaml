@@ -154,9 +154,6 @@ importers:
 
   apps/server:
     dependencies:
-      '@ai-sdk-tools/cache':
-        specifier: ^1.2.0
-        version: 1.2.0(ai@6.0.116(zod@4.3.6))
       '@ai-sdk/anthropic':
         specifier: ^3.0.63
         version: 3.0.63(zod@4.3.6)
@@ -703,15 +700,6 @@ importers:
         version: 5.9.3
 
 packages:
-
-  '@ai-sdk-tools/cache@1.2.0':
-    resolution: {integrity: sha512-ZjcP002ZsaK8y2H9FI/qSUEhMEjq3pZ6S9ZXNMNb7l9P99x29zzBn4R491PtliSEG9AZR0CSLDBbmwLwh5FY5w==}
-    peerDependencies:
-      '@ai-sdk-tools/artifacts': '*'
-      ai: ^5.0.82
-    peerDependenciesMeta:
-      '@ai-sdk-tools/artifacts':
-        optional: true
 
   '@ai-sdk/anthropic@3.0.63':
     resolution: {integrity: sha512-SiLosFr0FfKfrNpAAj8mD/i3S5YBB/z5orb1DH3pN1yATuBNjjPMLnRE4P3Dn7Y5cQsro0uzw5g5117hkShWoQ==}
@@ -8393,10 +8381,6 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
-
-  '@ai-sdk-tools/cache@1.2.0(ai@6.0.116(zod@4.3.6))':
-    dependencies:
-      ai: 6.0.116(zod@4.3.6)
 
   '@ai-sdk/anthropic@3.0.63(zod@4.3.6)':
     dependencies:

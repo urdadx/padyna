@@ -149,6 +149,12 @@ export const datasourceChunks = pgTable(
     index("datasource_chunks_datasource_id_idx").on(table.datasourceId),
     index("datasource_chunks_chatbot_id_idx").on(table.chatbotId),
     index("datasource_chunks_organization_id_idx").on(table.organizationId),
+    index("datasource_chunks_search_scope_idx").on(
+      table.chatbotId,
+      table.organizationId,
+      table.embeddingModel,
+      table.embeddingDimensions,
+    ),
     index("datasource_chunks_fulltext_search_idx").using(
       "gin",
       sql`(

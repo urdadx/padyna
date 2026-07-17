@@ -293,6 +293,7 @@ ingestionRoutes.post("/text", async (c) => {
 });
 
 ingestionRoutes.put("/qa/:id", async (c) => {
+  const session = c.get("session");
   const id = c.req.param("id");
 
   if (!id) {
@@ -321,6 +322,8 @@ ingestionRoutes.put("/qa/:id", async (c) => {
       id,
       question,
       answer,
+      chatbotId: session.activeChatbot,
+      organizationId: session.activeOrganization,
     });
     return c.json(result);
   } catch (error) {
@@ -335,6 +338,7 @@ ingestionRoutes.put("/qa/:id", async (c) => {
 });
 
 ingestionRoutes.put("/text/:id", async (c) => {
+  const session = c.get("session");
   const id = c.req.param("id");
 
   if (!id) {
@@ -363,6 +367,8 @@ ingestionRoutes.put("/text/:id", async (c) => {
       id,
       content,
       title,
+      chatbotId: session.activeChatbot,
+      organizationId: session.activeOrganization,
     });
     return c.json(result);
   } catch (error) {

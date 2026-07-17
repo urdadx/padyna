@@ -5,9 +5,8 @@ import { hashFile, hashText } from "./hash";
 import {
   createDatasourceRecord,
   incrementChatbotDatasourceCount,
-  insertDatasourceChunks,
   markDatasourceFailed,
-  markDatasourceSynced,
+  replaceDatasourceChunksAndMarkSynced,
 } from "@padyna/db/ingestion-files";
 import type { IngestFilesInput, IngestFilesOutput, IngestedFileResult } from "./types";
 
@@ -57,34 +56,38 @@ async function ingestSingleFile(
     const contentText = extracted.contentText;
 
     const chunks = chunkText(contentText);
-    const { embeddings, dimensions } = await embedTexts(chunks.map((chunk) => chunk.content));
-
-    if (chunks.length > 0) {
-      await insertDatasourceChunks(
-        chunks.map((chunk, index) => ({
-          datasourceId,
-          chatbotId,
-          organizationId,
-          chunkIndex: chunk.chunkIndex,
-          content: chunk.content,
-          contentHash: hashText(chunk.content),
-          tokenCount: chunk.tokenCount,
-          charCount: chunk.charCount,
-          embedding: embeddings[index] ?? [],
-          embeddingDimensions: dimensions,
-        })),
-      );
+    if (chunks.length === 0) {
+      throw new Error("No searchable content was extracted from the file.");
     }
+    const { embeddings, dimensions, model } = await embedTexts(
+      chunks.map((chunk) => `${file.name}\n\n${chunk.content}`),
+    );
 
-    await markDatasourceSynced({
-      datasourceId,
-      contentText,
-      contentHash: hashText(contentText),
-      tokenCount: estimateContentTokens(contentText),
-      charCount: contentText.length,
-      chunkCount: chunks.length,
-      mimeType: normalizeMimeType(extracted.mimeType, extracted.fileExtension),
-    });
+    await replaceDatasourceChunksAndMarkSynced(
+      chunks.map((chunk, index) => ({
+        datasourceId,
+        chatbotId,
+        organizationId,
+        chunkIndex: chunk.chunkIndex,
+        title: file.name,
+        content: chunk.content,
+        contentHash: hashText(chunk.content),
+        tokenCount: chunk.tokenCount,
+        charCount: chunk.charCount,
+        embedding: embeddings[index] ?? [],
+        embeddingModel: model,
+        embeddingDimensions: dimensions,
+      })),
+      {
+        datasourceId,
+        contentText,
+        contentHash: hashText(contentText),
+        tokenCount: estimateContentTokens(contentText),
+        charCount: contentText.length,
+        chunkCount: chunks.length,
+        mimeType: normalizeMimeType(extracted.mimeType, extracted.fileExtension),
+      },
+    );
 
     await incrementChatbotDatasourceCount(chatbotId, organizationId);
 
