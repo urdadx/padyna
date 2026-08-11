@@ -1,5 +1,5 @@
 import LoginForm from "@/components/auth/login-form";
-import { DitherImage } from "@/components/dither-kit";
+import { DitherImage } from "@/components/dither-kit/dither-image";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
@@ -36,7 +36,6 @@ async function RouteComponent() {
 					<DitherImage
 						src="https://assets.padyna.com/assets/bridge.webp"
 						alt="Bridge over a river"
-						loading="lazy"
 						className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
 					/>
 				</div>

@@ -1,5 +1,5 @@
 import { SignupForm } from "@/components/auth/signup-form";
-import { DitherImage } from "@/components/dither-kit";
+import { DitherImage } from "@/components/dither-kit/dither-image";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
@@ -27,7 +27,6 @@ function RouteComponent() {
 					<DitherImage
 						src="https://assets.padyna.com/assets/windmill.webp"
 						alt="Windmill in a field"
-						loading="lazy"
 						className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
 					/>
 				</div>
