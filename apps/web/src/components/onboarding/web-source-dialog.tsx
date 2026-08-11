@@ -21,7 +21,7 @@ export function WebSourceDialog({ open, onOpenChange }: WebSourceProps) {
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Add Links</DialogTitle>
           <DialogDescription className="leading-relaxed">
-            Add URLs to your website, youtube videos etc to train your AI agent.
+            Add website URLs to train your AI agent.
           </DialogDescription>
         </DialogHeader>
         <Tabs className="w-full">

@@ -1,5 +1,5 @@
 import type { ExtractedFileContent, SupportedFileExtension } from "./types";
-import { convertFileWithMarkItDown } from "./markitdown";
+import { convertFileToMarkdown } from "./anydoc";
 
 function getExtension(fileName: string): SupportedFileExtension | null {
   const extension = fileName.split(".").pop()?.toLowerCase();
@@ -24,10 +24,10 @@ export async function extractFileContent(file: File): Promise<ExtractedFileConte
     throw new Error(`Unsupported file extension for ${file.name}`);
   }
 
-  const contentText = (await convertFileWithMarkItDown(file))?.trim() ?? "";
+  const contentText = (await convertFileToMarkdown(file, fileExtension)).trim();
 
   if (!contentText) {
-    throw new Error(`MarkItDown could not extract content from ${file.name}.`);
+    throw new Error(`Could not extract content from ${file.name}.`);
   }
 
   return {

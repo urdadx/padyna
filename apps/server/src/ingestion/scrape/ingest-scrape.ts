@@ -11,7 +11,6 @@ import {
 import type { IngestLinkInput, IngestedLinkResult } from "./types";
 
 function normalizeMimeType(url: string) {
-  if (url.includes("youtube.com") || url.includes("youtu.be")) return "text/markdown";
   if (url.endsWith(".pdf")) return "application/pdf";
   return "text/html";
 }

@@ -11,7 +11,7 @@ export default function FAQs() {
       id: "item-1",
       question: "How does the AI customer support agent work?",
       answer:
-        "The agent is trained on your knowledge base (files, website, notion, google drive contents, youtube videos) and support documentation, allowing it to instantly answer customer questions with context 24/7 across all supported channels.",
+        "The agent is trained on your knowledge base (files, websites, Notion, and Google Drive content) and support documentation, allowing it to instantly answer customer questions with context 24/7 across all supported channels.",
     },
     {
       id: "item-2",

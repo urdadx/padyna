@@ -6,8 +6,8 @@ import {
 } from "@padyna/db/ingestion-files";
 import { chunkText, estimateContentTokens } from "../chunking";
 import { embedTexts } from "../embeddings";
+import { convertFileToMarkdown } from "../file/anydoc";
 import { hashText } from "../file/hash";
-import { convertFileWithMarkItDown } from "../file/markitdown";
 import {
   GOOGLE_DOC_MIME_TYPE,
   type GoogleDriveFile,
@@ -44,15 +44,22 @@ function getNormalizedMimeType(file: GoogleDriveFile) {
 
 async function extractTextFromGoogleDriveFile(file: GoogleDriveFile, content: ArrayBuffer) {
   const mimeType = getNormalizedMimeType(file);
-  const markdown = await convertFileWithMarkItDown(
+  const lowerName = file.name.toLowerCase();
+  const extension = lowerName.endsWith(".txt")
+    ? "txt"
+    : lowerName.endsWith(".md")
+      ? "md"
+      : undefined;
+  const markdown = await convertFileToMarkdown(
     new File([content], file.name, { type: mimeType }),
+    extension,
   );
 
-  if (!markdown) {
-    throw new Error(`MarkItDown could not extract content from ${file.name}`);
+  if (!markdown.trim()) {
+    throw new Error(`Could not extract content from ${file.name}`);
   }
 
-  return markdown;
+  return markdown.trim();
 }
 
 export async function ingestGoogleDriveFile(

@@ -172,6 +172,9 @@ importers:
       '@chat-adapter/telegram':
         specifier: ^4.23.0
         version: 4.23.0
+      '@firecrawl/anydoc':
+        specifier: ^0.1.8
+        version: 0.1.8
       '@hono/trpc-server':
         specifier: ^0.4.0
         version: 0.4.2(@trpc/server@11.10.0(typescript@5.9.3))(hono@4.12.3)
@@ -1196,11 +1199,11 @@ packages:
 
   '@esbuild-kit/core-utils@3.3.2':
     resolution: {integrity: sha512-sPRAnw9CdSsRmEtnsl2WXWdyquogVpB3yZ3dgwJfe8zrOzTsV7cJvmwrKVa+0ma5BoiGJ+BoqkMvawbayKUsqQ==}
-    deprecated: 'Merged into tsx: https://tsx.is'
+    deprecated: 'Merged into tsx: https://tsx.hirok.io'
 
   '@esbuild-kit/esm-loader@2.6.5':
     resolution: {integrity: sha512-FxEMIkJKnodyA1OaCUoEvbYRkoZlLZ4d/eXFu9Fh8CbBBgP5EmZxrfTRyN0qpXZ4vOvqnE5YdRdcrmUUXuU+dA==}
-    deprecated: 'Merged into tsx: https://tsx.is'
+    deprecated: 'Merged into tsx: https://tsx.hirok.io'
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -1645,6 +1648,53 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@firecrawl/anydoc-darwin-arm64@0.1.8':
+    resolution: {integrity: sha512-B+30kDFGW8RUt1S6nOwdRT3ZTf8pDztid1ws8XL95UuAkz2d49ktg00hfEIW0xCgM1HByUTfQkQtcJsfF2O35g==}
+    engines: {node: '>= 20'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@firecrawl/anydoc-darwin-x64@0.1.8':
+    resolution: {integrity: sha512-PqUQFRv7I86ou2sZ0qE6bQFASi2Ja5yfpsU1vhngnqTsC31q2iSLDE5MWWGGRMoNZrWDh5ICTN7yQBoepkSokw==}
+    engines: {node: '>= 20'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@firecrawl/anydoc-linux-arm64-gnu@0.1.8':
+    resolution: {integrity: sha512-lFuS2GdkKexYCCfBGb47si3vE4jA8Y+w9F377JJPeQc1/HQilqi+RjOhQrEgHiGlNygeOJwL6bKOQr+R+CWL9Q==}
+    engines: {node: '>= 20'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@firecrawl/anydoc-linux-arm64-musl@0.1.8':
+    resolution: {integrity: sha512-MT+24XbTQ5Jh+SDmbQz5F46sbz/gE2SeWf/5RyFriuOJHtiYSb0rym1AOa7HZH12AJvnfPcU6xTqyj1gKxRF0g==}
+    engines: {node: '>= 20'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@firecrawl/anydoc-linux-x64-gnu@0.1.8':
+    resolution: {integrity: sha512-Row1/D9/3Zf5fFKaIyZqlMbz/Bxzl9FULFH7Zxlx/h4HTZT3S4Yl5d5A5Gl6T1Rps3qwrsJerXfL+9nLrj4s3Q==}
+    engines: {node: '>= 20'}
+    cpu: [x64]
+    os: [linux]
+
+  '@firecrawl/anydoc-linux-x64-musl@0.1.8':
+    resolution: {integrity: sha512-PovgyJR229FbxYsPGFhHFio1B+zBn2WKgNMmon/aPZanSG5a+xGkv+ywdrYJnZtBF1+LHgfbiQPljv5BqdbUMg==}
+    engines: {node: '>= 20'}
+    cpu: [x64]
+    os: [linux]
+
+  '@firecrawl/anydoc-win32-x64-msvc@0.1.8':
+    resolution: {integrity: sha512-WwCy76FKeNLMFpfQkegaGZh6Oh05XMTQkGCVizh5IDZXTtYfn2j+KqOQbx8XT1y+dewBYQIvq/8OJFpeHuckKA==}
+    engines: {node: '>= 20'}
+    cpu: [x64]
+    os: [win32]
+
+  '@firecrawl/anydoc@0.1.8':
+    resolution: {integrity: sha512-DJXcCdEL1CcIyRRO/2C6SAcvn/SgM0nnpeGLOyZxJwCZJlx9s0HBUnsNtvQd5UHFUY/vZOURMOUf/h4I3HLjvQ==}
+    engines: {node: '>= 20'}
+    hasBin: true
 
   '@floating-ui/core@1.7.4':
     resolution: {integrity: sha512-C3HlIdsBxszvm5McXlB8PeOEWfBhcGBTZGkGlWc2U0KFY5IwG5OQEuQ8rq52DZmcHDlPLd+YFBK+cZcytwIFWg==}
@@ -9359,6 +9409,37 @@ snapshots:
 
   '@esbuild/win32-x64@0.27.3':
     optional: true
+
+  '@firecrawl/anydoc-darwin-arm64@0.1.8':
+    optional: true
+
+  '@firecrawl/anydoc-darwin-x64@0.1.8':
+    optional: true
+
+  '@firecrawl/anydoc-linux-arm64-gnu@0.1.8':
+    optional: true
+
+  '@firecrawl/anydoc-linux-arm64-musl@0.1.8':
+    optional: true
+
+  '@firecrawl/anydoc-linux-x64-gnu@0.1.8':
+    optional: true
+
+  '@firecrawl/anydoc-linux-x64-musl@0.1.8':
+    optional: true
+
+  '@firecrawl/anydoc-win32-x64-msvc@0.1.8':
+    optional: true
+
+  '@firecrawl/anydoc@0.1.8':
+    optionalDependencies:
+      '@firecrawl/anydoc-darwin-arm64': 0.1.8
+      '@firecrawl/anydoc-darwin-x64': 0.1.8
+      '@firecrawl/anydoc-linux-arm64-gnu': 0.1.8
+      '@firecrawl/anydoc-linux-arm64-musl': 0.1.8
+      '@firecrawl/anydoc-linux-x64-gnu': 0.1.8
+      '@firecrawl/anydoc-linux-x64-musl': 0.1.8
+      '@firecrawl/anydoc-win32-x64-msvc': 0.1.8
 
   '@floating-ui/core@1.7.4':
     dependencies:

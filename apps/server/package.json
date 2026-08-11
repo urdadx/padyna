@@ -19,6 +19,7 @@
     "@chat-adapter/slack": "4.23.0",
     "@chat-adapter/state-pg": "^4.23.0",
     "@chat-adapter/telegram": "^4.23.0",
+    "@firecrawl/anydoc": "^0.1.8",
     "@hono/trpc-server": "^0.4.0",
     "@padyna/api": "workspace:*",
     "@padyna/auth": "workspace:*",

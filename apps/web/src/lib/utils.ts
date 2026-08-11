@@ -313,7 +313,7 @@ export function getDaysUntilReset(createdAt?: Date) {
 }
 
 import ccTLDs from "@/constants/cctlds";
-import { SECOND_LEVEL_DOMAINS, SPECIAL_APEX_DOMAINS } from "@/constants/domains";
+import { SECOND_LEVEL_DOMAINS } from "@/constants/domains";
 
 export const getApexDomain = (url: string) => {
   let domain: any;
@@ -323,10 +323,6 @@ export const getApexDomain = (url: string) => {
     console.error("Error parsing URL:", e.message);
     return "";
   }
-  // special apex domains (e.g. youtu.be)
-  if (SPECIAL_APEX_DOMAINS[domain as keyof typeof SPECIAL_APEX_DOMAINS])
-    return SPECIAL_APEX_DOMAINS[domain as keyof typeof SPECIAL_APEX_DOMAINS];
-
   const parts = domain.split(".");
   if (parts.length > 2) {
     // if this is a second-level TLD (e.g. co.uk, .com.ua, .org.tt), we need to return the last 3 parts
