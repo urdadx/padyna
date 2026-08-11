@@ -1,4 +1,4 @@
-import { env } from "@padyna/env/server";
+import { FIRECRAWL_API_URL, getFirecrawlHeaders } from "../firecrawl";
 import { type ScrapedContent } from "./types";
 
 interface ScrapeResponse {
@@ -17,13 +17,9 @@ export class ScrapeError extends Error {
 }
 
 export async function runLinkScrape(url: string): Promise<ScrapedContent> {
-  const scraperUrl = env.SCRAPER_URL;
-
-  const response = await fetch(`${scraperUrl}/v2/scrape`, {
+  const response = await fetch(`${FIRECRAWL_API_URL}/v2/scrape`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getFirecrawlHeaders(),
     body: JSON.stringify({
       url,
       formats: ["markdown"],

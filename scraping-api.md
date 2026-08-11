@@ -1,7 +1,7 @@
 # CRAWL ENDPOINT
 
 curl --request POST \
- --url https://scraper.padyna.com/v2/crawl \
+ --url https://api.firecrawl.dev/v2/crawl \
  --header 'Content-Type: application/json' \
  --data '{
 "sitemap": "include",
@@ -9,7 +9,7 @@ curl --request POST \
 "includePaths": [
 "<string>" // URL pathname regex patterns to include in the crawl
 ],
-"limit": 10,
+"limit": 100,
 "webhook": {
 "url": "<string>",
 "headers": {},
@@ -38,7 +38,7 @@ curl --request POST \
 # GET CRAWL STATUS
 
 curl --request GET \
- --url https://scraper.padyna.com/v2/crawl/{id} \
+ --url https://api.firecrawl.dev/v2/crawl/{id} \
 
 # GET CRAWL STATUS RESPONSE
 
@@ -155,7 +155,7 @@ You can configure webhooks to receive real-time notifications as your crawl prog
 curl -X POST https://api.firecrawl.dev/v2/crawl \
  -H 'Content-Type: application/json' \
  -d '{
-"url": "https://scraper.padyna.com",
+"url": "https://firecrawl.dev",
 "limit": 100,
 "webhook": {
 "url": "https://your-domain.com/webhook",
@@ -187,7 +187,7 @@ crawl.failed ---> Fires if the crawl encounters an error
 # SCRAPE A SINGLE PAGE
 
 curl --request POST \
- --url https://scraper.urdadx.com/v2/scrape \
+ --url https://api.firecrawl.dev/v2/scrape \
  --header 'Content-Type: application/json' \
  --data '{
 "onlyMainContent": false,
@@ -225,7 +225,7 @@ curl --request POST \
 # MAP A URL
 
 curl --request POST \
- --url https://scraper.padyna.com/v2/map \
+ --url https://api.firecrawl.dev/v2/map \
  --header 'Content-Type: application/json' \
  --data '
 {

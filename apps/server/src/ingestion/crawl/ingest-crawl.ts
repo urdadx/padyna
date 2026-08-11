@@ -17,7 +17,7 @@ function normalizeMimeType(url: string) {
 }
 
 export async function ingestCrawl(input: CrawlInput): Promise<CrawlResult> {
-  const { url, limit = 10, includePaths, crawlEntireDomain } = input;
+  const { url, limit, includePaths, crawlEntireDomain } = input;
 
   const { id: crawlId } = await startCrawlWithOptions({
     url,

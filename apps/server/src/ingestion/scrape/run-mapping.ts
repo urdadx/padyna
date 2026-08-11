@@ -1,5 +1,5 @@
-import { env } from "@padyna/env/server";
 import { isExcludedLegalPath } from "../excluded-legal-paths";
+import { FIRECRAWL_API_URL, getFirecrawlHeaders } from "../firecrawl";
 
 interface MapLink {
   url: string;
@@ -23,13 +23,9 @@ export class MapError extends Error {
 }
 
 export async function runMapWebsite(url: string, search?: string): Promise<MapLink[]> {
-  const scraperUrl = env.SCRAPER_URL;
-
-  const response = await fetch(`${scraperUrl}/v2/map`, {
+  const response = await fetch(`${FIRECRAWL_API_URL}/v2/map`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getFirecrawlHeaders(),
     body: JSON.stringify({
       url,
       search,

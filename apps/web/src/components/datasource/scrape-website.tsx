@@ -11,9 +11,15 @@ import { SearchLinear } from "@/assets/icons/search-icon";
 
 interface ScrapeWebsiteProps {
   onSuccess?: () => void;
+  description?: string;
+  placeholder?: string;
 }
 
-export const ScrapeWebsite = ({ onSuccess }: ScrapeWebsiteProps) => {
+export const ScrapeWebsite = ({
+  onSuccess,
+  description = "Enter a web page URL to extract content from it.",
+  placeholder = "mywebsite.com/page",
+}: ScrapeWebsiteProps) => {
   const [urlInput, setUrlInput] = useState("");
 
   const { mutate, isPending } = useMutation({
@@ -50,9 +56,7 @@ export const ScrapeWebsite = ({ onSuccess }: ScrapeWebsiteProps) => {
 
   return (
     <div className="flex flex-col gap-2 mt-3">
-      <p className="text-sm text-muted-foreground">
-        Enter a web page URL to extract content from it.
-      </p>
+      <p className="text-sm text-muted-foreground">{description}</p>
       <div className="w-full flex justify-between items-center gap-2">
         <div className="flex rounded-md flex-1">
           <span className="border-input bg-gray-50 text-gray-500 inline-flex items-center rounded-s-md border px-3 text-sm">
@@ -60,7 +64,7 @@ export const ScrapeWebsite = ({ onSuccess }: ScrapeWebsiteProps) => {
           </span>
           <Input
             className="w-full -ms-px rounded-s-none shadow-none "
-            placeholder="mywebsite.com/page"
+            placeholder={placeholder}
             type="text"
             name="slug"
             required

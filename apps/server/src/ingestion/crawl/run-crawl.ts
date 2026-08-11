@@ -1,5 +1,5 @@
-import { env } from "@padyna/env/server";
 import { excludedLegalPathPatterns } from "../excluded-legal-paths";
+import { FIRECRAWL_API_URL, getFirecrawlHeaders } from "../firecrawl";
 import type { CrawlStatusResponse, StartCrawlResponse } from "./types";
 
 export class CrawlError extends Error {
@@ -20,13 +20,11 @@ interface StartCrawlOptions {
 }
 
 export async function startCrawl(options: StartCrawlOptions): Promise<StartCrawlResponse> {
-  const scraperUrl = env.SCRAPER_URL;
-
   const body: Record<string, unknown> = {
     sitemap: "include",
     excludePaths: excludedLegalPathPatterns,
     crawlEntireDomain: options.crawlEntireDomain ?? false,
-    limit: options.limit ?? 10,
+    limit: options.limit ?? 100,
     scrapeOptions: {
       onlyMainContent: false,
       maxAge: 172800000,
@@ -38,11 +36,9 @@ export async function startCrawl(options: StartCrawlOptions): Promise<StartCrawl
     body.includePaths = options.includePaths;
   }
 
-  const response = await fetch(`${scraperUrl}/v2/crawl`, {
+  const response = await fetch(`${FIRECRAWL_API_URL}/v2/crawl`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getFirecrawlHeaders(),
     body: JSON.stringify({
       url: options.url,
       ...body,
@@ -63,13 +59,9 @@ export async function startCrawl(options: StartCrawlOptions): Promise<StartCrawl
 }
 
 export async function getCrawlStatus(crawlId: string): Promise<CrawlStatusResponse> {
-  const scraperUrl = env.SCRAPER_URL;
-
-  const response = await fetch(`${scraperUrl}/v2/crawl/${crawlId}`, {
+  const response = await fetch(`${FIRECRAWL_API_URL}/v2/crawl/${crawlId}`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getFirecrawlHeaders(),
   });
 
   if (!response.ok) {
@@ -82,13 +74,9 @@ export async function getCrawlStatus(crawlId: string): Promise<CrawlStatusRespon
 }
 
 export async function cancelCrawl(crawlId: string): Promise<{ status: string }> {
-  const scraperUrl = env.SCRAPER_URL;
-
-  const response = await fetch(`${scraperUrl}/v2/crawl/${crawlId}`, {
+  const response = await fetch(`${FIRECRAWL_API_URL}/v2/crawl/${crawlId}`, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getFirecrawlHeaders(),
   });
 
   if (!response.ok) {
