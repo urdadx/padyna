@@ -25,7 +25,7 @@ export function WebSourceDialog({ open, onOpenChange }: WebSourceProps) {
           </DialogDescription>
         </DialogHeader>
         <Tabs className="w-full" defaultValue="scrape">
-          <TabsList className="w-full justify-start overflow-x-auto text-foreground h-auto gap-2 bg-gray-50 rounded-md p-2">
+          <TabsList className="w-fit max-w-full justify-start overflow-x-auto text-foreground h-auto gap-2 bg-gray-50 rounded-md p-2">
             <TabsTrigger value="scrape">Single URL</TabsTrigger>
             <TabsTrigger value="crawl">Crawl an entire website</TabsTrigger>
             <TabsTrigger value="youtube">YouTube</TabsTrigger>

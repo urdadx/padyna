@@ -7,6 +7,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { AgentPreviewPanel } from "../agent/agent-preview";
+import { DitherImage } from "../dither-kit";
 
 export function OnboardingForm({ className, ...props }: React.ComponentProps<"div">) {
 	const navigate = useNavigate({ from: "/onboarding/" });
@@ -78,9 +79,9 @@ export function OnboardingForm({ className, ...props }: React.ComponentProps<"di
 						</AnimatePresence>
 					</div>
 					<div className="relative hidden h-full min-h-0 border-l bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[24px_24px] md:block">
-						<img
+						<DitherImage
 							src="https://assets.padyna.com/assets/fire-lookout.webp"
-							alt="Image"
+							alt="Fire lookout in the mountains"
 							loading="lazy"
 							className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
 						/>
