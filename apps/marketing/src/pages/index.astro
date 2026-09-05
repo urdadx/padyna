@@ -16,6 +16,7 @@ import EscalationCTA from "@/components/EscalationCTA.astro";
 
 <Layout>
   <Header />
+  <main id="main-content" class="w-full" tabindex="-1">
   <CtaSection />
     <FeatureOverview />
     <ScrollAnimation />
@@ -27,9 +28,10 @@ import EscalationCTA from "@/components/EscalationCTA.astro";
     <GridSeparator />
     <EscalationCTA />
     <GridSeparator />
-    <PricingOptions client:load />
+    <PricingOptions />
     <GridSeparator />
-    <FAQs client:load />
+    <FAQs />
     <GridSeparator />
-    <FooterSection client:load />
+  </main>
+    <FooterSection />
 </Layout>

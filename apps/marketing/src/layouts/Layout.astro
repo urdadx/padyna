@@ -4,12 +4,16 @@ import "../styles/global.css";
 const pathname = Astro.url.pathname;
 const isLegalPage = /^\/(privacy|terms-of-service)\/?$/.test(pathname);
 const shouldLoadWidget = pathname !== "/widget" && !isLegalPage;
-const robotsDirective = isLegalPage
-  ? "noindex, nofollow, noarchive, nosnippet"
-  : undefined;
-const title = "Padyna - Your customer support on autopilot";
-const description =
-  "Instantly answer customer queries with an AI support agent trained on your business";
+const title = pathname.startsWith("/privacy")
+  ? "Privacy Policy | Padyna"
+  : pathname.startsWith("/terms-of-service")
+    ? "Terms of Service | Padyna"
+    : "Padyna - Your customer support on autopilot";
+const description = isLegalPage
+  ? pathname.startsWith("/privacy")
+    ? "Read how Padyna collects, uses, and protects your personal information."
+    : "Read the terms governing your use of Padyna's AI customer support service."
+  : "Instantly answer customer queries with an AI support agent trained on your business";
 const canonicalUrl = new URL(pathname, Astro.site ?? Astro.url);
 const ogImageUrl = new URL("/og.png", Astro.site ?? Astro.url);
 ---
@@ -24,55 +28,56 @@ const ogImageUrl = new URL("/og.png", Astro.site ?? Astro.url);
     <link rel="canonical" href={canonicalUrl} />
     <title>{title}</title>
     <meta name="description" content={description} />
-    {robotsDirective && <meta name="robots" content={robotsDirective} />}
+    <link rel="sitemap" href="/sitemap.xml" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="Padyna guide for agents" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:alt" content="Padyna - AI customer support" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@graph": [
+        { "@type": "Organization", "@id": "https://padyna.com/#organization", name: "Padyna", url: "https://padyna.com" },
+        { "@type": "WebSite", "@id": "https://padyna.com/#website", name: "Padyna", url: "https://padyna.com", publisher: { "@id": "https://padyna.com/#organization" } },
+        ...(!isLegalPage ? [{ "@type": "SoftwareApplication", name: "Padyna", url: "https://padyna.com", applicationCategory: "BusinessApplication", operatingSystem: "Web", description }] : []),
+      ],
+    })} />
   </head>
   <body class="min-h-screen bg-white">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <div
       class="mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center border-x border-stone-200 bg-white"
     >
-      <slot />
+      {isLegalPage ? <main id="main-content" tabindex="-1"><slot /></main> : <slot />}
     </div>
     {
       shouldLoadWidget && (
-        <>
-          <script>
-            (function (w, d) {
-              if (w.self !== w.top) return;
-              if (w.location.pathname === "/widget") return;
-              if (typeof w.Padyna !== "function") {
-                var q = [];
-                var stub = function () {
-                  q.push(arguments);
-                };
-                stub.q = q;
-                w.Padyna = stub;
-              }
-              var s = d.createElement("script");
-              s.src = "https://app.padyna.com/sdk.js";
-              s.async = true;
-              d.head.appendChild(s);
-            })(window, document);
-          </script>
-          <script>
-            if (
-              window.self === window.top &&
-              window.location.pathname !== "/widget"
-            ) {
-              window.Padyna("init", {
-                widgetId: "padyna_UQXeODdWl2xDQ7Nm",
-              });
+        <script is:inline>
+          (function (w, d) {
+            if (w.self !== w.top) return;
+            if (typeof w.Padyna !== "function") {
+              var q = [];
+              var stub = function () {
+                q.push(arguments);
+              };
+              stub.q = q;
+              w.Padyna = stub;
             }
-          </script>
-        </>
+            w.Padyna("init", {
+              widgetId: "padyna_UQXeODdWl2xDQ7Nm",
+            });
+            var s = d.createElement("script");
+            s.src = "https://app.padyna.com/sdk.js";
+            s.async = true;
+            d.head.appendChild(s);
+          })(window, document);
+        </script>
       )
     }
   </body>

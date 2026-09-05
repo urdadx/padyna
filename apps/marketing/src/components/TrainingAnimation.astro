@@ -1,6 +1,12 @@
 ---
 import { AIAgent } from "./icons";
 import { IntegrationLinear, WorkflowIcon } from "./icons";
+
+const connections = [
+  "M60 0 C 60 40, 180 10, 200 60",
+  "M200 0 L 200 60",
+  "M340 0 C 340 40, 220 10, 200 60",
+];
 ---
 
 <div class="bg-stone-0 flex flex-1 flex-col">
@@ -61,9 +67,7 @@ import { IntegrationLinear, WorkflowIcon } from "./icons";
         </div>
       </div>
     </div>
-    <div
-      class="relative flex h-20 w-full items-center gap-0 overflow-hidden"
-    >
+    <div class="relative flex h-20 w-full items-center gap-0 overflow-hidden">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="100%"
@@ -72,6 +76,7 @@ import { IntegrationLinear, WorkflowIcon } from "./icons";
         fill="none"
         class="absolute inset-0 h-full w-full"
         preserveAspectRatio="none"
+        aria-hidden="true"
       >
         <path
           id="path-templates"
@@ -92,39 +97,40 @@ import { IntegrationLinear, WorkflowIcon } from "./icons";
           stroke-width="1"
           fill="none"></path>
 
-        <!-- Animated Beams -->
-        <circle r="2" fill="#8b5cf6" class="beam">
-          <animateMotion
-            dur="3s"
-            repeatCount="indefinite"
-            path="M60 0 C 60 40, 180 10, 200 60"></animateMotion>
-        </circle>
-        <circle r="2" fill="#8b5cf6" class="beam" style="animation-delay: 1s;">
-          <animateMotion
-            dur="3s"
-            repeatCount="indefinite"
-            path="M200 0 L 200 60"></animateMotion>
-        </circle>
-        <circle r="2" fill="#8b5cf6" class="beam" style="animation-delay: 2s;">
-          <animateMotion
-            dur="3s"
-            repeatCount="indefinite"
-            path="M340 0 C 340 40, 220 10, 200 60"></animateMotion>
-        </circle>
+        <g class="static-beams" fill="#8b5cf6" aria-hidden="true">
+          <circle cx="122.5" cy="26.25" r="2"></circle>
+          <circle cx="200" cy="30" r="2"></circle>
+          <circle cx="277.5" cy="26.25" r="2"></circle>
+          <circle cx="122.5" cy="26.25" r="4" fill-opacity="0.2"></circle>
+        </g>
 
-        <!-- Glow effect for beams -->
-        <circle r="4" fill="#8b5cf6" fill-opacity="0.2" class="beam">
-          <animateMotion
-            dur="3s"
-            repeatCount="indefinite"
-            path="M60 0 C 60 40, 180 10, 200 60"></animateMotion>
-        </circle>
+        {
+          connections.map((d, index) => (
+            <g>
+              <circle r="3" fill="#7c3aed" fill-opacity="0.12">
+                <animateMotion dur="3s" begin={`${index * 1}s`} repeatCount="indefinite" path={d} />
+              </circle>
+              <circle r="2.5" fill="#7c3aed" fill-opacity="0.25">
+                <animateMotion dur="3s" begin={`${index * 1 + 0.15}s`} repeatCount="indefinite" path={d} />
+              </circle>
+              <circle r="2" fill="#7c3aed" fill-opacity="0.45">
+                <animateMotion dur="3s" begin={`${index * 1 + 0.3}s`} repeatCount="indefinite" path={d} />
+              </circle>
+              <circle r="1.5" fill="#7c3aed" fill-opacity="0.7">
+                <animateMotion dur="3s" begin={`${index * 1 + 0.45}s`} repeatCount="indefinite" path={d} />
+              </circle>
+              <circle r="2" fill="#8b5cf6">
+                <animateMotion dur="3s" begin={`${index * 1 + 0.6}s`} repeatCount="indefinite" path={d} />
+              </circle>
+            </g>
+          ))
+        }
       </svg>
     </div><div class="relative z-10 -mt-10">
       <div
         class="autosend-icon-container flex h-16 w-16 items-center justify-center rounded-[19px] border border-stone-200 bg-white shadow-[2px_10px_20px_rgba(139,92,246,0.1)] transition-transform duration-300"
       >
-       <AIAgent />
+        <AIAgent />
       </div>
     </div>
   </div><div class="flex flex-col gap-2 border-t bg-white p-6">
@@ -139,8 +145,24 @@ import { IntegrationLinear, WorkflowIcon } from "./icons";
   </div>
 </div>
 <style>
-  .migration-tools-illustration:hover .autosend-icon-container {
-    transform: scale(1.1);
-    box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.2);
+  @media (prefers-reduced-motion: no-preference) {
+    .migration-tools-illustration:hover .autosend-icon-container {
+      transform: scale(1.1);
+      box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.2);
+    }
+  }
+
+  .static-beams {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    g > circle {
+      display: none;
+    }
+
+    .static-beams {
+      display: inline;
+    }
   }
 </style>

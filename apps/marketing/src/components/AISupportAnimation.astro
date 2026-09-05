@@ -332,9 +332,11 @@
     will-change: transform;
   }
 
-  .group:hover .soundbar-line {
-    animation: soundbar 0.3s ease-in-out infinite alternate;
-    animation-delay: var(--delay);
+  @media (prefers-reduced-motion: no-preference) {
+    .group:hover .soundbar-line {
+      animation: soundbar 0.3s ease-in-out infinite alternate;
+      animation-delay: var(--delay);
+    }
   }
 
   @keyframes soundbar {

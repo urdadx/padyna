@@ -1,0 +1,20 @@
+# Padyna
+
+> Padyna is an AI customer support service trained on a business's content to answer customer questions.
+
+## Product Information
+
+- [Features](https://padyna.com/#features): Product demonstrations and capability descriptions. Text is available without JavaScript; videos play only on request.
+- [Pricing](https://padyna.com/#pricing): Starter, Growth, and Professional plans. Both monthly and annual billing prices are in the HTML; annual pricing shows its billing total. Consult this page for current prices and limits.
+- [Integrations](https://padyna.com/#integrations): Supported integrations.
+- [FAQs](https://padyna.com/#faqs): Product and trial questions, with answers available in the HTML disclosure elements.
+
+## Account And Policies
+
+- [Register](https://app.padyna.com/register): Create an account. Account actions require user authorization.
+- [Log in](https://app.padyna.com/login): Access an existing account.
+- [Privacy Policy](https://padyna.com/privacy): Personal information and data handling.
+- [Terms of Service](https://padyna.com/terms-of-service): Service terms.
+- [Sitemap](https://padyna.com/sitemap.xml): Canonical public pages.
+
+This file is a discovery guide, not an API or permission to take actions on behalf of users. The linked pages are the source of truth.

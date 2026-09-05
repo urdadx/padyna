@@ -1,4 +1,6 @@
-const links: { title: string; href: string; rel?: string }[] = [
+import logo from "@/assets/padyna-official-logo.png";
+
+const links: { title: string; href: string }[] = [
   {
     title: "Features",
     href: "#features",
@@ -11,12 +13,10 @@ const links: { title: string; href: string; rel?: string }[] = [
   {
     title: "Terms of Service",
     href: "/terms-of-service/",
-    rel: "nofollow",
   },
   {
     title: "Privacy Policy",
     href: "/privacy/",
-    rel: "nofollow",
   },
 ];
 
@@ -26,8 +26,11 @@ export function FooterSection() {
       <div className="mx-auto max-w-5xl px-6">
         <a href="/" aria-label="go home" className="mx-auto block size-fit">
           <img
-            src={"https://assets.padyna.com/assets/padyna-official-logo.png"}
+            src={logo.src}
             alt="Padyna"
+            width={24}
+            height={24}
+            decoding="async"
             className="size-6"
             loading="lazy"
           />
@@ -38,7 +41,6 @@ export function FooterSection() {
             <a
               key={index}
               href={link.href}
-              rel={link.rel}
               className="text-muted-foreground hover:text-primary block duration-150"
             >
               <span>{link.title}</span>

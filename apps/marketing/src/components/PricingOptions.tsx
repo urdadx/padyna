@@ -6,8 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Button } from "./ui/button";
+import { buttonVariants } from "./ui/button";
 
 type Plan = {
   id: number;
@@ -107,11 +106,11 @@ function PlanCard({
                 /mo
               </span>
             </span>
-            {isYearly && (
-              <span className="text-sm text-stone-500">
-                Billed annually (${price * 12}/year)
-              </span>
-            )}
+            <span className="text-sm text-stone-500">
+              {isYearly
+                ? `Billed annually ($${price * 12}/year)`
+                : "Billed monthly"}
+            </span>
           </div>
           <CardDescription className="text-sm text-stone-500">
             {plan.tagline}
@@ -122,8 +121,9 @@ function PlanCard({
           <hr className="border-dashed border-stone-200" />
           <ul className="list-outside space-y-3 text-sm">
             {plan.features.map((item) => (
-              <li className="flex items-start gap-2 text-stone-700">
+              <li key={item} className="flex items-start gap-2 text-stone-700">
                 <svg
+                  aria-hidden="true"
                   className="text-primary mt-0.5 size-3 shrink-0"
                   viewBox="0 0 24 24"
                   fill="none"
@@ -141,15 +141,15 @@ function PlanCard({
         </CardContent>
 
         <CardFooter className="p-3">
-          <Button
-            variant={plan.isPopular ? "default" : "outline"}
-            className="w-full"
-            onClick={() => {
-              window.location.href = "https://app.padyna.com";
-            }}
+          <a
+            href="https://app.padyna.com"
+            className={buttonVariants({
+              variant: plan.isPopular ? "default" : "outline",
+              className: "w-full",
+            })}
           >
             Start free trial
-          </Button>
+          </a>
         </CardFooter>
       </div>
     </Card>
@@ -175,39 +175,51 @@ export function PricingOptions() {
       </div>
       <div className="mx-auto w-full max-w-5xl px-4 sm:px-0">
         <div className="mt-8">
-          <Tabs defaultValue="monthly" className="w-full">
-            <div className="flex w-full flex-col items-center justify-center">
-              <div className="flex items-center justify-center gap-2">
-                <TabsList className="mx-auto grid w-75 grid-cols-2 rounded-full p-1">
-                  <TabsTrigger className="rounded-full" value="monthly">
-                    Monthly
-                  </TabsTrigger>
-                  <TabsTrigger className="relative rounded-full" value="yearly">
-                    Yearly{" "}
-                    <span className="text-primary ml-2 text-xs font-semibold">
-                      20% off
-                    </span>
-                  </TabsTrigger>
-                </TabsList>
-              </div>
+          <fieldset className="group w-full min-w-0">
+            <legend className="sr-only">Billing period</legend>
+            <div className="bg-muted mx-auto grid w-75 max-w-full grid-cols-2 rounded-full p-1">
+              {(["monthly", "yearly"] as const).map((period) => (
+                <label
+                  key={period}
+                  className="text-muted-foreground has-checked:bg-background has-checked:text-foreground has-focus-visible:outline-primary relative cursor-pointer rounded-full px-3 py-2 text-center text-sm font-medium has-checked:shadow-sm has-focus-visible:outline-2 has-focus-visible:outline-offset-2"
+                >
+                  <input
+                    type="radio"
+                    name="pricing-billing"
+                    value={period}
+                    defaultChecked={period === "monthly"}
+                    className="sr-only"
+                    aria-controls={`pricing-${period}`}
+                  />
+                  {period === "monthly" ? "Monthly" : "Yearly"}
+                </label>
+              ))}
             </div>
 
-            <TabsContent value="monthly" className="mt-8">
+            <div
+              id="pricing-monthly"
+              className="mt-8 hidden group-has-[[value=monthly]:checked]:block"
+            >
+              <h3 className="sr-only">Monthly billing plans</h3>
               <div className="grid w-full place-items-center gap-6 lg:grid-cols-3">
                 {plans.map((plan) => (
                   <PlanCard key={plan.id} plan={plan} billingPeriod="monthly" />
                 ))}
               </div>
-            </TabsContent>
+            </div>
 
-            <TabsContent value="yearly" className="mt-8">
+            <div
+              id="pricing-yearly"
+              className="mt-8 hidden group-has-[[value=yearly]:checked]:block"
+            >
+              <h3 className="sr-only">Yearly billing plans</h3>
               <div className="grid w-full place-items-center gap-6 lg:grid-cols-3">
                 {plans.map((plan) => (
                   <PlanCard key={plan.id} plan={plan} billingPeriod="yearly" />
                 ))}
               </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </fieldset>
         </div>
       </div>
     </section>

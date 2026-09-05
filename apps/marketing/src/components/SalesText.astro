@@ -1,5 +1,6 @@
 ---
 import { Image } from "astro:assets";
+import logo from "@/assets/padyna-official-logo.png";
 ---
 
 <section>
@@ -15,17 +16,17 @@ import { Image } from "astro:assets";
         </b>
         Repetitive questions and slow response times add friction.
       </p>
-      <p class="mt-4 leading-relaxed"></p>
       <div class="mt-4 flex items-start gap-2 sm:items-center">
         <p class="leading-relaxed">
           <Image
-            src={"https://assets.padyna.com/assets/padyna-official-logo.png"}
-            alt="Padyna logo"
+            src={logo}
+            alt=""
             class="inline h-7 w-7 rotate-3 rounded-lg shadow-sm sm:-mt-1.5 sm:mr-2"
             width={28}
             height={28}
+            widths={[28, 56]}
+            sizes="28px"
             loading="lazy"
-            fetchpriority="high"
           />{" "}
           <b>Padyna</b> gives you a smarter customer support experience with
           <b>clear answers, faster resolution, and fewer tickets</b> so your team

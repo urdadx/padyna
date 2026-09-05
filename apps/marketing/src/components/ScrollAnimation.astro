@@ -4,9 +4,10 @@ import { ScrollText } from "./ScrollText";
 import sheriff from "@/assets/sheriff.jpg";
 ---
 
-<div class="relative w-full">
+<figure class="relative w-full">
   <div class="pointer-events-none absolute inset-0 opacity-50">
     <svg
+      aria-hidden="true"
       xmlns="http://www.w3.org/2000/svg"
       xmlns:xlink="http://www.w3.org/1999/xlink"
       width="100%"
@@ -33,14 +34,18 @@ import sheriff from "@/assets/sheriff.jpg";
       <rect width="100%" height="100%" fill="url(#scroll-grid-pattern)"></rect>
     </svg>
   </div>
-  <ScrollText client:load />
-  <div class="sticky bottom-20 flex justify-center py-12">
+  <ScrollText />
+  <figcaption class="relative flex justify-center pt-8 pb-16 sm:pb-24">
     <div class="flex flex-col items-center gap-3">
       <Image
         src={sheriff}
         loading="lazy"
+        width={48}
+        height={48}
+        widths={[48, 96]}
+        sizes="48px"
         alt="Sherif Adedokun"
-        class="h-12 w-12 rounded-full border border-stone-200"
+        class="h-12 w-12 rounded-full border border-stone-200 object-cover"
       />
       <div class="text-center">
         <p class="font-display text-xl font-medium text-stone-900">
@@ -51,5 +56,5 @@ import sheriff from "@/assets/sheriff.jpg";
         </p>
       </div>
     </div>
-  </div>
-</div>
+  </figcaption>
+</figure>

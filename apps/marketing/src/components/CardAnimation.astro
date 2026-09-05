@@ -111,21 +111,25 @@ import { GlobeLinear, TextLinear } from "./icons";
   .card-left {
     transform: translateX(-95px) translateY(16px) rotate(-15deg);
   }
-  .group:hover .card-left {
-    transform: translateX(-130px) translateY(0px) rotate(-25deg);
-  }
 
   .card-center {
     transform: translateX(0) translateY(0) scale(1);
-  }
-  .group:hover .card-center {
-    transform: translateY(-20px) scale(1.15);
   }
 
   .card-right {
     transform: translateX(90px) translateY(16px) rotate(15deg);
   }
-  .group:hover .card-right {
-    transform: translateX(125px) translateY(0px) rotate(25deg);
+  @media (prefers-reduced-motion: no-preference) {
+    .group:hover .card-left {
+      transform: translateX(-130px) translateY(0px) rotate(-25deg);
+    }
+
+    .group:hover .card-center {
+      transform: translateY(-20px) scale(1.15);
+    }
+
+    .group:hover .card-right {
+      transform: translateX(125px) translateY(0px) rotate(25deg);
+    }
   }
 </style>

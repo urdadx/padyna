@@ -1,3 +1,4 @@
 User-agent: *
-Disallow: /privacy
-Disallow: /terms-of-service
+Allow: /
+
+Sitemap: https://padyna.com/sitemap.xml

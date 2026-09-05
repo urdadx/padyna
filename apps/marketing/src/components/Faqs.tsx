@@ -1,10 +1,3 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-
 export default function FAQs() {
   const faqItems = [
     {
@@ -58,22 +51,29 @@ export default function FAQs() {
         </div>
 
         <div className="mx-auto mt-12 max-w-xl px-4">
-          <Accordion className="bg-card ring-muted w-full rounded-2xl border px-8 py-3 shadow-sm ring-8 dark:ring-0">
+          <div className="bg-card ring-muted w-full rounded-2xl border px-8 py-3 shadow-sm ring-8 dark:ring-0">
             {faqItems.map((item) => (
-              <AccordionItem
+              <details
                 key={item.id}
-                value={item.id}
-                className="border-dashed"
+                className="group border-b border-dashed last:border-b-0"
               >
-                <AccordionTrigger className="cursor-pointer font-sans text-base hover:no-underline">
-                  {item.question}
-                </AccordionTrigger>
-                <AccordionContent>
-                  <p className="text-base">{item.answer}</p>
-                </AccordionContent>
-              </AccordionItem>
+                <summary className="focus-visible:outline-primary flex cursor-pointer list-none items-center justify-between gap-4 rounded-md py-4 font-sans text-base font-medium focus-visible:outline-2 focus-visible:outline-offset-4 [&::-webkit-details-marker]:hidden">
+                  <span>{item.question}</span>
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="size-4 shrink-0 text-stone-500 group-open:rotate-180"
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </summary>
+                <p className="pb-4 text-base">{item.answer}</p>
+              </details>
             ))}
-          </Accordion>
+          </div>
         </div>
       </div>
     </section>
