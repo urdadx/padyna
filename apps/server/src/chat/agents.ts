@@ -12,7 +12,7 @@ import { DiscordActionTool } from "../actions/discord-action-tool";
 import { JiraActionTool } from "../actions/jira-action-tool";
 import { SlackActionTool } from "../actions/slack-action-tool";
 
-const CHAT_MODEL = "gpt-5.4-mini";
+const CHAT_MODEL = "gpt-6-luna";
 
 interface CreateSupportChatAgentInput {
   chatbotId: string;

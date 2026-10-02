@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Check, Copy, Download } from "lucide-react";
-import { isValidElement, useCallback, useEffect, useRef, useState } from "react";
+import { Children, isValidElement, useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import type { BundledLanguage, Highlighter } from "shiki";
 
 let _highlighterPromise: Promise<Highlighter> | null = null;
@@ -192,9 +193,9 @@ export function MarkdownCodeBlock({
   "data-block": dataBlock,
 }: React.HTMLAttributes<HTMLElement> & {
   node?: unknown;
-  "data-block"?: string;
+  "data-block"?: boolean | string;
 }) {
-  if (!dataBlock) {
+  if (dataBlock === undefined) {
     return (
       <code
         className={cn(
@@ -210,18 +211,14 @@ export function MarkdownCodeBlock({
   const langMatch = className?.match(/language-([^\s]+)/);
   const language = langMatch?.[1] ?? "";
 
-  let code = "";
-  if (
-    isValidElement(children) &&
-    children.props !== null &&
-    typeof children.props === "object" &&
-    "children" in children.props &&
-    typeof (children.props as { children: unknown }).children === "string"
-  ) {
-    code = (children.props as { children: string }).children;
-  } else if (typeof children === "string") {
-    code = children;
-  }
+  const extractText = (value: ReactNode): string =>
+    Children.toArray(value)
+      .map((child) => {
+        if (typeof child === "string" || typeof child === "number") return String(child);
+        if (!isValidElement<{ children?: ReactNode }>(child)) return "";
+        return extractText(child.props.children);
+      })
+      .join("");
 
-  return <CodeBlock code={code} language={language} />;
+  return <CodeBlock code={extractText(children)} language={language} />;
 }
