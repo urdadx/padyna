@@ -7,10 +7,11 @@ export function ErrorPage({ error }: ErrorPageProps) {
 		<div className="flex min-h-svh w-full items-center justify-center bg-background px-6 py-12 text-foreground">
 			<div className="flex max-w-2xl flex-col items-center text-center">
 				<img
-					src="https://assets.padyna.com/assets/bug.png"
+					src="/assets/bug.avif"
 					alt="Something went wrong"
+					width={896}
+					height={896}
 					className="w-full max-w-md object-contain"
-					loading="lazy"
 				/>
 				<h1 className="mt-6 text-3xl font-semibold tracking-tight sm:text-4xl">
 					Something went wrong
