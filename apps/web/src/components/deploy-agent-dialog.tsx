@@ -136,32 +136,6 @@ export const DeployAgentDialog = () => {
         <span className="text-sm font-medium whitespace-nowrap">Telegram</span>
       </button>
       <button
-        type="button"
-        onClick={() => setActiveTab("agent")}
-        className={cn(
-          "group relative flex items-center gap-2.5 rounded-lg px-4 py-2 text-left transition-all",
-          isMobile ? "shrink-0 min-w-max border" : "w-full",
-          activeTab === "agent"
-            ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200 border-red-100 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-700"
-            : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 border-transparent dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100",
-        )}
-      >
-        {activeTab === "agent" && (
-          <div
-            className={cn(
-              "bg-red-600",
-              isMobile
-                ? "absolute -bottom-px left-0 right-0 h-0.5"
-                : "absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full",
-            )}
-          />
-        )}
-        <div className="flex h-4 w-4 shrink-0 items-center justify-center text-red-600">
-          <RobotIcon className="size-5" />
-        </div>
-        <span className="text-sm font-medium whitespace-nowrap">Agent prompt</span>
-      </button>
-      <button
         onClick={() => setActiveTab("link")}
         className={cn(
           "group relative flex items-center gap-2.5 rounded-lg px-4 py-2 text-left transition-all",
@@ -185,6 +159,32 @@ export const DeployAgentDialog = () => {
           <WebsiteIcon color={activeTab === "link" ? "green" : "gray"} />
         </div>
         <span className="text-sm font-medium whitespace-nowrap">Website </span>
+      </button>
+      <button
+        type="button"
+        onClick={() => setActiveTab("agent")}
+        className={cn(
+          "group relative flex items-center gap-2.5 rounded-lg px-4 py-2 text-left transition-all",
+          isMobile ? "shrink-0 min-w-max border" : "w-full",
+          activeTab === "agent"
+            ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200 border-red-100 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-700"
+            : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 border-transparent dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100",
+        )}
+      >
+        {activeTab === "agent" && (
+          <div
+            className={cn(
+              "bg-red-600",
+              isMobile
+                ? "absolute -bottom-px left-0 right-0 h-0.5"
+                : "absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full",
+            )}
+          />
+        )}
+        <div className={cn("flex h-4 w-4 shrink-0 items-center justify-center", activeTab === "agent" ? "text-red-600" : "text-gray-500")}>
+          <RobotIcon className="size-5" />
+        </div>
+        <span className="text-sm font-medium whitespace-nowrap">Agent prompt</span>
       </button>
       <button
         onClick={() => setActiveTab("qr")}
