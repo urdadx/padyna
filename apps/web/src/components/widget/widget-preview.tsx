@@ -17,6 +17,9 @@ import * as Sentry from "@sentry/react";
 import { WidgetHeader } from "./widget-header";
 import { WidgetMessages } from "./widget-messages";
 import { WidgetMessage } from "./widget-components/message";
+import { WidgetEmojiPicker } from "./widget-emoji-picker";
+import { useWelcomeIntro } from "./use-welcome-intro";
+import { BouncingDots } from "loading-dev";
 
 import "streamdown/styles.css";
 
@@ -35,6 +38,7 @@ import { env } from "@padyna/env/web";
 import { browserSafeChatFetch } from "@/lib/ai/browser-safe-chat-fetch";
 
 const ESCALATED_STATUSES = new Set(["escalated", "assigned"]);
+const DEFAULT_WELCOME_MESSAGE = "Hi👋. How can I help you?";
 
 function getWidgetDebugInfo() {
 	if (typeof window === "undefined") {
@@ -136,6 +140,34 @@ function WidgetPreviewContent({
 	);
 
 	const [input, setInput] = useState("");
+	const inputRef = useRef<HTMLInputElement>(null);
+	// Bumped each time the SDK opens the widget, so the welcome intro plays on every open.
+	const [openCount, setOpenCount] = useState(0);
+
+	useEffect(() => {
+		const onMessage = (event: MessageEvent) => {
+			if (event.source !== window.parent || window.parent === window) return;
+			if ((event.data as { type?: string } | null)?.type === "padyna:widget_open") {
+				setOpenCount((count) => count + 1);
+			}
+		};
+
+		window.addEventListener("message", onMessage);
+		return () => window.removeEventListener("message", onMessage);
+	}, []);
+
+	// Insert at the caret so picking an emoji mid-sentence doesn't jump to the end.
+	const insertEmoji = (emoji: string) => {
+		const element = inputRef.current;
+		const start = element?.selectionStart ?? input.length;
+		const end = element?.selectionEnd ?? input.length;
+		setInput(input.slice(0, start) + emoji + input.slice(end));
+
+		requestAnimationFrame(() => {
+			element?.focus();
+			element?.setSelectionRange(start + emoji.length, start + emoji.length);
+		});
+	};
 
 	const initQueryKey = ["widget-init", widgetId, chatId, hostOrigin, platform];
 
@@ -221,6 +253,7 @@ function WidgetPreviewContent({
 	const isError = status === "error";
 	const isEscalated = ESCALATED_STATUSES.has(initData?.conversationStatus ?? "");
 	const isClosed = initData?.conversationStatus === "closed";
+	const welcomePhase = useWelcomeIntro(openCount, messages.length > 0);
 
 	useEffect(() => {
 		if (!chatId || !initData || hydratedChatIdRef.current === chatId) {
@@ -389,8 +422,16 @@ function WidgetPreviewContent({
 				<Conversation className="min-h-0 py-4">
 					<ConversationContent className="gap-4 p-4">
 						{widgetConfig?.isEnabled && messages.length === 0 ? (
-							<WidgetMessage animate={false}>
-								{widgetConfig.initialMessage}
+							<WidgetMessage key={welcomePhase} animate>
+								{welcomePhase === "typing" ? (
+									<span
+										className="flex items-center text-muted-foreground"
+										aria-label="Assistant is typing">
+										<BouncingDots size={20} color="currentColor" />
+									</span>
+								) : (
+									widgetConfig.initialMessage || DEFAULT_WELCOME_MESSAGE
+								)}
 							</WidgetMessage>
 						) : (
 							<WidgetMessages
@@ -440,18 +481,27 @@ function WidgetPreviewContent({
 						action={() => {
 							void submit(input);
 						}}>
-						<Input
-							style={
-								{
-									"--ring": widgetConfig?.primaryColor,
-								} as React.CSSProperties
-							}
-							className="bg-white text-sm focus-visible:ring-ring"
-							placeholder={inputPlaceholder}
-							value={input}
-							onChange={(e) => setInput(e.target.value)}
-							disabled={!canSendMessage}
-						/>
+						<div className="relative min-w-0 flex-1">
+							<Input
+								ref={inputRef}
+								style={
+									{
+										"--ring": widgetConfig?.primaryColor,
+									} as React.CSSProperties
+								}
+								className="bg-white pr-10 text-sm focus-visible:ring-ring"
+								placeholder={inputPlaceholder}
+								value={input}
+								onChange={(e) => setInput(e.target.value)}
+								disabled={!canSendMessage}
+							/>
+							<div className="absolute inset-y-0 right-1 flex items-center">
+								<WidgetEmojiPicker
+									disabled={!canSendMessage}
+									onEmojiSelect={insertEmoji}
+								/>
+							</div>
+						</div>
 						<Button
 							type="submit"
 							aria-label="Send message"
