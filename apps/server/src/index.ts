@@ -37,7 +37,13 @@ app.use(logger());
 app.use(
   "/*",
   cors({
-    origin: env.CORS_ORIGIN,
+    // The SDK fetches public widget config from customer sites, so that one route accepts any
+    // origin (its allowlist check runs on the Origin header). Everything else, including the
+    // widget's chat and init calls made from our own iframe, stays limited to the web app.
+    origin: (origin, c) =>
+      c.req.method === "GET" && /^\/api\/widget\/[^/]+\/config$/.test(c.req.path)
+        ? origin
+        : env.CORS_ORIGIN,
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "sentry-trace", "baggage"],
     credentials: true,

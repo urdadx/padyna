@@ -1,3 +1,4 @@
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { getPgPool } from "@padyna/db";
 import { Hono } from "hono";
 import { authMiddleware } from "../../middlewares/auth-middleware";
@@ -95,7 +96,9 @@ securedDiscordRoutes.get("/channels", async (c) => {
           message: error.message,
           details: error.details,
         },
-        error.statusCode >= 400 && error.statusCode < 600 ? error.statusCode : 502,
+        error.statusCode >= 400 && error.statusCode < 600
+          ? (error.statusCode as ContentfulStatusCode)
+          : 502,
       );
     }
 

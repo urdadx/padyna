@@ -191,7 +191,8 @@ actionRoutes.patch("/:actionId", async (c) => {
     return c.json(
       {
         message: `Invalid ${existingAction.provider} action payload`,
-        issues: z.treeifyError(parseResult.error),
+        // Each provider has its own schema; the error is the same shape for all of them.
+        issues: z.treeifyError(parseResult.error as z.ZodError),
       },
       400,
     );
@@ -354,7 +355,8 @@ actionRoutes.post("/jira", async (c) => {
     return c.json(
       {
         message: "Invalid Jira action payload",
-        issues: z.treeifyError(parseResult.error),
+        // Each provider has its own schema; the error is the same shape for all of them.
+        issues: z.treeifyError(parseResult.error as z.ZodError),
       },
       400,
     );
@@ -400,7 +402,8 @@ actionRoutes.post("/calendly", async (c) => {
     return c.json(
       {
         message: "Invalid Calendly action payload",
-        issues: z.treeifyError(parseResult.error),
+        // Each provider has its own schema; the error is the same shape for all of them.
+        issues: z.treeifyError(parseResult.error as z.ZodError),
       },
       400,
     );
@@ -446,7 +449,8 @@ actionRoutes.post("/cal", async (c) => {
     return c.json(
       {
         message: "Invalid Cal action payload",
-        issues: z.treeifyError(parseResult.error),
+        // Each provider has its own schema; the error is the same shape for all of them.
+        issues: z.treeifyError(parseResult.error as z.ZodError),
       },
       400,
     );
@@ -491,7 +495,8 @@ actionRoutes.post("/clickup", async (c) => {
     return c.json(
       {
         message: "Invalid ClickUp action payload",
-        issues: z.treeifyError(parseResult.error),
+        // Each provider has its own schema; the error is the same shape for all of them.
+        issues: z.treeifyError(parseResult.error as z.ZodError),
       },
       400,
     );
@@ -537,7 +542,8 @@ actionRoutes.post("/discord", async (c) => {
     return c.json(
       {
         message: "Invalid Discord action payload",
-        issues: z.treeifyError(parseResult.error),
+        // Each provider has its own schema; the error is the same shape for all of them.
+        issues: z.treeifyError(parseResult.error as z.ZodError),
       },
       400,
     );
@@ -583,7 +589,8 @@ actionRoutes.post("/slack", async (c) => {
     return c.json(
       {
         message: "Invalid Slack action payload",
-        issues: z.treeifyError(parseResult.error),
+        // Each provider has its own schema; the error is the same shape for all of them.
+        issues: z.treeifyError(parseResult.error as z.ZodError),
       },
       400,
     );

@@ -5,10 +5,12 @@ import {
 } from "ai";
 import { db } from "@padyna/db";
 import { chatbot, chatConversation, chatMessage } from "@padyna/db/schema/index";
-import { eq, asc } from "drizzle-orm";
+import { env } from "@padyna/env/server";
+import { and, eq, asc } from "drizzle-orm";
 import { Hono } from "hono";
 import { createSupportChatAgent } from "../chat";
 import {
+  ConversationAccessError,
   getConversationStatus,
   getUserMetadataFromRequest,
   persistConversationMessages,
@@ -16,6 +18,12 @@ import {
 import { initializeLiveChatConversation } from "../chat/live-chat-service";
 import { broadcastConversationStatusUpdate } from "../chat/live-chat-service";
 import { createRateLimitMiddleware, getClientIp } from "../lib/ratelimiter";
+import {
+  isOriginAllowed,
+  parseIncomingUserMessage,
+  parseOrigin,
+  resolveEmbedOrigin,
+} from "./widget-request";
 import {
   organizationHasBrandingAddon,
   resolveHidePoweredBy,
@@ -91,60 +99,15 @@ function buildWidgetConfig(chatbotRecord: PublicWidgetChatbot, hasBrandingAddon:
   };
 }
 
-function parseOrigin(value: string | undefined): string | null {
-  if (!value) {
-    return null;
-  }
-
-  try {
-    return new URL(value).origin.toLowerCase();
-  } catch {
-    return null;
-  }
-}
-
-function normalizeAllowedDomain(value: string): string | null {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  const direct = parseOrigin(trimmed);
-  if (direct) {
-    return direct;
-  }
-
-  return parseOrigin(`https://${trimmed}`);
-}
+const widgetAppOrigin = parseOrigin(env.CORS_ORIGIN);
 
 function getRequestOrigin(c: any): string | null {
-  const hostOrigin = parseOrigin(c.req.query("hostOrigin"));
-  if (hostOrigin) {
-    return hostOrigin;
-  }
-
-  const origin = parseOrigin(c.req.header("origin"));
-  if (origin) {
-    return origin;
-  }
-
-  return parseOrigin(c.req.header("referer"));
-}
-
-function isDomainAllowed(chatbotRecord: PublicWidgetChatbot, requestOrigin: string | null) {
-  const allowed = (chatbotRecord.allowedDomains ?? [])
-    .map(normalizeAllowedDomain)
-    .filter((entry): entry is string => entry !== null);
-
-  if (allowed.length === 0) {
-    return true;
-  }
-
-  if (!requestOrigin) {
-    return false;
-  }
-
-  return allowed.includes(requestOrigin);
+  return resolveEmbedOrigin({
+    origin: c.req.header("origin"),
+    referer: c.req.header("referer"),
+    hostOriginHint: c.req.query("hostOrigin"),
+    widgetAppOrigin,
+  });
 }
 
 function convertDbMessagesToUiMessages(rows: any[]) {
@@ -153,6 +116,21 @@ function convertDbMessagesToUiMessages(rows: any[]) {
     role: row.role,
     parts: Array.isArray(row.parts) ? row.parts : [{ type: "text", text: row.contentText || "" }],
   }));
+}
+
+async function loadConversationUiMessages(conversationId: string, chatbotId: string) {
+  const rows = await db
+    .select({
+      messageId: chatMessage.messageId,
+      role: chatMessage.role,
+      contentText: chatMessage.contentText,
+      parts: chatMessage.parts,
+    })
+    .from(chatMessage)
+    .where(and(eq(chatMessage.conversationId, conversationId), eq(chatMessage.chatbotId, chatbotId)))
+    .orderBy(asc(chatMessage.createdAt));
+
+  return convertDbMessagesToUiMessages(rows);
 }
 
 async function getWidgetChatbot(widgetId: string) {
@@ -201,7 +179,7 @@ async function resolveWidgetRequest(
   }
 
   const requestOrigin = getRequestOrigin(c);
-  if (!isDomainAllowed(chatbotRecord, requestOrigin)) {
+  if (!isOriginAllowed(chatbotRecord.allowedDomains, requestOrigin)) {
     return c.json({ message: "Domain not allowed" }, 403);
   }
 
@@ -235,34 +213,34 @@ widgetRoutes.post("/:widgetId/init", async (c) => {
   let conversationStatus: string | null = null;
   let liveChatToken: string | null = null;
 
-  if (conversationId) {
+  if (typeof conversationId === "string" && conversationId.length > 0) {
+    // Scoped to this widget's chatbot: a conversation id from another chatbot or organization
+    // is treated as unknown, so its transcript and live chat token are never returned.
     const [conversation] = await db
       .select({ status: chatConversation.status, metadata: chatConversation.metadata })
       .from(chatConversation)
-      .where(eq(chatConversation.id, conversationId))
+      .where(
+        and(
+          eq(chatConversation.id, conversationId),
+          eq(chatConversation.chatbotId, chatbotRecord.id),
+          eq(chatConversation.organizationId, chatbotRecord.organizationId),
+        ),
+      )
       .limit(1);
 
-    conversationStatus = conversation?.status ?? null;
+    if (conversation) {
+      conversationStatus = conversation.status ?? null;
 
-    if (conversation?.status === "escalated" || conversation?.status === "assigned") {
-      const initialized = await initializeLiveChatConversation({
-        conversationId,
-      });
-      liveChatToken = initialized?.liveChatToken ?? getLiveChatToken(conversation.metadata) ?? null;
+      if (conversation.status === "escalated" || conversation.status === "assigned") {
+        const initialized = await initializeLiveChatConversation({
+          conversationId,
+        });
+        liveChatToken =
+          initialized?.liveChatToken ?? getLiveChatToken(conversation.metadata) ?? null;
+      }
+
+      messages = await loadConversationUiMessages(conversationId, chatbotRecord.id);
     }
-
-    const rows = await db
-      .select({
-        messageId: chatMessage.messageId,
-        role: chatMessage.role,
-        contentText: chatMessage.contentText,
-        parts: chatMessage.parts,
-      })
-      .from(chatMessage)
-      .where(eq(chatMessage.conversationId, conversationId))
-      .orderBy(asc(chatMessage.createdAt));
-
-    messages = convertDbMessagesToUiMessages(rows);
   }
 
   return c.json({
@@ -282,32 +260,43 @@ widgetRoutes.post("/:widgetId/chat", widgetChatRateLimitMiddleware, async (c) =>
   const { chatbotRecord, requestOrigin } = resolved;
   const channel = resolveConversationChannel(c);
 
-  const { id: conversationId, messages } = await c.req.json();
-  const uiMessages = messages;
+  const { id: conversationId, message } = await c.req.json();
 
-  if (!Array.isArray(uiMessages)) {
-    return c.json({ message: "messages must be an array" }, 400);
+  if (typeof conversationId !== "string" || conversationId.length === 0) {
+    return c.json({ message: "id is required" }, 400);
+  }
+
+  const userMessage = parseIncomingUserMessage(message);
+  if (!userMessage) {
+    return c.json({ message: "message must be a user message with text" }, 400);
   }
 
   const visitorMetadata = requestOrigin ? getUserMetadataFromRequest(c) : undefined;
 
-  const firstUserMessage = uiMessages.find((m: any) => m.role === "user");
-  let title: string | undefined;
-  if (firstUserMessage?.parts) {
-    const textPart = firstUserMessage.parts.find((p: any) => p?.type === "text");
-    title = textPart?.text;
+  let targetConversationId: string | undefined;
+  try {
+    targetConversationId = await persistConversationMessages({
+      chatbotId: chatbotRecord.id,
+      organizationId: chatbotRecord.organizationId,
+      userId: undefined,
+      channel,
+      messages: [userMessage],
+      metadata: visitorMetadata,
+      title: userMessage.parts[0]?.text,
+      conversationId,
+    });
+  } catch (error) {
+    if (error instanceof ConversationAccessError) {
+      return c.json({ message: "Conversation not found" }, 404);
+    }
+    throw error;
   }
 
-  const targetConversationId = await persistConversationMessages({
-    chatbotId: chatbotRecord.id,
-    organizationId: chatbotRecord.organizationId,
-    userId: undefined,
-    channel,
-    messages: uiMessages,
-    metadata: visitorMetadata,
-    title,
-    conversationId,
-  });
+  // History comes from the database, never from the client.
+  const uiMessages = await loadConversationUiMessages(
+    targetConversationId ?? conversationId,
+    chatbotRecord.id,
+  );
 
   if (targetConversationId) {
     const status = await getConversationStatus(targetConversationId);

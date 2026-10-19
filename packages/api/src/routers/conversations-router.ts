@@ -31,8 +31,13 @@ const conversationSortSchema = z.enum([
   "linear",
 ]);
 
-function isPlatformSort(sort: z.infer<typeof conversationSortSchema>) {
-  return !["recent", "oldest", "priority"].includes(sort);
+type ConversationSort = z.infer<typeof conversationSortSchema>;
+const ORDER_SORTS = ["recent", "oldest", "priority"] as const;
+
+function isPlatformSort(
+  sort: ConversationSort,
+): sort is Exclude<ConversationSort, (typeof ORDER_SORTS)[number]> {
+  return !(ORDER_SORTS as readonly string[]).includes(sort);
 }
 
 export const conversationsRouter = router({

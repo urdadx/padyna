@@ -223,6 +223,9 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
     if (!chatbotId || !isEnabled) return;
 
     const handleMessage = async (event: MessageEvent) => {
+      // Only the embedding page's SDK may drive the session; ignore other frames and scripts.
+      if (event.source !== window.parent || window.parent === window) return;
+
       const type = (event.data as { type?: string })?.type;
 
       if (type === "padyna:widget_open") {

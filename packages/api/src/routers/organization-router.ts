@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { protectedProcedure, router } from "../index";
 import { db } from "@padyna/db";
 import { eq } from "drizzle-orm";

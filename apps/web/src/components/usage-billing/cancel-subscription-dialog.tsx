@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { queryClient, trpc } from "@/utils/trpc";
 import { useMutation } from "@tanstack/react-query";
 import Spinner from "../ui/spinner";
-import { polarClient } from "@/lib/polar-client";
 
 interface CancelSubscriptionProps {
   id: string;
@@ -27,15 +26,9 @@ export const CancelSubscription = ({
   onOpenChange,
   onCanceled,
 }: CancelSubscriptionProps) => {
+  const cancelSubscription = useMutation(trpc.subscription.cancelSubscription.mutationOptions());
   const cancelMutation = useMutation({
-    mutationFn: async () => {
-      return polarClient.subscriptions.update({
-        id,
-        subscriptionUpdate: {
-          cancelAtPeriodEnd: true,
-        },
-      });
-    },
+    mutationFn: () => cancelSubscription.mutateAsync({ id }),
     onSuccess: () => {
       toast.success("Subscription canceled");
       onOpenChange(false);

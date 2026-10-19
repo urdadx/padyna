@@ -15,7 +15,6 @@ export const env = createEnv({
     VITE_EXTRA_MESSAGE_CREDITS_ADDON: z.string().optional(),
     VITE_REMOVE_BRANDING_ADDON: z.string().optional(),
     VITE_EXTRA_TEAM_MEMBER_ADDON: z.string().optional(),
-    VITE_POLAR_ACCESS_TOKEN: z.string(),
     VITE_FRONTEND_ORIGIN: z.url().default("http://localhost:3001"),
     VITE_TELEGRAM_BOT_USERNAME: z.string().min(1).default("padyna_bot"),
     VITE_POLAR_SERVER: z.enum(["sandbox", "production"]).optional(),

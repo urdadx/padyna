@@ -13,8 +13,9 @@ async function main() {
 
   await bundle.write({
     file: outPath,
+    // No `name`: a named IIFE emits `var Padyna = ...`, which overwrites the
+    // window.Padyna function the SDK installs with the module namespace object.
     format: "iife",
-    name: "Padyna",
     sourcemap: true,
     minify: true,
   });
@@ -27,7 +28,8 @@ async function main() {
 
   const webPublicPath = resolve(root, "..", "..", "apps", "web", "public", "sdk.js");
   await copyFile(outPath, webPublicPath);
-  console.log(`Synced to apps/web/public/sdk.js`);
+  await copyFile(`${outPath}.map`, `${webPublicPath}.map`);
+  console.log(`Synced to apps/web/public/sdk.js (+ sdk.js.map)`);
 
   console.log("Global API: window.Padyna");
 }

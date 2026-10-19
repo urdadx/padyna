@@ -139,6 +139,14 @@ function normalizeIncomingMessages(messages: StoredUIMessage[]) {
     .filter((message): message is NormalizedMessage => message !== null);
 }
 
+/** Thrown when a client-supplied conversation id belongs to a different chatbot. */
+export class ConversationAccessError extends Error {
+  constructor() {
+    super("Conversation does not belong to this chatbot");
+    this.name = "ConversationAccessError";
+  }
+}
+
 async function getOrCreateConversation(input: {
   chatbotId: string;
   organizationId: string;
@@ -150,10 +158,22 @@ async function getOrCreateConversation(input: {
 }) {
   if (input.conversationId) {
     const [existing] = await db
-      .select({ id: chatConversation.id, metadata: chatConversation.metadata })
+      .select({
+        id: chatConversation.id,
+        metadata: chatConversation.metadata,
+        chatbotId: chatConversation.chatbotId,
+        organizationId: chatConversation.organizationId,
+      })
       .from(chatConversation)
       .where(eq(chatConversation.id, input.conversationId))
       .limit(1);
+
+    if (
+      existing &&
+      (existing.chatbotId !== input.chatbotId || existing.organizationId !== input.organizationId)
+    ) {
+      throw new ConversationAccessError();
+    }
 
     if (existing) {
       const nextMetadata = mergeConversationMetadata(existing.metadata, input.metadata);

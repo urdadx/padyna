@@ -16,7 +16,7 @@ import {
 	transformerNotationWordHighlight,
 } from "@shikijs/transformers";
 import { CheckIcon, CopyIcon, FileIcon } from "lucide-react";
-import type { ComponentProps, HTMLAttributes, ReactElement, ReactNode } from "react";
+import type { ComponentProps, ComponentType, HTMLAttributes, ReactElement, ReactNode } from "react";
 import { cloneElement, createContext, useContext, useEffect, useState } from "react";
 import { type BundledLanguage, type CodeOptionsMultipleThemes, codeToHtml } from "shiki";
 
@@ -205,7 +205,7 @@ export const CodeBlockFiles = ({ className, children, ...props }: CodeBlockFiles
 };
 
 export type CodeBlockFilenameProps = HTMLAttributes<HTMLDivElement> & {
-	icon?: IconType;
+	icon?: ComponentType<{ className?: string }>;
 	value?: string;
 };
 
@@ -244,7 +244,13 @@ export type CodeBlockSelectProps = ComponentProps<typeof Select>;
 export const CodeBlockSelect = (props: CodeBlockSelectProps) => {
 	const { value, onValueChange } = useContext(CodeBlockContext);
 
-	return <Select onValueChange={onValueChange} value={value} {...props} />;
+	return (
+		<Select
+			onValueChange={(next) => onValueChange?.(next as string)}
+			value={value}
+			{...props}
+		/>
+	);
 };
 
 export type CodeBlockSelectTriggerProps = ComponentProps<typeof SelectTrigger>;
@@ -279,6 +285,7 @@ export const CodeBlockSelectItem = ({ className, ...props }: CodeBlockSelectItem
 );
 
 export type CodeBlockCopyButtonProps = ComponentProps<typeof Button> & {
+	asChild?: boolean;
 	onCopy?: () => void;
 	onError?: (error: Error) => void;
 	timeout?: number;

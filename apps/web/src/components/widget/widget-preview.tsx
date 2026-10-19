@@ -127,6 +127,10 @@ function WidgetPreviewContent({
 			new DefaultChatTransport({
 				api: chatApi,
 				fetch: browserSafeChatFetch,
+				// The server loads history from the database; only the new message is sent.
+				prepareSendMessagesRequest: ({ id, messages }) => ({
+					body: { id, message: messages.at(-1) },
+				}),
 			}),
 		[chatApi],
 	);

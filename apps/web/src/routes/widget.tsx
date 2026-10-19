@@ -1,7 +1,7 @@
 import { WidgetPreview } from "@/components/widget/widget-preview";
 import { env } from "@padyna/env/web";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircleIcon } from "lucide-react";
 import { useChatGeneration } from "@/components/widget/use-chat-gen";
 
@@ -9,16 +9,42 @@ export const Route = createFileRoute("/widget")({
 	component: WidgetRoute,
 	validateSearch: (search) => ({
 		widgetId: String(search.widgetId ?? ""),
-		hostOrigin:
-			typeof search.hostOrigin === "string" && search.hostOrigin.length > 0
-				? search.hostOrigin
-				: undefined,
 	}),
 });
 
+function isEmbedded() {
+	try {
+		return window.self !== window.top;
+	} catch {
+		return true;
+	}
+}
+
+// The origin of the page embedding this iframe. Read from the browser rather than the URL,
+// because whoever frames /widget controls its query string. The server checks this against
+// the widget's allowed domains.
+function getParentOrigin(): string | undefined {
+	const ancestor = window.location.ancestorOrigins?.[0];
+	if (ancestor && ancestor !== "null") {
+		return ancestor;
+	}
+
+	try {
+		return document.referrer ? new URL(document.referrer).origin : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 function WidgetRoute() {
-	const { widgetId, hostOrigin } = Route.useSearch();
-	const platform: "web" | "widget" = hostOrigin ? "widget" : "web";
+	const { widgetId } = Route.useSearch();
+	const [{ hostOrigin, platform }] = useState(() => {
+		const embedded = isEmbedded();
+		return {
+			hostOrigin: embedded ? getParentOrigin() : undefined,
+			platform: (embedded ? "widget" : "web") as "web" | "widget",
+		};
+	});
 
 	const { chatId, resetChatId } = useChatGeneration(`chatId_${platform}`);
 

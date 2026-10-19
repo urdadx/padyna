@@ -5,6 +5,45 @@ import { organization, member } from "@padyna/db/schema/organization";
 import { env } from "@padyna/env/server";
 import { z } from "zod";
 import { polarClient } from "@padyna/auth/lib/payments";
+import { TRPCError } from "@trpc/server";
+
+// Polar ids from the client are only trusted after checking they belong to the caller's
+// organization; the server's Polar token can act on every customer.
+async function assertSubscriptionInOrganization(subscriptionId: string, organizationId: string) {
+  const subscription = await polarClient.subscriptions.get({ id: subscriptionId });
+  if (subscription.metadata?.referenceId !== organizationId) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Subscription not found" });
+  }
+  return subscription;
+}
+
+async function assertOrderInOrganization(orderId: string, organizationId: string) {
+  const order = await polarClient.orders.get({ id: orderId });
+  if (order.metadata?.referenceId !== organizationId) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+  }
+  return order;
+}
+
+function requireActiveOrganization(organizationId: string | null | undefined) {
+  if (!organizationId) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "No active organization" });
+  }
+  return organizationId;
+}
+
+function isBillingAdmin(role: string | null | undefined) {
+  return role === "admin" || role === "owner";
+}
+
+async function getExternalCustomerId(organizationId: string) {
+  const [row] = await db
+    .select({ externalCustomerId: organization.externalCustomerId })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+  return row?.externalCustomerId ?? null;
+}
 
 export const subscriptionRouter = router({
   getOrganizationLimits: protectedProcedure.query(async ({ ctx }) => {
@@ -57,10 +96,8 @@ export const subscriptionRouter = router({
   getOrderInvoice: protectedProcedure
     .input(z.object({ orderId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const organizationId = ctx.session.session.activeOrganization;
-      if (!organizationId) {
-        throw new Error("No active organization");
-      }
+      const organizationId = requireActiveOrganization(ctx.session.session.activeOrganization);
+      await assertOrderInOrganization(input.orderId, organizationId);
 
       const result = await polarClient.orders.invoice({
         id: input.orderId,
@@ -87,15 +124,7 @@ export const subscriptionRouter = router({
     if (!organizationId) {
       return null;
     }
-    const [row] = await db
-      .select({
-        externalCustomerId: organization.externalCustomerId,
-      })
-      .from(organization)
-      .where(eq(organization.id, organizationId))
-      .limit(1);
-
-    const externalCustomerId = row?.externalCustomerId;
+    const externalCustomerId = await getExternalCustomerId(organizationId);
     if (!externalCustomerId) return null;
     return polarClient.customers.getStateExternal({
       externalId: externalCustomerId,
@@ -103,7 +132,44 @@ export const subscriptionRouter = router({
   }),
 
   // we are usingg the api directly here cos polar ts sdk has wrong types for this functionality
-  endTrial: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  updateBillingEmail: protectedProcedure
+    .input(z.object({ email: z.email() }))
+    .mutation(async ({ input, ctx }) => {
+      const organizationId = requireActiveOrganization(ctx.session.session.activeOrganization);
+      if (!isBillingAdmin(ctx.session.user.role)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can update billing" });
+      }
+
+      const externalCustomerId = await getExternalCustomerId(organizationId);
+      if (!externalCustomerId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No billing account found" });
+      }
+
+      await polarClient.customers.updateExternal({
+        externalId: externalCustomerId,
+        customerUpdateExternalID: { email: input.email },
+      });
+    }),
+
+  cancelSubscription: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const organizationId = requireActiveOrganization(ctx.session.session.activeOrganization);
+      if (!isBillingAdmin(ctx.session.user.role)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can cancel subscriptions" });
+      }
+
+      await assertSubscriptionInOrganization(input.id, organizationId);
+      await polarClient.subscriptions.update({
+        id: input.id,
+        subscriptionUpdate: { cancelAtPeriodEnd: true },
+      });
+    }),
+
+  endTrial: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input, ctx }) => {
+    const organizationId = requireActiveOrganization(ctx.session.session.activeOrganization);
+    await assertSubscriptionInOrganization(input.id, organizationId);
+
     const response = await fetch(`${env.POLAR_API_URL}/subscriptions/${input.id}`, {
       method: "PATCH",
       headers: {

@@ -25,7 +25,7 @@ export const InlineCitationText = ({ className, ...props }: InlineCitationTextPr
 export type InlineCitationCardProps = ComponentProps<typeof HoverCard>;
 
 export const InlineCitationCard = (props: InlineCitationCardProps) => (
-  <HoverCard closeDelay={0} openDelay={0} {...props} />
+  <HoverCard {...props} />
 );
 
 export type InlineCitationCardTriggerProps = ComponentProps<typeof Badge> & {
@@ -38,6 +38,8 @@ export const InlineCitationCardTrigger = ({
   ...props
 }: InlineCitationCardTriggerProps) => (
   <HoverCardTrigger
+    closeDelay={0}
+    delay={0}
     render={<Badge className={cn("ml-1 rounded-full", className)} variant="secondary" {...props} />}
   >
     {sources[0] ? (
@@ -68,7 +70,7 @@ type CarouselIndexState = {
   current: number;
 };
 
-function getCarouselIndexState(api: CarouselApi): CarouselIndexState {
+function getCarouselIndexState(api: NonNullable<CarouselApi>): CarouselIndexState {
   return {
     count: api.scrollSnapList().length,
     current: api.selectedScrollSnap() + 1,

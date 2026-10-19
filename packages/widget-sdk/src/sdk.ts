@@ -49,6 +49,9 @@ type PadynaState = {
   onResize: (() => void) | null;
   isIframeLoaded: boolean;
   isIframeBootstrapped: boolean;
+  widgetUrl: string;
+  widgetOrigin: string;
+  onBeforeUnload: (() => void) | null;
   loaderShownAt: number;
   hideLoaderTimer: ReturnType<typeof setTimeout> | null;
   launcherMessage: string;
@@ -100,9 +103,7 @@ function buildWidgetUrl(options: PadynaInitOptions, defaultServerUrl: string) {
 
   const url = new URL("/widget", serverUrl);
   url.searchParams.set("widgetId", options.widgetId);
-  if (typeof window !== "undefined" && window.location.origin) {
-    url.searchParams.set("hostOrigin", window.location.origin);
-  }
+  // No hostOrigin here: the iframe reads its parent origin from the browser, not its URL.
   return url.toString();
 }
 
@@ -490,11 +491,41 @@ const state: PadynaState = {
   onResize: null,
   isIframeLoaded: false,
   isIframeBootstrapped: false,
+  widgetUrl: "",
+  widgetOrigin: "",
+  onBeforeUnload: null,
   loaderShownAt: 0,
   hideLoaderTimer: null,
   launcherMessage: DEFAULT_LAUNCHER_MESSAGE,
   isLauncherMessageDismissed: false,
 };
+
+function postToWidget(message: { type: string }) {
+  const target = state.dom?.iframe.contentWindow;
+  if (target && state.widgetOrigin) {
+    target.postMessage(message, state.widgetOrigin);
+  }
+}
+
+// The iframe loads the full chat app, so it's only fetched once someone shows intent
+// (hover/focus on the launcher) or opens the widget, not on every host page view.
+function ensureIframeLoading() {
+  const dom = state.dom;
+  if (!dom || state.isIframeBootstrapped || !state.widgetUrl) {
+    return;
+  }
+
+  state.isIframeBootstrapped = true;
+  dom.iframe.onload = () => {
+    state.isIframeLoaded = true;
+    if (state.dom && state.isOpen) {
+      scheduleHideLoader(state.dom);
+      // The open event fired before the iframe could listen; replay it.
+      postToWidget({ type: "padyna:widget_open" });
+    }
+  };
+  dom.iframe.src = state.widgetUrl;
+}
 
 async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
   if (command === "init") {
@@ -514,23 +545,15 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
 
     syncLauncherBubble(dom);
 
-    window.addEventListener("beforeunload", () => {
-      if (state.dom?.iframe.contentWindow) {
-        state.dom.iframe.contentWindow.postMessage({ type: "parent-page-unload" }, "*");
-      }
-    });
-
-    const widgetUrl = buildWidgetUrl(options, state.defaultServerUrl);
-    if (widgetUrl) {
-      state.isIframeBootstrapped = true;
-      dom.iframe.onload = () => {
-        state.isIframeLoaded = true;
-        if (state.dom && state.isOpen) {
-          scheduleHideLoader(state.dom);
-        }
-      };
-      dom.iframe.src = widgetUrl;
+    if (!state.onBeforeUnload) {
+      state.onBeforeUnload = () => postToWidget({ type: "parent-page-unload" });
+      window.addEventListener("beforeunload", state.onBeforeUnload);
     }
+
+    state.widgetUrl = buildWidgetUrl(options, state.defaultServerUrl);
+    state.widgetOrigin = state.widgetUrl ? new URL(state.widgetUrl).origin : "";
+    dom.button.onpointerenter = ensureIframeLoading;
+    dom.button.onfocus = ensureIframeLoading;
 
     try {
       const widgetConfig = await fetchWidgetConfig(options, state.defaultServerUrl);
@@ -611,10 +634,12 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
     if (!state.isIframeLoaded) {
       state.loaderShownAt = Date.now();
       setLoadingVisual(state.dom, true);
+      ensureIframeLoading();
+      // widget_open is sent from the iframe's onload once it can receive it.
+      return;
     }
 
-    // Notify the iframe that the widget has been opened
-    state.dom.iframe.contentWindow?.postMessage({ type: "padyna:widget_open" }, "*");
+    postToWidget({ type: "padyna:widget_open" });
 
     return;
   }
@@ -625,7 +650,9 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
     }
 
     // Notify the iframe that the widget is closing so it can fire widget_close analytics
-    state.dom.iframe.contentWindow?.postMessage({ type: "padyna:widget_close" }, "*");
+    if (state.isIframeLoaded) {
+      postToWidget({ type: "padyna:widget_close" });
+    }
 
     state.isOpen = false;
 
@@ -653,6 +680,14 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
     state.onResize = null;
   }
 
+  if (state.onBeforeUnload) {
+    window.removeEventListener("beforeunload", state.onBeforeUnload);
+    state.onBeforeUnload = null;
+  }
+
+  // Undo the scroll lock applied while open full-screen on mobile.
+  document.body.style.overflow = "";
+
   if (state.dom?.root.isConnected) {
     state.dom.root.remove();
   }
@@ -664,6 +699,8 @@ async function runCommand(command: PadynaCommand, options?: PadynaInitOptions) {
   state.initOptions = null;
   state.isIframeBootstrapped = false;
   state.isIframeLoaded = false;
+  state.widgetUrl = "";
+  state.widgetOrigin = "";
   state.launcherMessage = "";
   state.isLauncherMessageDismissed = false;
   if (state.hideLoaderTimer) {
@@ -686,7 +723,7 @@ function drainQueue(queued: unknown[][]) {
   }
 }
 
-export const Padyna: PadynaCallable = Object.assign(
+const Padyna: PadynaCallable = Object.assign(
   (command: PadynaCommand, options?: PadynaInitOptions) => {
     void runCommand(command, options);
   },

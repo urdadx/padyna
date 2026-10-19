@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "../ui/input";
-import { polarClient } from "@/lib/polar-client";
 import { useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { trpc } from "@/utils/trpc";
 import Spinner from "../ui/spinner";
 import { useRouteContext } from "@tanstack/react-router";
@@ -16,36 +15,25 @@ export function UserBillingEmail() {
 	const { session } = useRouteContext({ from: "/(admin)" });
 	const isAdmin = session?.user.role === "admin" || session?.user.role === "owner";
 
-	const { data: customerState, refetch } = useSuspenseQuery({
-		queryKey: ["customerState", orgLimits?.externalCustomerId],
-		queryFn: async () => {
-			if (!orgLimits?.externalCustomerId) return null;
-			const result = await polarClient.customers.getStateExternal({
-				externalId: orgLimits.externalCustomerId,
-			});
-			return result;
-		},
-	});
+	const { data: customerState, refetch } = useSuspenseQuery(
+		trpc.subscription.getCustomerState.queryOptions(),
+	);
 
 	const [email, setEmail] = useState(customerState?.email ?? "");
-	const [isSaving, setIsSaving] = useState(false);
 
-	const handleSave = async () => {
+	const updateEmail = useMutation(
+		trpc.subscription.updateBillingEmail.mutationOptions({
+			onSuccess: () => refetch(),
+			onError: (error) => {
+				console.error("Failed to update billing email:", error);
+			},
+		}),
+	);
+	const isSaving = updateEmail.isPending;
+
+	const handleSave = () => {
 		if (!orgLimits?.externalCustomerId) return;
-		setIsSaving(true);
-		try {
-			await polarClient.customers.update({
-				id: orgLimits.externalCustomerId,
-				customerUpdate: {
-					email,
-				},
-			});
-			await refetch();
-		} catch (error) {
-			console.error("Failed to update billing email:", error);
-		} finally {
-			setIsSaving(false);
-		}
+		updateEmail.mutate({ email });
 	};
 
 	if (!orgLimits?.externalCustomerId) {
