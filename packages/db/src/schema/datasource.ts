@@ -32,6 +32,18 @@ const vector = customType<{ data: number[]; driverData: string; config: { dimens
   },
 });
 
+const tsvector = customType<{ data: string }>({
+  dataType() {
+    return "tsvector";
+  },
+});
+
+// Written in Postgres' normalized form so drizzle-kit push sees no difference on
+// every deploy. Keep in sync with the full-text query in hybrid-retrieval.
+const CHUNK_SEARCH_VECTOR = sql.raw(
+  `(setweight(to_tsvector('english'::regconfig, COALESCE(title, ''::text)), 'A'::"char") || setweight(to_tsvector('english'::regconfig, content), 'B'::"char"))`,
+);
+
 export const datasources = pgTable(
   "datasources",
   {
@@ -137,6 +149,9 @@ export const datasourceChunks = pgTable(
     embeddingDimensions: integer("embedding_dimensions"),
     lastEmbeddedAt: timestamp("last_embedded_at"),
 
+    // Precomputed so full-text ranking doesn't re-parse every matching chunk per query.
+    searchVector: tsvector("search_vector").generatedAlwaysAs(CHUNK_SEARCH_VECTOR),
+
     extraMetadata: jsonb("extra_metadata").$type<Record<string, unknown>>(),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -155,17 +170,10 @@ export const datasourceChunks = pgTable(
       table.embeddingModel,
       table.embeddingDimensions,
     ),
-    index("datasource_chunks_fulltext_search_idx").using(
-      "gin",
-      sql`(
-        setweight(to_tsvector('simple', coalesce(${table.title}, '')), 'A') ||
-        setweight(to_tsvector('simple', coalesce(${table.content}, '')), 'B')
-      )`,
-    ),
-    index("datasource_chunks_embedding_cosine_idx").using(
-      "ivfflat",
-      sql`${table.embedding} vector_cosine_ops`,
-    ),
+    index("datasource_chunks_search_vector_idx").using("gin", table.searchVector),
+    // No approximate vector index: semantic search is an exact scan within one chatbot
+    // (narrowed by datasource_chunks_search_scope_idx). A global IVFFlat index lost
+    // small tenants' matches to the chatbot filter and was disabled at query time anyway.
     uniqueIndex("datasource_chunks_datasource_chunk_index_uidx").on(
       table.datasourceId,
       table.chunkIndex,

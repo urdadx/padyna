@@ -1,10 +1,8 @@
 import { getPgPool } from "@padyna/db";
-import { env } from "@padyna/env/server";
 import { EMBEDDING_DIMENSIONS, EMBEDDING_MODEL } from "../lib/embeddings";
 import { embedTextForSemanticSearch } from "./semantic-search";
 
 type SourceType = "link" | "file" | "qa" | "text" | "notion" | "google_drive";
-export type SemanticSearchMode = "approximate" | "exact";
 
 export interface HybridRetrievalMetrics {
   totalMs: number;
@@ -28,7 +26,6 @@ export interface HybridRetrievalInput {
   minSemanticScore?: number;
   semanticWeight?: number;
   fullTextWeight?: number;
-  semanticSearchMode?: SemanticSearchMode;
   rrfK?: number;
   onMetrics?: (metrics: HybridRetrievalMetrics) => void;
   abortSignal?: AbortSignal;
@@ -89,6 +86,11 @@ const DEFAULT_FTS_CHUNK_LIMIT = 40;
 const DEFAULT_MAX_CHUNKS_PER_DATASOURCE = 2;
 const DEFAULT_MIN_SEMANTIC_SCORE = 0.2;
 const DEFAULT_RRF_K = 60;
+// Tuned with evaluate-retrieval: full-text mainly rescues matches semantic search
+// ranks just outside the cut-off. At equal weight its broad "any term" matches
+// pushed the best source down the list.
+const DEFAULT_SEMANTIC_WEIGHT = 1;
+const DEFAULT_FULL_TEXT_WEIGHT = 0.25;
 const MAX_LIMIT = 50;
 const MAX_CANDIDATE_LIMIT = 200;
 const LEGACY_EMBEDDING_MODEL = "deterministic-hash-v1";
@@ -109,9 +111,9 @@ function clampScore(value: number | undefined, fallback: number) {
   return Math.max(-1, Math.min(value, 1));
 }
 
-function clampWeight(value: number | undefined) {
+function clampWeight(value: number | undefined, fallback: number) {
   if (value === undefined || !Number.isFinite(value)) {
-    return 1;
+    return fallback;
   }
 
   return Math.max(0, Math.min(value, 5));
@@ -150,7 +152,14 @@ async function retrieveFullTextCandidates(
   const result = await getPgPool().query<CandidateRow>(
     `
       with search_query as (
-        select websearch_to_tsquery('simple', $1) as value
+        -- Match any meaningful term rather than all of them: visitors ask full questions
+        -- ("how do I reset my password?") and requiring every word left full-text search
+        -- with no hits for almost all of them. ts_rank_cd still ranks chunks that cover
+        -- more of the terms higher. 'english' adds stemming and drops stop words.
+        select to_tsquery(
+          'english',
+          replace(plainto_tsquery('english', $1)::text, ' & ', ' | ')
+        ) as value
       ), candidates as (
         select
           dc.id as chunk_id,
@@ -162,8 +171,7 @@ async function retrieveFullTextCandidates(
           d.source_type,
           d.url,
           ts_rank_cd(
-            setweight(to_tsvector('simple', coalesce(dc.title, '')), 'A') ||
-            setweight(to_tsvector('simple', coalesce(dc.content, '')), 'B'),
+            dc.search_vector,
             search_query.value
           ) as score,
           dc.updated_at
@@ -174,10 +182,7 @@ async function retrieveFullTextCandidates(
           and dc.organization_id = $3
           and d.ingest_status = 'synced'
           and d.deleted_at is null
-          and (
-            setweight(to_tsvector('simple', coalesce(dc.title, '')), 'A') ||
-            setweight(to_tsvector('simple', coalesce(dc.content, '')), 'B')
-          ) @@ search_query.value
+          and dc.search_vector @@ search_query.value
         order by score desc, dc.updated_at desc, dc.id asc
         limit $4
       )
@@ -204,26 +209,19 @@ async function retrieveFullTextCandidates(
   };
 }
 
+// Exact nearest-neighbour search within one chatbot's chunks. Filtering by chatbot
+// first (btree index) keeps this cheap at per-chatbot corpus sizes, and unlike a
+// global approximate index it can't lose a small tenant's matches to the filter.
 async function retrieveSemanticCandidates(
   embedding: number[],
   chatbotId: string,
   organizationId: string,
   limit: number,
   minScore: number,
-  searchMode: SemanticSearchMode,
 ) {
   const startedAt = performance.now();
-  const client = await getPgPool().connect();
-
-  try {
-    await client.query("begin");
-    if (searchMode === "exact") {
-      await client.query("set local enable_indexscan = off");
-    } else {
-      await client.query("set local ivfflat.probes = 10");
-    }
-    const result = await client.query<CandidateRow>(
-      `
+  const result = await getPgPool().query<CandidateRow>(
+    `
       with candidates as (
         select
           dc.id as chunk_id,
@@ -264,30 +262,23 @@ async function retrieveSemanticCandidates(
         row_number() over (order by score desc, chunk_id asc)::integer as rank
       from relevant
       order by rank asc
-      `,
-      [
-        embeddingToVectorLiteral(embedding),
-        chatbotId,
-        organizationId,
-        EMBEDDING_DIMENSIONS,
-        EMBEDDING_MODEL,
-        LEGACY_EMBEDDING_MODEL,
-        limit,
-        minScore,
-      ],
-    );
-    await client.query("commit");
+    `,
+    [
+      embeddingToVectorLiteral(embedding),
+      chatbotId,
+      organizationId,
+      EMBEDDING_DIMENSIONS,
+      EMBEDDING_MODEL,
+      LEGACY_EMBEDDING_MODEL,
+      limit,
+      minScore,
+    ],
+  );
 
-    return {
-      candidates: result.rows.map(mapCandidateRow),
-      durationMs: performance.now() - startedAt,
-    };
-  } catch (error) {
-    await client.query("rollback").catch(() => undefined);
-    throw error;
-  } finally {
-    client.release();
-  }
+  return {
+    candidates: result.rows.map(mapCandidateRow),
+    durationMs: performance.now() - startedAt,
+  };
 }
 
 export function fuseRetrievalCandidates(
@@ -408,8 +399,8 @@ export async function retrieveHybridChunks(
       limit,
     ),
     rrfK: clamp(input.rrfK, DEFAULT_RRF_K, 1, 500),
-    semanticWeight: clampWeight(input.semanticWeight),
-    fullTextWeight: clampWeight(input.fullTextWeight),
+    semanticWeight: clampWeight(input.semanticWeight, DEFAULT_SEMANTIC_WEIGHT),
+    fullTextWeight: clampWeight(input.fullTextWeight, DEFAULT_FULL_TEXT_WEIGHT),
   };
 
   const fullTextPromise = retrieveFullTextCandidates(
@@ -428,7 +419,6 @@ export async function retrieveHybridChunks(
       input.organizationId,
       semanticCandidateLimit,
       clampScore(input.minSemanticScore, DEFAULT_MIN_SEMANTIC_SCORE),
-      input.semanticSearchMode ?? env.RAG_SEMANTIC_SEARCH_MODE,
     );
   });
 

@@ -90,7 +90,10 @@ export async function ingestNotionPage(
       embeddings: embeddingVectors,
       dimensions,
       model,
-    } = await embedTexts(chunks.map((chunk) => `${chunkTitle}\n\n${chunk.content}`));
+    } = await embedTexts(
+      chunks.map((chunk) => `${chunkTitle}\n\n${chunk.content}`),
+      { reuseFromDatasourceId: datasourceId },
+    );
 
     await replaceDatasourceChunksAndMarkSynced(
       chunks.map((chunk, index) => ({

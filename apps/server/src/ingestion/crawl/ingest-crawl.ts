@@ -10,6 +10,9 @@ import {
   replaceDatasourceChunksAndMarkSynced,
 } from "@padyna/db/ingestion-files";
 import { startCrawl } from "./run-crawl";
+import { mapWithConcurrency } from "../../lib/concurrency";
+
+const CRAWL_PAGE_CONCURRENCY = 4;
 
 function normalizeMimeType(url: string) {
   if (url.endsWith(".pdf")) return "application/pdf";
@@ -64,9 +67,11 @@ export async function processCompletedCrawl(
   const datasourceIds: string[] = [];
   let totalChunks = 0;
 
-  for (const pageData of statusResponse.data) {
+  // Pages are independent, so a few run at once instead of one after another
+  // (each page is a record insert, an embedding call and a chunk write).
+  await mapWithConcurrency(statusResponse.data, CRAWL_PAGE_CONCURRENCY, async (pageData) => {
     if (!pageData.markdown) {
-      continue;
+      return;
     }
 
     const pageUrl = pageData.metadata?.url || pageData.metadata?.sourceURL || "";
@@ -86,7 +91,7 @@ export async function processCompletedCrawl(
       });
     } catch (error) {
       console.error("Failed to create datasource record for crawl page:", error);
-      continue;
+      return;
     }
 
     try {
@@ -100,14 +105,17 @@ export async function processCompletedCrawl(
 
       if (chunks.length === 0) {
         await markDatasourceFailed(datasourceId, "No chunks created from content");
-        continue;
+        return;
       }
 
       const {
         embeddings: embeddingVectors,
         dimensions,
         model,
-      } = await embedTexts(chunks.map((chunk) => `${chunkTitle}\n\n${chunk.content}`));
+      } = await embedTexts(
+        chunks.map((chunk) => `${chunkTitle}\n\n${chunk.content}`),
+        { reuseFromDatasourceId: datasourceId },
+      );
 
       await replaceDatasourceChunksAndMarkSynced(
         chunks.map((chunk, index) => ({
@@ -142,7 +150,7 @@ export async function processCompletedCrawl(
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       await markDatasourceFailed(datasourceId, errorMessage);
     }
-  }
+  });
 
   if (datasourceIds.length > 0) {
     await incrementChatbotDatasourceCount(chatbotId, organizationId);

@@ -1,13 +1,17 @@
 import { openai, type OpenAIEmbeddingModelOptions } from "@ai-sdk/openai";
 import { embed, embedMany } from "ai";
 import { env } from "@padyna/env/server";
+import { mapWithConcurrency, toBatches } from "./concurrency";
 
 export const EMBEDDING_MODEL = "text-embedding-3-small";
 export const EMBEDDING_DIMENSIONS = 1536;
 
 const EMBEDDING_TIMEOUT_MS = 15_000;
 const INGESTION_EMBEDDING_TIMEOUT_MS = 60_000;
-const MAX_PARALLEL_EMBEDDING_CALLS = 2;
+// Batches stay well under OpenAI's per-request token cap (~300 tokens per chunk), and
+// each gets its own timeout so a large document isn't racing one 60s budget.
+const EMBEDDING_BATCH_SIZE = 256;
+const MAX_PARALLEL_EMBEDDING_CALLS = 4;
 
 const providerOptions = {
   openai: {
@@ -58,13 +62,21 @@ export async function embedDocuments(values: string[]): Promise<number[][]> {
     return [];
   }
 
-  const { embeddings } = await embedMany({
-    model: getEmbeddingModel(),
-    values,
-    providerOptions,
-    maxParallelCalls: MAX_PARALLEL_EMBEDDING_CALLS,
-    abortSignal: AbortSignal.timeout(INGESTION_EMBEDDING_TIMEOUT_MS),
-  });
+  const batches = await mapWithConcurrency(
+    toBatches(values, EMBEDDING_BATCH_SIZE),
+    MAX_PARALLEL_EMBEDDING_CALLS,
+    async (batch) => {
+      const { embeddings } = await embedMany({
+        model: getEmbeddingModel(),
+        values: batch,
+        providerOptions,
+        maxParallelCalls: 1,
+        abortSignal: AbortSignal.timeout(INGESTION_EMBEDDING_TIMEOUT_MS),
+      });
+      return embeddings;
+    },
+  );
+  const embeddings = batches.flat();
 
   if (embeddings.length !== values.length) {
     throw new Error(

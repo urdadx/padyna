@@ -1,14 +1,16 @@
-import {
-  createAgentUIStreamResponse,
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-} from "ai";
+import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { db } from "@padyna/db";
 import { chatbot, chatConversation, chatMessage } from "@padyna/db/schema/index";
 import { env } from "@padyna/env/server";
 import { and, eq, asc } from "drizzle-orm";
 import { Hono } from "hono";
 import { createSupportChatAgent } from "../chat";
+import {
+  getLatestUserText,
+  prefetchKnowledge,
+  streamAgentResponse,
+} from "../chat/knowledge-first-stream";
+import { TtlCache } from "../lib/ttl-cache";
 import {
   ConversationAccessError,
   getConversationStatus,
@@ -133,7 +135,25 @@ async function loadConversationUiMessages(conversationId: string, chatbotId: str
   return convertDbMessagesToUiMessages(rows);
 }
 
+// Every widget request (config, init, each chat message) starts with this lookup.
+// A short TTL keeps dashboard edits (enabled, allowed domains) live within seconds.
+const widgetChatbotCache = new TtlCache<string, PublicWidgetChatbot | null>({
+  ttlMs: 15_000,
+  maxSize: 1_000,
+});
+
 async function getWidgetChatbot(widgetId: string) {
+  const cached = widgetChatbotCache.get(widgetId);
+  if (cached !== undefined) {
+    return cached ?? undefined;
+  }
+
+  const record = await loadWidgetChatbot(widgetId);
+  widgetChatbotCache.set(widgetId, record ?? null);
+  return record;
+}
+
+async function loadWidgetChatbot(widgetId: string) {
   const rows = await db
     .select({
       id: chatbot.id,
@@ -158,7 +178,7 @@ async function getWidgetChatbot(widgetId: string) {
 
 async function resolveWidgetRequest(
   c: any,
-  options: { requireEnabled?: boolean } = {},
+  options: { requireEnabled?: boolean; includeBranding?: boolean } = {},
 ): Promise<
   | {
       chatbotRecord: PublicWidgetChatbot;
@@ -183,7 +203,11 @@ async function resolveWidgetRequest(
     return c.json({ message: "Domain not allowed" }, 403);
   }
 
-  const hasBrandingAddon = await organizationHasBrandingAddon(chatbotRecord.organizationId);
+  // Only config and init render the "Powered by" badge; chat requests skip the lookup.
+  const hasBrandingAddon =
+    options.includeBranding === false
+      ? false
+      : await organizationHasBrandingAddon(chatbotRecord.organizationId);
 
   return { chatbotRecord, requestOrigin, hasBrandingAddon };
 }
@@ -252,7 +276,7 @@ widgetRoutes.post("/:widgetId/init", async (c) => {
 });
 
 widgetRoutes.post("/:widgetId/chat", widgetChatRateLimitMiddleware, async (c) => {
-  const resolved = await resolveWidgetRequest(c, { requireEnabled: true });
+  const resolved = await resolveWidgetRequest(c, { requireEnabled: true, includeBranding: false });
   if (resolved instanceof Response) {
     return resolved;
   }
@@ -270,6 +294,14 @@ widgetRoutes.post("/:widgetId/chat", widgetChatRateLimitMiddleware, async (c) =>
   if (!userMessage) {
     return c.json({ message: "message must be a user message with text" }, 400);
   }
+
+  // Start the knowledge search now; it runs while the message is stored and the
+  // agent is set up, and lets the model answer without a separate search step.
+  const prefetchPromise = prefetchKnowledge({
+    query: getLatestUserText([userMessage]),
+    chatbotId: chatbotRecord.id,
+    organizationId: chatbotRecord.organizationId,
+  });
 
   const visitorMetadata = requestOrigin ? getUserMetadataFromRequest(c) : undefined;
 
@@ -292,47 +324,44 @@ widgetRoutes.post("/:widgetId/chat", widgetChatRateLimitMiddleware, async (c) =>
     throw error;
   }
 
-  // History comes from the database, never from the client.
-  const uiMessages = await loadConversationUiMessages(
-    targetConversationId ?? conversationId,
-    chatbotRecord.id,
-  );
-
-  if (targetConversationId) {
-    const status = await getConversationStatus(targetConversationId);
-    if (status === "escalated" || status === "assigned" || status === "closed") {
-      if (status === "escalated" || status === "assigned") {
-        broadcastConversationStatusUpdate({
-          conversationId: targetConversationId,
-          status,
-        });
-      }
-
-      const stream = createUIMessageStream({
-        originalMessages: uiMessages,
-        execute: async ({ writer }) => {
-          writer.write({ type: "finish" });
-        },
-      });
-      return createUIMessageStreamResponse({ stream });
-    }
-  }
-
   const resolvedConversationId = targetConversationId ?? conversationId;
 
-  const agent = await createSupportChatAgent({
-    chatbotId: chatbotRecord.id,
-    organizationId: chatbotRecord.organizationId,
-    chatbotName: chatbotRecord.name || "AI Assistant",
-    chatbotUseCase: chatbotRecord.usecase || "support",
-    conversationId: resolvedConversationId,
-  });
+  const [uiMessages, status, agent, prefetched] = await Promise.all([
+    // History comes from the database, never from the client.
+    loadConversationUiMessages(resolvedConversationId, chatbotRecord.id),
+    targetConversationId ? getConversationStatus(targetConversationId) : null,
+    createSupportChatAgent({
+      chatbotId: chatbotRecord.id,
+      organizationId: chatbotRecord.organizationId,
+      chatbotName: chatbotRecord.name || "AI Assistant",
+      chatbotUseCase: chatbotRecord.usecase || "support",
+      conversationId: resolvedConversationId,
+    }),
+    prefetchPromise,
+  ]);
 
-  return createAgentUIStreamResponse({
+  if (targetConversationId && (status === "escalated" || status === "assigned" || status === "closed")) {
+    if (status === "escalated" || status === "assigned") {
+      broadcastConversationStatusUpdate({
+        conversationId: targetConversationId,
+        status,
+      });
+    }
+
+    const stream = createUIMessageStream({
+      originalMessages: uiMessages,
+      execute: async ({ writer }) => {
+        writer.write({ type: "finish" });
+      },
+    });
+    return createUIMessageStreamResponse({ stream });
+  }
+
+  return streamAgentResponse({
     agent,
     uiMessages,
-    originalMessages: uiMessages,
-    onFinish: async ({ messages: completedMessages }) => {
+    prefetched,
+    onFinish: async (completedMessages) => {
       await persistConversationMessages({
         chatbotId: chatbotRecord.id,
         organizationId: chatbotRecord.organizationId,

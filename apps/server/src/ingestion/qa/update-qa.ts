@@ -58,7 +58,10 @@ export async function updateQa(input: UpdateQaInput): Promise<UpdateQaResult> {
       embeddings: embeddingVectors,
       dimensions,
       model,
-    } = await embedTexts(chunks.map((chunk) => `${question}\n\n${chunk.content}`));
+    } = await embedTexts(
+      chunks.map((chunk) => `${question}\n\n${chunk.content}`),
+      { reuseFromDatasourceId: id },
+    );
 
     await replaceDatasourceChunksAndMarkSynced(
       chunks.map((chunk, index) => ({

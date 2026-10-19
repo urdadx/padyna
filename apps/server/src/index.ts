@@ -12,6 +12,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { ingestionRoutes } from "./ingestion-routes";
 import { chatRoutes, liveChatRoutes } from "./chat";
+import { flushDatasourceReferences } from "./chat/datasource-references";
 import { widgetRoutes } from "./widget";
 import { analyticsStreamRoutes } from "./analytics/stream";
 import { endSessionRoute } from "./analytics/end-session";
@@ -251,6 +252,13 @@ app.use(
 app.get("/", (c) => {
   return c.text("OK");
 });
+
+// Write buffered datasource reference counts before the process exits (deploys, restarts).
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.once(signal, () => {
+    void flushDatasourceReferences().finally(() => process.exit(0));
+  });
+}
 
 export default {
   fetch: app.fetch,

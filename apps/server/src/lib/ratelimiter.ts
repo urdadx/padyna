@@ -1,7 +1,6 @@
-import { RedisClient } from "bun";
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
-import { env } from "@padyna/env/server";
+import { redis } from "./redis";
 
 type RateLimitInput = {
   namespace: string;
@@ -27,8 +26,6 @@ type RateLimitMiddlewareOptions = {
   windowSeconds: number;
   resolveIdentifier: (c: Context) => string | null | undefined | Promise<string | null | undefined>;
 };
-
-const redis = new RedisClient(env.REDIS_URL);
 
 function toBucket(now: Date, windowSeconds: number): number {
   const epochSeconds = Math.floor(now.getTime() / 1000);

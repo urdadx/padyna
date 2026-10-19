@@ -1,4 +1,4 @@
-import type { HybridRetrievalMetrics, SemanticSearchMode } from "./hybrid-retrieval";
+import type { HybridRetrievalMetrics } from "./hybrid-retrieval";
 
 interface EvaluationItem {
   query: string;
@@ -89,7 +89,7 @@ async function main() {
   const datasetPath = Bun.argv[2];
   if (!datasetPath) {
     throw new Error(
-      "Usage: bun run evaluate-search -- <dataset.json> [k] [approximate|exact] [show-misses]",
+      "Usage: bun run evaluate-search -- <dataset.json> [k] [show-misses]",
     );
   }
 
@@ -98,13 +98,9 @@ async function main() {
     throw new Error("k must be an integer between 1 and 50.");
   }
   const k = requestedK;
-  const searchMode = Bun.argv[4] ?? "approximate";
-  if (searchMode !== "approximate" && searchMode !== "exact") {
-    throw new Error("search mode must be approximate or exact.");
-  }
-  const showMisses = Bun.argv[5] === "show-misses";
-  if (Bun.argv[5] !== undefined && !showMisses) {
-    throw new Error("The optional fourth argument must be show-misses.");
+  const showMisses = Bun.argv[4] === "show-misses";
+  if (Bun.argv[4] !== undefined && !showMisses) {
+    throw new Error("The optional third argument must be show-misses.");
   }
 
   const dataset = parseDataset(await Bun.file(datasetPath).json());
@@ -115,6 +111,7 @@ async function main() {
   let zeroResults = 0;
   let fallbackCount = 0;
   let failedQueries = 0;
+  let queriesWithFullTextHits = 0;
   const missedQueries: MissedQuery[] = [];
 
   for (const [index, item] of dataset.entries()) {
@@ -126,7 +123,6 @@ async function main() {
         chatbotId: item.chatbotId,
         organizationId: item.organizationId,
         limit: k,
-        semanticSearchMode: searchMode as SemanticSearchMode,
         onMetrics: (value) => {
           metrics = value;
         },
@@ -152,6 +148,7 @@ async function main() {
       }
       if (results.length === 0) zeroResults += 1;
       if (metrics?.degradedToFullText) fallbackCount += 1;
+      if ((metrics?.fullTextCandidates ?? 0) > 0) queriesWithFullTextHits += 1;
       if (metrics) collectLatencies(latencies, metrics);
     } catch (error) {
       failedQueries += 1;
@@ -162,13 +159,13 @@ async function main() {
 
   const count = dataset.length;
   console.log(`Queries: ${count}`);
-  console.log(`Semantic search mode: ${searchMode}`);
   console.log(`Source Recall@${k}: ${((recallTotal / count) * 100).toFixed(2)}%`);
   console.log(`MRR@${k}: ${(reciprocalRankTotal / count).toFixed(4)}`);
   console.log(
     `Zero-result rate: ${((zeroResults / count) * 100).toFixed(2)}% (${zeroResults}/${count})`,
   );
   console.log(`Degraded/full-text fallback count: ${fallbackCount}`);
+  console.log(`Queries with full-text hits: ${queriesWithFullTextHits}/${dataset.length}`);
   console.log(`Failed queries: ${failedQueries}`);
   console.log(`Missed queries: ${missedQueries.length}`);
   console.log(`Total latency: ${formatLatency(latencies.total)}`);

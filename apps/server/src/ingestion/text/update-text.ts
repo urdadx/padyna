@@ -67,7 +67,10 @@ export async function updateText(input: UpdateTextInput): Promise<UpdateTextResu
       embeddings: embeddingVectors,
       dimensions,
       model,
-    } = await embedTexts(chunks.map((chunk) => `${chunkTitle}\n\n${chunk.content}`));
+    } = await embedTexts(
+      chunks.map((chunk) => `${chunkTitle}\n\n${chunk.content}`),
+      { reuseFromDatasourceId: id },
+    );
 
     await replaceDatasourceChunksAndMarkSynced(
       chunks.map((chunk, index) => ({

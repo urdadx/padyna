@@ -1,12 +1,8 @@
-import {
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-  convertToModelMessages,
-  validateUIMessages,
-} from "ai";
+import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { Hono } from "hono";
 import { authMiddleware } from "../middlewares/auth-middleware";
 import { createSupportChatAgent } from "./agents";
+import { getLatestUserText, prefetchKnowledge, streamAgentResponse } from "./knowledge-first-stream";
 import {
   getConversationStatus,
   getUserMetadataFromRequest,
@@ -68,26 +64,6 @@ chatRoutes.post("/", authChatRateLimitMiddleware, async (c) => {
     return c.json({ message: "No active user" }, 400);
   }
 
-  const [chatbotData] = await db
-    .select()
-    .from(chatbot)
-    .where(and(eq(chatbot.id, activeChatbot), eq(chatbot.organizationId, activeOrganization)))
-    .limit(1);
-
-  if (!chatbotData) {
-    return c.json({ message: "Chatbot not found" }, 404);
-  }
-
-  const [organizationData] = await db
-    .select({ externalCustomerId: organization.externalCustomerId })
-    .from(organization)
-    .where(eq(organization.id, activeOrganization))
-    .limit(1);
-
-  const chatbotName = chatbotData.name || "AI Assistant";
-  const chatbotUseCase = chatbotData.usecase || "support";
-  const externalCustomerId = organizationData?.externalCustomerId;
-
   const body = await c.req.json();
   const uiMessages = body.messages;
   const conversationId = body.conversationId;
@@ -95,6 +71,35 @@ chatRoutes.post("/", authChatRateLimitMiddleware, async (c) => {
   if (!Array.isArray(uiMessages)) {
     return c.json({ message: "messages must be an array" }, 400);
   }
+
+  // Start the knowledge search right away; it overlaps with the lookups below and
+  // lets the model answer without a separate search step.
+  const prefetchPromise = prefetchKnowledge({
+    query: getLatestUserText(uiMessages),
+    chatbotId: activeChatbot,
+    organizationId: activeOrganization,
+  });
+
+  const [[chatbotData], [organizationData]] = await Promise.all([
+    db
+      .select()
+      .from(chatbot)
+      .where(and(eq(chatbot.id, activeChatbot), eq(chatbot.organizationId, activeOrganization)))
+      .limit(1),
+    db
+      .select({ externalCustomerId: organization.externalCustomerId })
+      .from(organization)
+      .where(eq(organization.id, activeOrganization))
+      .limit(1),
+  ]);
+
+  if (!chatbotData) {
+    return c.json({ message: "Chatbot not found" }, 404);
+  }
+
+  const chatbotName = chatbotData.name || "AI Assistant";
+  const chatbotUseCase = chatbotData.usecase || "support";
+  const externalCustomerId = organizationData?.externalCustomerId;
 
   const firstMessage = uiMessages[0];
   const firstTextPart = firstMessage?.parts?.find(
@@ -113,51 +118,43 @@ chatRoutes.post("/", authChatRateLimitMiddleware, async (c) => {
     conversationId,
   });
 
-  if (targetConversationId) {
-    const status = await getConversationStatus(targetConversationId);
-    if (status === "escalated" || status === "assigned" || status === "closed") {
-      if (status === "escalated" || status === "assigned") {
-        broadcastConversationStatusUpdate({
-          conversationId: targetConversationId,
-          status,
-        });
-      }
-
-      const stream = createUIMessageStream({
-        originalMessages: uiMessages,
-        execute: async ({ writer }) => {
-          writer.write({ type: "finish" });
-        },
-      });
-      return createUIMessageStreamResponse({ stream });
-    }
-  }
-
   const resolvedConversationId = targetConversationId ?? conversationId;
 
-  const agent = await createSupportChatAgent({
-    chatbotId: activeChatbot,
-    organizationId: activeOrganization,
-    chatbotName,
-    chatbotUseCase,
-    conversationId: resolvedConversationId,
-    userId,
-  });
+  const [status, agent, prefetched] = await Promise.all([
+    targetConversationId ? getConversationStatus(targetConversationId) : null,
+    createSupportChatAgent({
+      chatbotId: activeChatbot,
+      organizationId: activeOrganization,
+      chatbotName,
+      chatbotUseCase,
+      conversationId: resolvedConversationId,
+      userId,
+    }),
+    prefetchPromise,
+  ]);
 
-  const agentTools = agent.tools as Record<string, any>;
+  if (targetConversationId && (status === "escalated" || status === "assigned" || status === "closed")) {
+    if (status === "escalated" || status === "assigned") {
+      broadcastConversationStatusUpdate({
+        conversationId: targetConversationId,
+        status,
+      });
+    }
 
-  const validatedMessages = await validateUIMessages({
-    messages: uiMessages,
-    tools: agentTools,
-  });
+    const stream = createUIMessageStream({
+      originalMessages: uiMessages,
+      execute: async ({ writer }) => {
+        writer.write({ type: "finish" });
+      },
+    });
+    return createUIMessageStreamResponse({ stream });
+  }
 
-  const modelMessages = await convertToModelMessages(validatedMessages, {
-    tools: agentTools,
-  });
-
-  const result = await agent.stream({
-    messages: modelMessages,
-    onFinish: async ({ totalUsage }) => {
+  return streamAgentResponse({
+    agent,
+    uiMessages,
+    prefetched,
+    onUsage: async (usage) => {
       if (!externalCustomerId) {
         return;
       }
@@ -168,19 +165,15 @@ chatRoutes.post("/", authChatRateLimitMiddleware, async (c) => {
             name: "llm_usage",
             externalCustomerId,
             metadata: {
-              totalTokens: totalUsage.totalTokens ?? 0,
-              promptTokens: totalUsage.inputTokens ?? 0,
-              completionTokens: totalUsage.outputTokens ?? 0,
+              totalTokens: usage.totalTokens ?? 0,
+              promptTokens: usage.inputTokens ?? 0,
+              completionTokens: usage.outputTokens ?? 0,
             },
           },
         ],
       });
     },
-  });
-
-  return result.toUIMessageStreamResponse({
-    originalMessages: validatedMessages,
-    onFinish: async ({ messages }) => {
+    onFinish: async (messages) => {
       await persistConversationMessages({
         chatbotId: activeChatbot,
         organizationId: activeOrganization,

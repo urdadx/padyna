@@ -113,6 +113,7 @@ export async function ingestGoogleDriveFile(
     const chunks = chunkText(contentText);
     const { embeddings, dimensions, model } = await embedTexts(
       chunks.map((chunk) => `${input.file.name}\n\n${chunk.content}`),
+      { reuseFromDatasourceId: datasourceId },
     );
 
     await replaceDatasourceChunksAndMarkSynced(

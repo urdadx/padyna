@@ -65,7 +65,10 @@ export async function ingestLink(input: IngestLinkInput): Promise<IngestedLinkRe
       embeddings: embeddingVectors,
       dimensions,
       model,
-    } = await embedTexts(chunks.map((chunk) => `${chunkTitle}\n\n${chunk.content}`));
+    } = await embedTexts(
+      chunks.map((chunk) => `${chunkTitle}\n\n${chunk.content}`),
+      { reuseFromDatasourceId: datasourceId },
+    );
 
     await replaceDatasourceChunksAndMarkSynced(
       chunks.map((chunk, index) => ({

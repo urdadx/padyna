@@ -12,7 +12,6 @@ export const env = createEnv({
     POLAR_SUCCESS_URL: z.url(),
     CORS_ORIGIN: z.url(),
     OPENAI_API_KEY: z.string().min(1).optional(),
-    RAG_SEMANTIC_SEARCH_MODE: z.enum(["exact", "approximate"]).default("exact"),
     NODE_ENV: z.string(),
     STARTER_MONTHLY_PLAN: z.string().optional(),
     STARTER_YEARLY_PLAN: z.string().optional(),
