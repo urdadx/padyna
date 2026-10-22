@@ -1,0 +1,111 @@
+---
+// Shows a dashboard snapshot page from `public/demos/` (see
+// src/assets/features/README.md) in an iframe rendered at its captured size and
+// scaled to this element's width; give this element the same aspect ratio.
+// The page replays its conversation while playing: driven by `setPlaying()`,
+// or, with `autoplay`, whenever it is on screen and motion is allowed.
+interface Props {
+  src: string;
+  width: number;
+  height: number;
+  title: string;
+  autoplay?: boolean;
+  class?: string;
+}
+
+const {
+  src,
+  width,
+  height,
+  title,
+  autoplay = false,
+  class: className,
+} = Astro.props;
+---
+
+<demo-frame
+  class:list={["relative block overflow-hidden", className]}
+  data-width={width}
+  data-autoplay={autoplay ? "" : undefined}
+>
+  <iframe
+    src={src}
+    title={title}
+    aria-hidden="true"
+    tabindex="-1"
+    loading="lazy"
+    class="pointer-events-none absolute top-0 left-0 origin-top-left border-0"
+    style={`width: ${width}px; height: ${height}px`}></iframe>
+</demo-frame>
+
+<script>
+  type DemoWindow = Window & {
+    demo?: { setPlaying(playing: boolean): void };
+  };
+
+  class DemoFrame extends HTMLElement {
+    private playing = false;
+    private cleanup?: () => void;
+
+    connectedCallback() {
+      const iframe = this.querySelector("iframe")!;
+      const width = Number(this.dataset.width);
+      const resizeObserver = new ResizeObserver(() => {
+        iframe.style.transform = `scale(${this.clientWidth / width})`;
+      });
+      resizeObserver.observe(this);
+      const sync = () => this.sync();
+      iframe.addEventListener("load", sync);
+      const cleanups = [
+        () => resizeObserver.disconnect(),
+        () => iframe.removeEventListener("load", sync),
+      ];
+
+      if (this.hasAttribute("data-autoplay")) {
+        const reducedMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        );
+        let visible = false;
+        // Reduced motion keeps the finished conversation on screen.
+        const update = () =>
+          this.setPlaying(
+            visible && !reducedMotion.matches && !document.hidden,
+          );
+        const visibilityObserver = new IntersectionObserver(([entry]) => {
+          visible = entry.isIntersecting;
+          update();
+        });
+        visibilityObserver.observe(this);
+        reducedMotion.addEventListener("change", update);
+        document.addEventListener("visibilitychange", update);
+        cleanups.push(
+          () => visibilityObserver.disconnect(),
+          () => reducedMotion.removeEventListener("change", update),
+          () => document.removeEventListener("visibilitychange", update),
+        );
+      }
+
+      this.cleanup = () => cleanups.forEach((fn) => fn());
+    }
+
+    disconnectedCallback() {
+      this.cleanup?.();
+    }
+
+    setPlaying(playing: boolean) {
+      this.playing = playing;
+      this.sync();
+    }
+
+    private sync() {
+      const frame = this.querySelector("iframe")?.contentWindow as
+        | DemoWindow
+        | null
+        | undefined;
+      frame?.demo?.setPlaying(this.playing);
+    }
+  }
+
+  if (!customElements.get("demo-frame"))
+    customElements.define("demo-frame", DemoFrame);
+</script>

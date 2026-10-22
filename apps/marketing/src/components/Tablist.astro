@@ -1,48 +1,46 @@
 ---
+import { Image } from "astro:assets";
 import FeatureIcon from "./FeatureIcon.astro";
-import playgroundPoster from "../assets/features/playground-poster.webp";
-import actionsPoster from "../assets/features/actions-poster.webp";
-import analyticsPoster from "../assets/features/analytics-poster.webp";
-import activityPoster from "../assets/features/activity-poster.webp";
+import PlaygroundDemo from "./PlaygroundDemo.astro";
+import DemoBackdrop from "./DemoBackdrop.astro";
+import actionsImage from "../assets/features/actions.webp";
+import analyticsImage from "../assets/features/analytics.webp";
+import livechatImage from "../assets/features/livechat.webp";
 
+// `duration` is how long a tab stays selected while auto-cycling (seconds);
+// the Playground demo gets long enough to finish one run of its conversation.
 const features = [
   {
     id: "playground",
-    label: "Playground",
-    description: "Test and customize your AI agent effortlessly",
+    label: "Assistant",
     alternative:
-      "The Playground displays agent settings beside a live chat preview. Customize the agent name, icon, use case, brand color, welcome message, and suggested messages, then try a conversation in the preview.",
-    video: "https://assets.padyna.com/assets/playground_long.mp4",
-    poster: playgroundPoster,
+      "The Playground displays agent settings beside a live chat preview. A customer asks to change the delivery address on an order, and the agent asks for the new address and confirms the change.",
+    demo: true,
+    duration: 24,
+  },
+  {
+    id: "livechat",
+    label: "Live chat",
+    alternative:
+      "Chat logs list customer conversations from the website widget, WhatsApp, Slack, Telegram, and Discord beside the selected chat. The agent answers a duplicate-charge question, cites the sources it used, and the conversation can be escalated for live messaging or closed.",
+    image: livechatImage,
+    duration: 8,
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    alternative:
+      "The Analytics dashboard shows visits, chats started, bounce rate, average session time, and live users for the last 30 days. A daily chart compares visits and chats, with top platforms and most referenced data sources below.",
+    image: analyticsImage,
+    duration: 8,
   },
   {
     id: "actions",
     label: "Agent Actions",
-    description: "Automate workflows directly inside the conversation.",
     alternative:
-      "The Agent Actions screen lists workflows with descriptions, usage counts, and active status. Examples include booking meetings, creating Jira support tickets, and sending refund notifications from customer conversations.",
-    video: "https://assets.padyna.com/assets/padyna_action.mp4",
-    poster: actionsPoster,
-  },
-  {
-    id: "analytics",
-    label: "Analytics & Insights",
-    description:
-      "Track performance, uncover patterns, and understand every conversation.",
-    alternative:
-      "The Analytics dashboard shows visits, chats started, bounce rate, average session time, and live users for a selected date range. A timeline compares visits and chats, with breakdowns by platform, referrer, and data source below.",
-    video: "https://assets.padyna.com/assets/padyna-analytics.mp4",
-    poster: analyticsPoster,
-  },
-  {
-    id: "activity",
-    label: "Activity",
-    description:
-      "Track and manage your agent conversations with your customers.",
-    alternative:
-      "Activity shows a list of customer chats beside the selected conversation. Review customer messages, agent replies, and cited sources, filter recent chats, or use the conversation's Escalate and Close actions.",
-    video: "https://assets.padyna.com/assets/padyna-activity.mp4",
-    poster: activityPoster,
+      "The Agent Actions screen lists workflows with descriptions, usage counts, and active status. Examples include booking product demos, creating Jira tickets, processing refunds, and notifying the team in Discord from customer conversations.",
+    image: actionsImage,
+    duration: 8,
   },
 ] as const;
 ---
@@ -55,26 +53,23 @@ const features = [
     hidden
   >
     {
-      features.map(({ id, label }, index) => (
+      features.map((feature, index) => (
         <button
           type="button"
           role="tab"
-          id={`feature-${id}-tab`}
-          aria-controls={`feature-${id}-panel`}
+          id={`feature-${feature.id}-tab`}
+          aria-controls={`feature-${feature.id}-panel`}
           aria-selected={index === 0}
+          style={`--feature-duration: ${feature.duration}s`}
           tabindex={index === 0 ? 0 : -1}
           class="feature-tab relative flex flex-1 cursor-pointer items-center justify-center gap-2 border-r border-b border-stone-200 bg-stone-50 px-6 py-4 transition-colors duration-200 last:border-r-0 hover:bg-stone-100/50"
         >
-          <FeatureIcon name={id} />
+          <FeatureIcon name={feature.id} />
           <span class="hidden font-mono text-sm font-medium tracking-tight text-stone-600 uppercase transition-colors md:inline">
-            {label}
+            {feature.label}
           </span>
-          <span class="font-mono text-sm font-medium tracking-tight text-stone-600 uppercase transition-colors md:hidden">
-            {id === "actions"
-              ? "Action"
-              : id === "analytics"
-                ? "Analytics"
-                : label}
+          <span class="font-mono text-xs font-medium tracking-tight text-stone-600 uppercase transition-colors md:hidden">
+            {feature.id === "actions" ? "Actions" : feature.label}
           </span>
         </button>
       ))
@@ -82,8 +77,9 @@ const features = [
   </div>
 
   {
-    features.map(
-      ({ id, label, description, alternative, video, poster }, index) => (
+    features.map((feature, index) => {
+      const { id, label, alternative } = feature;
+      return (
         <details class="feature-disclosure w-full" open={index === 0}>
           <summary
             id={`feature-${id}-summary`}
@@ -113,67 +109,40 @@ const features = [
           <div
             id={`feature-${id}-panel`}
             class="feature-panel overflow-hidden border-b border-stone-200 bg-white md:border-b-0"
+            aria-describedby={`feature-${id}-alternative`}
           >
-            <figure class="m-0 p-0 md:p-8">
-              <div class="relative h-96 w-full overflow-hidden bg-stone-950 md:h-168">
-                <video
-                  id={`feature-${id}-video`}
-                  data-src={video}
-                  poster={poster.src}
-                  autoplay
-                  muted
-                  loop
-                  playsinline
-                  preload="none"
-                  tabindex="-1"
-                  aria-label={`${label} demo`}
-                  aria-describedby={`feature-${id}-description feature-${id}-alternative`}
-                  class="absolute inset-0 h-full w-full object-cover"
-                />
-                <div class="absolute inset-x-0 bottom-0 hidden p-6 md:block md:p-8">
-                  <div class="w-fit rounded-lg border border-white/15 bg-black/35 px-4 py-3 text-white backdrop-blur-sm">
-                    <p
-                      id={`feature-${id}-description`}
-                      class="mt-1 text-sm text-white/90"
-                    >
-                      {description}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  data-playback
-                  data-label={label}
-                  type="button"
-                  aria-label={`Pause ${label} demo`}
-                  aria-controls={`feature-${id}-video`}
-                  class="feature-playback absolute top-3 right-3 flex size-11 cursor-pointer items-center justify-center rounded-lg border border-white/15 bg-black/35 text-white backdrop-blur-sm hover:bg-black/55"
-                  hidden
-                >
-                  <svg
-                    aria-hidden="true"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path data-pause-icon d="M6 4h4v16H6zm8 0h4v16h-4z" />
-                    <path data-play-icon d="m7 4 14 8-14 8z" />
-                  </svg>
-                </button>
+            <figure class="relative m-0 p-3 sm:p-6 md:p-12 lg:p-16">
+              <DemoBackdrop />
+              <div class="relative aspect-video w-full overflow-hidden rounded-lg border border-black/5 bg-stone-50 shadow-[0_24px_60px_-20px_rgb(28_25_23/0.35)] md:rounded-xl">
+                {"image" in feature ? (
+                  <Image
+                    src={feature.image}
+                    alt=""
+                    widths={[720, 1440, 2160, 2880]}
+                    sizes="(min-width: 80rem) 1216px, (min-width: 48rem) calc(100vw - 4rem), 100vw"
+                    loading={index === 0 ? "eager" : "lazy"}
+                    class="absolute inset-0 h-full w-full object-cover object-top-left"
+                  />
+                ) : (
+                  <PlaygroundDemo />
+                )}
               </div>
               <figcaption id={`feature-${id}-alternative`} class="sr-only">
                 {alternative}
               </figcaption>
-              <p data-video-status role="status" class="sr-only" />
             </figure>
           </div>
         </details>
-      ),
-    )
+      );
+    })
   }
 </feature-tabs>
 
 <script>
+  type DemoFrame = HTMLElement & {
+    setPlaying?(playing: boolean): void;
+  };
+
   class FeatureTabs extends HTMLElement {
     private cleanup?: () => void;
 
@@ -191,15 +160,14 @@ const features = [
         ...this.querySelectorAll<HTMLDetailsElement>(".feature-disclosure"),
       ];
       const panels = [...this.querySelectorAll<HTMLElement>(".feature-panel")];
-      const videos = [...this.querySelectorAll<HTMLVideoElement>("video")];
-      const controls = [
-        ...this.querySelectorAll<HTMLButtonElement>("[data-playback]"),
-      ];
-      const nearby = new Set<Element>();
+      const stages = panels.map(
+        (panel) => panel.querySelector<HTMLElement>("figure > div")!,
+      );
+      // The Playground demo plays while selected and on screen; screenshots are static.
+      const demos = panels.map((panel) =>
+        panel.querySelector<DemoFrame>("demo-frame"),
+      );
       const visible = new Set<Element>();
-      const userPaused = new Set<number>();
-      const motionOptIn = new Set<number>();
-      const pending = new Set<HTMLVideoElement>();
       let active = 0;
       let manuallyControlled = false;
 
@@ -227,10 +195,6 @@ const features = [
       this.addEventListener("focusin", stopCycling, { signal });
       this.addEventListener("click", stopCycling, { signal });
 
-      const wantsPlayback = (index: number) =>
-        !userPaused.has(index) &&
-        (!reducedMotion.matches || motionOptIn.has(index));
-
       const updateMedia = () => {
         if (signal.aborted) return;
         this.toggleAttribute(
@@ -239,53 +203,18 @@ const features = [
             !reducedMotion.matches &&
             !document.hidden &&
             disclosures[active].open &&
-            visible.has(videos[active]) &&
-            wantsPlayback(active),
+            visible.has(stages[active]),
         );
-        videos.forEach((video, index) => {
-          const enabled = wantsPlayback(index);
+        demos.forEach((demo, index) => {
+          if (!demo) return;
           const selected = disclosures[index].open && index === active;
-          const shouldPlay =
-            selected && enabled && visible.has(video) && !document.hidden;
-          video.autoplay = shouldPlay;
-          // Attach only the approaching, active panel's source. Reduced motion
-          // keeps the real poster until the visitor explicitly opts into playback.
-          if (
+          // Reduced motion keeps the finished conversation on screen.
+          demo.setPlaying?.(
             selected &&
-            enabled &&
-            nearby.has(video) &&
-            !document.hidden &&
-            !video.hasAttribute("src")
-          ) {
-            video.src = video.dataset.src!;
-          }
-          if (!shouldPlay) video.pause();
-          else if (
-            video.hasAttribute("src") &&
-            video.paused &&
-            !pending.has(video)
-          ) {
-            pending.add(video);
-            void video
-              .play()
-              .catch((error: DOMException) => {
-                if (error.name !== "AbortError") {
-                  userPaused.add(index);
-                  updateMedia();
-                }
-              })
-              .finally(() => {
-                pending.delete(video);
-                // A quick tab/viewport change can interrupt an in-flight play.
-                if (video.autoplay && video.paused && !video.error)
-                  updateMedia();
-              });
-          }
-          controls[index].setAttribute(
-            "aria-label",
-            `${enabled ? "Pause" : "Play"} ${controls[index].dataset.label} demo`,
+              !reducedMotion.matches &&
+              visible.has(stages[index]) &&
+              !document.hidden,
           );
-          controls[index].toggleAttribute("data-paused", !enabled);
         });
       };
 
@@ -339,100 +268,37 @@ const features = [
         );
       });
 
-      disclosures.forEach((details, index) => {
-        details.addEventListener(
-          "toggle",
-          () => {
-            updateMedia();
-          },
-          { signal },
-        );
-        const video = videos[index];
-        const control = controls[index];
-        video.muted = true;
-        control.hidden = false;
-        control.addEventListener(
-          "click",
-          () => {
-            if (wantsPlayback(index)) {
-              userPaused.add(index);
-              motionOptIn.delete(index);
-            } else {
-              userPaused.delete(index);
-              motionOptIn.add(index);
-              if (video.error) video.load();
-            }
-            updateMedia();
-          },
-          { signal },
-        );
-        const status = details.querySelector<HTMLElement>(
-          "[data-video-status]",
-        )!;
-        video.addEventListener(
-          "error",
-          () => {
-            userPaused.add(index);
-            status.textContent =
-              "The demo is unavailable. A still image and text description are provided instead.";
-            updateMedia();
-          },
-          { signal },
-        );
-        video.addEventListener(
-          "playing",
-          () => {
-            status.textContent = "";
-          },
-          { signal },
-        );
-      });
-      const observe = (
-        entries: IntersectionObserverEntry[],
-        targets: Set<Element>,
-      ) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio > 0)
-            targets.add(entry.target);
-          else targets.delete(entry.target);
-        });
-        updateMedia();
-      };
-      const nearObserver = new IntersectionObserver(
-        (entries) => observe(entries, nearby),
-        { rootMargin: "320px 0px" },
+      disclosures.forEach((details) =>
+        details.addEventListener("toggle", updateMedia, { signal }),
       );
       const visibleObserver = new IntersectionObserver(
-        (entries) => observe(entries, visible),
-        { threshold: [0, 0.01] },
-      );
-      videos.forEach((video) => {
-        nearObserver.observe(video);
-        visibleObserver.observe(video);
-      });
-      document.addEventListener("visibilitychange", updateMedia, { signal });
-      reducedMotion.addEventListener(
-        "change",
-        () => {
-          motionOptIn.clear();
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && entry.intersectionRatio > 0)
+              visible.add(entry.target);
+            else visible.delete(entry.target);
+          });
           updateMedia();
         },
-        { signal },
+        { threshold: [0, 0.01] },
       );
+      stages.forEach((stage) => visibleObserver.observe(stage));
+      document.addEventListener("visibilitychange", updateMedia, { signal });
+      reducedMotion.addEventListener("change", updateMedia, { signal });
+      // The demo element may upgrade after this one; sync once it can play.
+      void customElements.whenDefined("demo-frame").then(updateMedia);
       render();
       this.cleanup = () => {
         controller.abort();
-        nearObserver.disconnect();
         visibleObserver.disconnect();
       };
     }
 
     disconnectedCallback() {
       this.cleanup?.();
-      this.querySelectorAll("video").forEach((video) => {
-        video.autoplay = false;
-        video.pause();
-      });
+      this.querySelectorAll<DemoFrame>("demo-frame").forEach((demo) =>
+        demo.setPlaying?.(false),
+      );
     }
   }
 
@@ -467,7 +333,12 @@ const features = [
   @media (width < 48rem) {
     .feature-tab {
       flex: 1 0 auto;
-      padding-inline: 1rem;
+      gap: 0.375rem;
+      padding: 0.75rem 0.875rem;
+    }
+    .feature-tab > :global(svg) {
+      width: 16px;
+      height: 16px;
     }
   }
   [data-tabs] summary {
@@ -503,7 +374,7 @@ const features = [
       height: 2px;
       background: var(--color-primary);
       transform-origin: left;
-      animation: feature-countdown 10s linear forwards;
+      animation: feature-countdown var(--feature-duration, 10s) linear forwards;
     }
   }
   button:focus-visible,
@@ -511,13 +382,6 @@ const features = [
   .feature-panel:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: -3px;
-  }
-  .feature-playback:focus-visible {
-    outline-color: white;
-  }
-  .feature-playback:not([data-paused]) [data-play-icon],
-  .feature-playback[data-paused] [data-pause-icon] {
-    display: none;
   }
   @media (prefers-reduced-motion: no-preference) {
     .feature-chevron {

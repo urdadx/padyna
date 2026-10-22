@@ -1,24 +1,56 @@
 ---
-
+import DemoBackdrop from "./DemoBackdrop.astro";
+import DemoFrame from "./DemoFrame.astro";
 ---
 
-<div
-  class="flex w-full flex-col gap-2 border-y border-stone-200 px-4 py-6 sm:flex-row sm:items-end sm:gap-0 sm:px-6 sm:py-10"
+<section
+  class="grid w-full grid-cols-1 border-y border-stone-200 md:grid-cols-2"
 >
-  <div class="flex flex-1 flex-col gap-2">
+  <div
+    class="flex flex-col justify-center gap-4 bg-white px-4 py-10 sm:px-6 md:border-r md:border-stone-200 md:px-10 md:py-16 lg:px-16"
+  >
     <p
       class="text-primary font-mono text-sm font-medium tracking-[0.56px] uppercase"
     >
       Human in the loop
-    </p><h2
-      class=" max-w-100.5 text-[24px] font-medium leading-[1.2]  sm:text-[32px]"
-    >
-      Seamlessly transition from <br class="hidden sm:inline" />AI to human expertise.
-    </h2>
-  </div><div class="flex-1">
-    <p class="max-w-lg text-base leading-5.5 font-normal text-stone-500">
-      Ensure no customer request goes unanswered. When inquiries become complex, 
-      the AI agent flags and hands off the conversation to your team, ensuring a seamless customer experience.
     </p>
+    <h2
+      class="max-w-100.5 text-[24px] leading-[1.2] font-medium sm:text-[32px]"
+    >
+      Seamlessly transition from <br class="hidden sm:inline" />AI to human
+      expertise.
+    </h2>
+    <p class="max-w-lg text-base leading-5.5 font-normal text-stone-500">
+      Ensure no customer request goes unanswered. When inquiries become complex,
+      the AI agent flags and hands off the conversation to your team, ensuring a
+      seamless customer experience.
+    </p>
+    <a
+      href="https://app.padyna.com"
+      class="bg-primary mt-2 box-border flex h-8 w-fit cursor-pointer items-center justify-center gap-x-2 rounded-md px-4 py-1.5 text-center font-mono text-sm leading-5 font-semibold whitespace-nowrap text-white uppercase transition-all duration-75 ease-in select-none active:scale-95 active:shadow-none"
+      translate="no"
+    >
+      Onboard your team
+    </a>
   </div>
-</div>
+
+  <figure
+    class="relative m-0 flex items-center justify-center px-4 py-10 sm:px-6 md:py-16"
+  >
+    <DemoBackdrop />
+    <DemoFrame
+      src="/demos/escalation.html"
+      width={400}
+      height={640}
+      title="Padyna chat widget escalating a conversation to a human agent"
+      autoplay
+      class="aspect-5/8 w-full max-w-100 rounded-2xl border border-black/5 bg-white shadow-[0_24px_60px_-20px_rgb(28_25_23/0.35)]"
+    />
+    <figcaption class="sr-only">
+      A customer asks the website chat widget for a refund. The AI agent
+      escalates the conversation to a human, the widget shows that it is waiting
+      for a human agent, then a teammate from billing joins live, confirms the
+      refund, and the customer thanks them.
+    </figcaption>
+  </figure>
+</section>

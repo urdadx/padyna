@@ -1,19 +1,21 @@
-# Feature Video Posters
+# Feature Screenshots
 
-Real first frames from the existing feature demos, extracted with FFmpeg. Only
-the optimized WebP posters are shipped; downloaded MP4s remain outside the repo.
+`actions.webp`, `analytics.webp` and `livechat.webp` (the Chat logs page) are
+2880×1620 captures of the real dashboard (`apps/web`) at a 1440×810 viewport
+with 2× device scale. They were taken with Playwright against `pnpm dev:web`,
+with every request to the API server (tRPC, Better Auth session,
+`/api/actions`, analytics SSE stream) answered by dummy fixtures, so no real
+customer data appears in them.
 
-| Poster                   | Source                                                  |
-| ------------------------ | ------------------------------------------------------- |
-| `playground-poster.webp` | `https://assets.padyna.com/assets/playground_long.mp4`  |
-| `actions-poster.webp`    | `https://assets.padyna.com/assets/padyna_action.mp4`    |
-| `analytics-poster.webp`  | `https://assets.padyna.com/assets/padyna-analytics.mp4` |
-| `activity-poster.webp`   | `https://assets.padyna.com/assets/padyna-activity.mp4`  |
+On tablets and desktops the Playground tab is not an image:
+`public/demos/playground.html` (1280×720) is a DOM snapshot of the real
+Playground page captured the same way, with a mocked `/api/chat` stream. It
+keeps only the CSS rules and font files the snapshot uses, and
+`public/demos/player.js` replays the captured conversation. Phones get
+`playground.webp`, a 2.25× render of that snapshot's finished conversation.
 
-Extraction settings (1440px wide, WebP quality 82):
-
-```sh
-ffmpeg -ss 0 -i /tmp/opencode/feature-playground.mp4 -frames:v 1 \
-  -vf "scale=1440:-2" -c:v libwebp -quality 82 -compression_level 6 \
-  apps/marketing/src/assets/features/playground-poster.webp
-```
+`public/demos/escalation.html` (400×640, the size of the embedded widget
+panel) is the same kind of snapshot of the customer chat widget (`/widget`),
+used by the "Human in the loop" section. It was captured with a mocked
+`/api/widget/:id/chat` stream that calls `escalate_to_human` and a mocked
+live-chat WebSocket in which a teammate joins, types and replies.

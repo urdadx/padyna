@@ -1,0 +1,25 @@
+---
+// The Playground demo is a static snapshot of the real dashboard page
+// (`public/demos/playground.html`, captured from `apps/web` with dummy data)
+// replayed in an iframe, so it renders with the dashboard's own markup, CSS,
+// fonts and icons. Phones get a still screenshot of the same page instead.
+import { Image } from "astro:assets";
+import DemoFrame from "./DemoFrame.astro";
+import playgroundImage from "../assets/features/playground.webp";
+---
+
+<Image
+  src={playgroundImage}
+  alt=""
+  widths={[720, 1440]}
+  sizes="100vw"
+  loading="eager"
+  class="absolute inset-0 h-full w-full object-cover object-top-left md:hidden"
+/>
+<DemoFrame
+  src="/demos/playground.html"
+  width={1280}
+  height={720}
+  title="Padyna Playground demo"
+  class="hidden h-full w-full md:block"
+/>
