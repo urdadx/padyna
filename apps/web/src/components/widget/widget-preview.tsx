@@ -32,8 +32,8 @@ import { getInputPlaceholder } from "./get-input-placeholder";
 import { useAnalytics } from "./use-analytics";
 import { useSubmitMessage } from "./use-submit-message";
 import { useWidgetSession } from "./use-widget-session";
-import { StatusIndicator } from "../agent/agent-components/status-indicator";
-import { SupportMessage } from "../agent/agent-components/message";
+import { LiveTypingIndicator } from "../agent/agent-components/live-typing-indicator";
+import { cn } from "@/lib/utils";
 import { env } from "@padyna/env/web";
 import { browserSafeChatFetch } from "@/lib/ai/browser-safe-chat-fetch";
 
@@ -454,7 +454,8 @@ function WidgetPreviewContent({
 
 			<div className="flex min-h-0 flex-1 flex-col smooth-div">
 				<Conversation className="min-h-0 py-4">
-					<ConversationContent className="gap-4 p-4">
+					{/* In live chat the list keeps room at the bottom for the typing indicator. */}
+					<ConversationContent className={cn("gap-4 p-4", isEscalated && "relative pb-14")}>
 						{widgetConfig?.isEnabled && messages.length === 0 ? (
 							<WidgetMessage key={welcomePhase} animate>
 								{welcomePhase === "typing" ? (
@@ -485,10 +486,12 @@ function WidgetPreviewContent({
 							<ClosedBanner startNewConversation={resetConversation} />
 						)}
 						{isEscalated && !liveChat.isPeerJoined && <EscalatedBanner />}
-						{isEscalated && liveChat.remoteTyping && (
-							<SupportMessage isUser={false} animate={false}>
-								<StatusIndicator label="Agent is typing..." />
-							</SupportMessage>
+						{isEscalated && (
+							<LiveTypingIndicator
+								visible={liveChat.remoteTyping}
+								label="Agent is typing..."
+								className="absolute bottom-3 left-4"
+							/>
 						)}
 					</ConversationContent>
 					<ConversationScrollButton />

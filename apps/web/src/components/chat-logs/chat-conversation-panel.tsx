@@ -21,8 +21,7 @@ import { queryClient } from "@/utils/trpc";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLiveChatSocket } from "@/lib/chat/live-chat-socket";
 import { ChatStatusHeader } from "./chat-status-header";
-import { SupportMessage } from "../agent/agent-components/message";
-import { StatusIndicator } from "../agent/agent-components/status-indicator";
+import { LiveTypingIndicator } from "../agent/agent-components/live-typing-indicator";
 import { useRouteContext } from "@tanstack/react-router";
 
 interface ChatConversationPanelProps {
@@ -381,7 +380,7 @@ const ChatConversationPanelContent = ({ chatId, className }: ChatConversationPan
       ) : null}
       <ChatContainerRoot optimize className="flex-1 min-w-0 w-full smooth-div">
         <ChatContainerContent className="px-4">
-          <div className="flex w-full min-w-0 flex-col gap-4 mb-10 my-3 overflow-x-hidden">
+          <div className="relative flex w-full min-w-0 flex-col gap-4 mt-3 pb-12 overflow-x-hidden">
             {isLoading ? (
               <div className="flex flex-1 min-h-100 items-center justify-center gap-2">
                 <Spinner size={30} />
@@ -405,10 +404,13 @@ const ChatConversationPanelContent = ({ chatId, className }: ChatConversationPan
                 </h2>
               </div>
             )}
-            {isEscalated && liveChat.remoteTyping && (
-              <SupportMessage className="text-white" isUser={false} animate={false}>
-                <StatusIndicator label="User is typing..." />
-              </SupportMessage>
+            {/* Sits in the list's bottom padding, so it never shifts the messages. */}
+            {isEscalated && (
+              <LiveTypingIndicator
+                visible={liveChat.remoteTyping}
+                label="User is typing..."
+                className="absolute bottom-2 left-0"
+              />
             )}
           </div>
           <ChatContainerScrollAnchor />
