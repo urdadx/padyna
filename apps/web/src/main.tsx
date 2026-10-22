@@ -6,6 +6,8 @@ import { queryClient, trpc } from "./utils/trpc";
 import { GlobalLoader } from "./components/global-loader";
 import { NotFoundPage } from "./not-found";
 import { ErrorPage } from "./error-page";
+// Listens for the embedding page from start-up, before the widget can (see the module).
+import "./lib/widget-host";
 
 const router = createRouter({
 	routeTree,

@@ -14,5 +14,7 @@
     "paths": {
       "@/*": ["./src/*"]
     }
-  }
+  },
+  // Tests run under Bun (`bun test`), whose types would clash with the app's DOM types.
+  "exclude": ["node_modules", "dist", "src/**/test/**"]
 }

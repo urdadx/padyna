@@ -8,6 +8,7 @@ import {
   setWidgetActive,
 } from "@/lib/analytics/track";
 import { getOrCreateVisitorId } from "@/lib/analytics/visitor";
+import { widgetHost } from "@/lib/widget-host";
 
 type UseWidgetSessionOptions = {
   chatbotId: string | undefined;
@@ -153,7 +154,7 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
     sessionIdRef.current = null;
   }, [chatbotId, closePresenceSocket]);
 
-  const openSession = useCallback(async () => {
+  const startSession = useCallback(async () => {
     if (!chatbotId) return;
 
     openPresenceSocket();
@@ -182,6 +183,16 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
       }
     }
   }, [chatbotId, openPresenceSocket]);
+
+  // Overlapping opens (a catch-up plus a message, or a re-mount) share one call,
+  // so a visitor never gets two sessions.
+  const openingRef = useRef<Promise<void> | null>(null);
+  const openSession = useCallback(() => {
+    openingRef.current ??= startSession().finally(() => {
+      openingRef.current = null;
+    });
+    return openingRef.current;
+  }, [startSession]);
 
   const resetChatStarted = useCallback(() => {
     chatStartedRef.current = false;
@@ -215,28 +226,22 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
     };
   }, [chatbotId, isEnabled, endCurrentSession, closePresenceSocket]);
 
-  // postMessage listener for widget open/close events
+  // Open/close messages from the embedding page. The host may have opened the
+  // widget before the chatbot was known here, so catch up on subscribe.
   useEffect(() => {
     if (!chatbotId || !isEnabled) return;
 
-    const handleMessage = async (event: MessageEvent) => {
-      // Only the embedding page's SDK may drive the session; ignore other frames and scripts.
-      if (event.source !== window.parent || window.parent === window) return;
+    if (widgetHost.isOpen()) {
+      void openSession();
+    }
 
-      const type = (event.data as { type?: string })?.type;
-
+    return widgetHost.subscribe((type) => {
       if (type === "padyna:widget_open") {
-        await openSession();
-        return;
+        void openSession();
+      } else {
+        void endCurrentSession();
       }
-
-      if (type === "padyna:widget_close" || type === "parent-page-unload") {
-        await endCurrentSession();
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
+    });
   }, [chatbotId, isEnabled, openSession, endCurrentSession]);
 
   // tracking for website link
