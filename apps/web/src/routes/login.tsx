@@ -1,5 +1,5 @@
 import LoginForm from "@/components/auth/login-form";
-import { DitherImage } from "@/components/dither-kit/dither-image";
+import { TileBackdrop } from "@/components/tile-backdrop";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
@@ -33,11 +33,7 @@ async function RouteComponent() {
 					</div>
 				</div>
 				<div className="relative hidden bg-muted lg:block">
-					<DitherImage
-						src="https://assets.padyna.com/assets/bridge.webp"
-						alt="Bridge over a river"
-						className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-					/>
+					<TileBackdrop variant="equalizer" className="dark:brightness-[0.35]" />
 				</div>
 			</div>
 		</>

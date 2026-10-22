@@ -1,5 +1,5 @@
 import { SignupForm } from "@/components/auth/signup-form";
-import { DitherImage } from "@/components/dither-kit/dither-image";
+import { TileBackdrop } from "@/components/tile-backdrop";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
@@ -24,11 +24,7 @@ function RouteComponent() {
 					</div>
 				</div>
 				<div className="relative hidden bg-muted lg:block">
-					<DitherImage
-						src="https://assets.padyna.com/assets/windmill.webp"
-						alt="Windmill in a field"
-						className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-					/>
+					<TileBackdrop variant="mesh" className="dark:brightness-[0.35]" />
 				</div>
 			</div>
 		</>
