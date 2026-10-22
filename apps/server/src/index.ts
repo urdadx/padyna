@@ -262,5 +262,12 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
 
 export default {
   fetch: app.fetch,
-  websocket,
+  websocket: {
+    ...websocket,
+    // Live chat and presence frames are small JSON; Bun's default limit is 16 MB.
+    maxPayloadLength: 64 * 1024,
+    // Bun pings idle sockets and closes ones that stop answering.
+    idleTimeout: 60,
+    sendPings: true,
+  },
 };

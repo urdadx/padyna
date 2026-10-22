@@ -255,6 +255,20 @@ function WidgetPreviewContent({
 	const isClosed = initData?.conversationStatus === "closed";
 	const welcomePhase = useWelcomeIntro(openCount, messages.length > 0);
 
+	// The live socket normally announces an escalation, but it only opens with
+	// the first message; if the AI escalates before it connects, the finished
+	// reply's escalate_to_human call still brings the widget into live mode.
+	const lastMessage = messages.at(-1);
+	const repliedWithEscalation =
+		status === "ready" &&
+		lastMessage?.role === "assistant" &&
+		lastMessage.parts.some((part) => part.type === "tool-escalate_to_human");
+	useEffect(() => {
+		if (repliedWithEscalation && !isEscalated) {
+			void refetchInitData();
+		}
+	}, [repliedWithEscalation, isEscalated, refetchInitData]);
+
 	useEffect(() => {
 		if (!chatId || !initData || hydratedChatIdRef.current === chatId) {
 			return;
@@ -269,7 +283,9 @@ function WidgetPreviewContent({
 	const liveChat = useLiveChatSocket({
 		conversationId: chatId,
 		role: "visitor",
-		enabled: Boolean(chatId),
+		// No conversation exists to escalate until the first message is sent, so
+		// visitors who only open the widget don't hold a socket.
+		enabled: Boolean(chatId) && (messages.length > 0 || isEscalated),
 		autoJoin: isEscalated,
 		joinToken: initData?.liveChatToken ?? undefined,
 		userName: "Visitor",
@@ -304,30 +320,48 @@ function WidgetPreviewContent({
 		},
 	});
 
+	// Typing is sent as transitions only: "true" once when the visitor starts,
+	// "false" after a pause or when the input is cleared.
+	const typingSentRef = useRef(false);
+	const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const canSendTyping = isEscalated && liveChat.hasJoined && liveChat.canSendMessages;
+	const { sendTyping } = liveChat;
+
 	useEffect(() => {
 		const stopTyping = () => {
-			liveChat.sendTyping(false);
+			if (typingTimeoutRef.current) {
+				clearTimeout(typingTimeoutRef.current);
+				typingTimeoutRef.current = null;
+			}
+			if (typingSentRef.current) {
+				typingSentRef.current = false;
+				sendTyping(false);
+			}
 		};
 
-		if (!isEscalated || !liveChat.hasJoined) {
-			return stopTyping;
+		if (!canSendTyping || input.trim().length === 0) {
+			stopTyping();
+			return;
 		}
 
-		if (input.trim().length === 0) {
-			stopTyping();
-			return stopTyping;
+		if (!typingSentRef.current) {
+			typingSentRef.current = sendTyping(true);
 		}
 
-		liveChat.sendTyping(true);
-		const timeoutId = setTimeout(() => {
-			liveChat.sendTyping(false);
-		}, 1_200);
+		if (typingTimeoutRef.current) {
+			clearTimeout(typingTimeoutRef.current);
+		}
+		typingTimeoutRef.current = setTimeout(stopTyping, 1_200);
+	}, [input, canSendTyping, sendTyping]);
 
-		return () => {
-			clearTimeout(timeoutId);
-			stopTyping();
-		};
-	}, [input, isEscalated, liveChat]);
+	useEffect(
+		() => () => {
+			if (typingTimeoutRef.current) {
+				clearTimeout(typingTimeoutRef.current);
+			}
+		},
+		[],
+	);
 
 	const { submit } = useSubmitMessage({
 		chatId,

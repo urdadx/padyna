@@ -97,6 +97,12 @@ function toWsUrl(conversationId: string): string {
   return url.toString();
 }
 
+// Close codes after which reconnecting would not help: unauthorized,
+// forbidden, not found, and "replaced" (another tab of the same participant
+// joined; retrying would make the two tabs keep replacing each other).
+const NON_RETRYABLE_CLOSE_CODES = new Set([4001, 4401, 4403, 4404]);
+const MAX_RETRY_DELAY_MS = 8_000;
+
 export function useLiveChatSocket({
   conversationId,
   role,
@@ -113,7 +119,15 @@ export function useLiveChatSocket({
   const shouldReconnectRef = useRef(false);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
+  // Set once this participant asks to join; a reconnect then rejoins on its own.
   const joinRequestedRef = useRef(false);
+  // Read at send time so a new token or escalation doesn't tear down the socket.
+  const autoJoinRef = useRef(autoJoin);
+  const joinTokenRef = useRef(joinToken);
+  const userNameRef = useRef(userName);
+  autoJoinRef.current = autoJoin;
+  joinTokenRef.current = joinToken;
+  userNameRef.current = userName;
 
   const [status, setStatus] = useState<LiveChatConnectionStatus>("idle");
   const [isConnected, setIsConnected] = useState(false);
@@ -176,11 +190,9 @@ export function useLiveChatSocket({
       return false;
     }
 
-    if (role === "visitor") {
-      const token = typeof joinToken === "string" ? joinToken.trim() : "";
-      if (!token) {
-        return false;
-      }
+    const token = joinTokenRef.current?.trim() ?? "";
+    if (role === "visitor" && !token) {
+      return false;
     }
 
     joinRequestedRef.current = true;
@@ -188,10 +200,10 @@ export function useLiveChatSocket({
     return send({
       type: "join",
       role,
-      token: role === "visitor" ? joinToken : undefined,
-      userName,
+      token: role === "visitor" ? token : undefined,
+      userName: userNameRef.current,
     });
-  }, [conversationId, role, joinToken, userName, send]);
+  }, [conversationId, role, send]);
 
   const connect = useCallback(() => {
     if (!enabled || !conversationId) {
@@ -212,18 +224,29 @@ export function useLiveChatSocket({
 
     const socket = new WebSocket(toWsUrl(conversationId));
     socketRef.current = socket;
+    // Events from a socket that has since been replaced must not touch state:
+    // a late close from the old socket would otherwise mark the new one down.
+    const isCurrent = () => socketRef.current === socket;
 
     socket.onopen = () => {
+      if (!isCurrent()) {
+        return;
+      }
+
       retryCountRef.current = 0;
       setIsConnected(true);
       setStatus("connected");
 
-      if (autoJoin) {
+      if (autoJoinRef.current || joinRequestedRef.current) {
         join();
       }
     };
 
     socket.onmessage = (event) => {
+      if (!isCurrent()) {
+        return;
+      }
+
       const raw = typeof event.data === "string" ? event.data : "";
       const incoming = parseEvent(raw);
       if (!incoming) {
@@ -290,6 +313,11 @@ export function useLiveChatSocket({
     };
 
     socket.onclose = (event) => {
+      if (!isCurrent()) {
+        return;
+      }
+
+      socketRef.current = null;
       setIsConnected(false);
       setHasJoined(false);
       setIsPeerJoined(false);
@@ -303,14 +331,15 @@ export function useLiveChatSocket({
         });
       }
 
-      const nonRetryableCodes = new Set([4401, 4403, 4404]);
-
-      if (!enabled || !shouldReconnectRef.current || nonRetryableCodes.has(event.code)) {
+      if (!enabled || !shouldReconnectRef.current || NON_RETRYABLE_CLOSE_CODES.has(event.code)) {
         setStatus("disconnected");
         return;
       }
 
-      const retryDelay = Math.min(1_000 * 2 ** retryCountRef.current, 8_000);
+      // Exponential backoff with jitter, so a server restart isn't met by
+      // every client reconnecting at the same instant.
+      const baseDelay = Math.min(1_000 * 2 ** retryCountRef.current, MAX_RETRY_DELAY_MS);
+      const retryDelay = baseDelay / 2 + Math.random() * (baseDelay / 2);
       retryCountRef.current += 1;
       reconnectTimerRef.current = setTimeout(() => {
         connect();
@@ -319,10 +348,14 @@ export function useLiveChatSocket({
     };
 
     socket.onerror = () => {
+      if (!isCurrent()) {
+        return;
+      }
+
       setStatus("error");
       setError("Could not establish live chat connection.");
     };
-  }, [enabled, conversationId, autoJoin, join, role]);
+  }, [enabled, conversationId, join, role]);
 
   const disconnect = useCallback(() => {
     shouldReconnectRef.current = false;
@@ -372,40 +405,56 @@ export function useLiveChatSocket({
     };
   }, [enabled, conversationId, connect, closeSocket, resetState]);
 
+  // Joins once the socket is open and the participant may join (e.g. the
+  // visitor's token arrives after escalation) — without reconnecting.
   useEffect(() => {
     if (!enabled || !autoJoin || !isConnected || hasJoined) {
       return;
     }
 
-    if (role === "visitor") {
-      const token = typeof joinToken === "string" ? joinToken.trim() : "";
-      if (!token) {
-        return;
-      }
+    if (role === "visitor" && !joinToken?.trim()) {
+      return;
     }
 
     join();
   }, [enabled, autoJoin, isConnected, hasJoined, join, role, joinToken]);
 
-  const canSendMessages = useMemo(
-    () => isConnected && hasJoined && isReady,
-    [isConnected, hasJoined, isReady],
-  );
+  const canSendMessages = isConnected && hasJoined && isReady;
 
-  return {
-    status,
-    isConnected,
-    hasJoined,
-    isPeerJoined,
-    isReady,
-    canSendMessages,
-    remoteTyping,
-    error,
-    isAssignedToOther,
-    connect,
-    disconnect,
-    join,
-    sendMessage,
-    sendTyping,
-  };
+  // A stable object, so consumers' effects that depend on it don't re-run on
+  // every render.
+  return useMemo(
+    () => ({
+      status,
+      isConnected,
+      hasJoined,
+      isPeerJoined,
+      isReady,
+      canSendMessages,
+      remoteTyping,
+      error,
+      isAssignedToOther,
+      connect,
+      disconnect,
+      join,
+      sendMessage,
+      sendTyping,
+    }),
+    [
+      status,
+      isConnected,
+      hasJoined,
+      isPeerJoined,
+      isReady,
+      canSendMessages,
+      remoteTyping,
+      error,
+      isAssignedToOther,
+      connect,
+      disconnect,
+      join,
+      sendMessage,
+      sendTyping,
+    ],
+  );
 }
