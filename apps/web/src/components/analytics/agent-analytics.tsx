@@ -148,14 +148,7 @@ export function AgentAnalytics() {
 							</div>
 						</CardTitle>
 						<CardDescription className="text-xl md:text-2xl font-semibold text-black">
-							{overview && overview.totalVisits > 0
-								? `${Math.round(
-										((overview.totalVisits -
-											overview.totalChats) /
-											overview.totalVisits) *
-											100,
-									)}%`
-								: "0%"}
+							{`${Math.round((overview?.bounceRate ?? 0) * 100)}%`}
 						</CardDescription>
 					</div>
 
@@ -190,6 +183,7 @@ export function AgentAnalytics() {
 						data={chartData}
 						hasData={hasData}
 						className="h-75"
+						granularity={selectedTimeRange === "24h" ? "hour" : "day"}
 						showVisitors={showVisitors}
 						showChats={showChats}
 					/>

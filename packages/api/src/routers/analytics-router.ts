@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../index";
 import { db } from "@padyna/db";
-import { eq, and, gte, lte, sql, desc, count, countDistinct, avg } from "drizzle-orm";
+import { eq, and, gte, lte, ne, sql, desc, count } from "drizzle-orm";
 import {
   visitorSessions,
   visitorEvents,
@@ -11,6 +11,15 @@ import {
 } from "@padyna/db/schema/index";
 import { TRPCError } from "@trpc/server";
 import { analyticsEvents } from "../lib/events";
+import {
+  TIME_RANGES,
+  clampDurationMs,
+  endVisitorSession,
+  getBreakdowns,
+  getChartSeries,
+  getDateRange,
+  getOverviewStats,
+} from "../lib/analytics";
 import { createOrganizationNotification } from "@padyna/db/notifications";
 
 type DeviceInfo = {
@@ -115,9 +124,9 @@ function detectDeviceFromUserAgent(userAgent: string): DeviceInfo {
   return result;
 }
 
-const timeRangeSchema = z.enum(["24h", "7d", "30d", "90d"]).default("24h");
+const timeRangeSchema = z.enum(TIME_RANGES).default("24h");
 
-export const paginatedInput = z.object({
+const paginatedInput = z.object({
   timeRange: timeRangeSchema,
   limit: z.number().min(1).max(100).default(10),
 });
@@ -130,29 +139,31 @@ function getActiveChatbot(ctx: { session: { session: { activeChatbot?: string | 
   return chatbotId;
 }
 
-export function getDateRange(timeRange: z.infer<typeof timeRangeSchema>) {
-  const now = new Date();
-  const start = new Date(now);
+const n = (val: unknown) => Number(val ?? 0);
 
-  switch (timeRange) {
-    case "24h":
-      start.setHours(start.getHours() - 24);
-      break;
-    case "7d":
-      start.setDate(start.getDate() - 7);
-      break;
-    case "30d":
-      start.setDate(start.getDate() - 30);
-      break;
-    case "90d":
-      start.setDate(start.getDate() - 90);
-      break;
+/** Sets the widget-open flag; announces it only when it actually changed. */
+async function setWidgetOpen(input: { sessionId: string; chatbotId: string }, open: boolean) {
+  const updated = await db
+    .update(visitorSessions)
+    .set({ isWidgetActive: open })
+    .where(
+      and(
+        eq(visitorSessions.id, input.sessionId),
+        eq(visitorSessions.chatbotId, input.chatbotId),
+        ne(visitorSessions.isWidgetActive, open),
+      ),
+    )
+    .returning({ id: visitorSessions.id });
+
+  if (updated.length > 0) {
+    analyticsEvents.emit("analytics-update", {
+      chatbotId: input.chatbotId,
+      action: open ? "widget-open" : "widget-close",
+    });
   }
 
-  return { start, end: now };
+  return { ok: true };
 }
-
-const n = (val: unknown) => Number(val ?? 0);
 
 export const analyticsRouter = router({
   getTopActions: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
@@ -176,263 +187,33 @@ export const analyticsRouter = router({
       href: "",
     }));
   }),
+
   getOverview: protectedProcedure
     .input(z.object({ timeRange: timeRangeSchema }))
     .query(async ({ ctx, input }) => {
       const chatbotId = getActiveChatbot(ctx);
-      const { start, end } = getDateRange(input.timeRange);
 
-      const [sessionsResult, eventsResult, activeVisitorsResult] = await Promise.all([
+      const [stats, [active]] = await Promise.all([
+        getOverviewStats(chatbotId, input.timeRange),
         db
-          .select({
-            totalSessions: count().as("total_sessions"),
-            uniqueVisitors: countDistinct(visitorSessions.visitorId).as("unique_visitors"),
-            avgDuration: avg(visitorSessions.durationMs).as("avg_duration"),
-          })
-          .from(visitorSessions)
-          .where(
-            and(
-              eq(visitorSessions.chatbotId, chatbotId),
-              gte(visitorSessions.startedAt, start),
-              lte(visitorSessions.startedAt, end),
-            ),
-          ),
-        db
-          .select({ totalChats: count().as("total_chats") })
-          .from(visitorEvents)
-          .where(
-            and(
-              eq(visitorEvents.chatbotId, chatbotId),
-              eq(visitorEvents.event, "chat_started"),
-              gte(visitorEvents.timestamp, start),
-              lte(visitorEvents.timestamp, end),
-            ),
-          ),
-        db
-          .select({
-            count: sql<number>`count(${visitorSessions.id})::int`.as("active_visitors"),
-          })
+          .select({ count: count() })
           .from(visitorSessions)
           .where(
             and(eq(visitorSessions.chatbotId, chatbotId), eq(visitorSessions.isWidgetActive, true)),
           ),
       ]);
 
-      return {
-        totalVisits: n(sessionsResult[0]?.totalSessions),
-        uniqueVisitors: n(sessionsResult[0]?.uniqueVisitors),
-        totalChats: n(eventsResult[0]?.totalChats),
-        averageSessionTime: Math.round(n(sessionsResult[0]?.avgDuration) / 1000),
-        activeVisitors: n(activeVisitorsResult[0]?.count),
-      };
+      return { ...stats, activeVisitors: n(active?.count) };
     }),
 
   getChartData: protectedProcedure
     .input(z.object({ timeRange: timeRangeSchema }))
-    .query(async ({ ctx, input }) => {
-      const chatbotId = getActiveChatbot(ctx);
-      const { start, end } = getDateRange(input.timeRange);
+    .query(({ ctx, input }) => getChartSeries(getActiveChatbot(ctx), input.timeRange)),
 
-      const rows = await db
-        .select({
-          date: sql<string>`DATE(${visitorSessions.startedAt})`.as("date"),
-          visitors: count().as("visitors"),
-          chats: sql<number>`
-            COUNT(CASE WHEN ${visitorEvents.event} = 'chat_started' THEN 1 END)
-          `.as("chats"),
-        })
-        .from(visitorSessions)
-        .leftJoin(
-          visitorEvents,
-          and(
-            eq(visitorEvents.sessionId, visitorSessions.id),
-            eq(visitorEvents.event, "chat_started"),
-          ),
-        )
-        .where(
-          and(
-            eq(visitorSessions.chatbotId, chatbotId),
-            gte(visitorSessions.startedAt, start),
-            lte(visitorSessions.startedAt, end),
-          ),
-        )
-        .groupBy(sql`DATE(${visitorSessions.startedAt})`)
-        .orderBy(sql`DATE(${visitorSessions.startedAt})`);
-
-      return rows.map((r) => ({
-        date: r.date,
-        visitors: n(r.visitors),
-        chats: n(r.chats),
-      }));
-    }),
-
-  getTopCountries: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
-    const chatbotId = getActiveChatbot(ctx);
-    const { start, end } = getDateRange(input.timeRange);
-
-    const result = await db
-      .select({
-        countryCode: visitorSessions.countryCode,
-        country: visitorSessions.country,
-        count: count().as("count"),
-      })
-      .from(visitorSessions)
-      .where(
-        and(
-          eq(visitorSessions.chatbotId, chatbotId),
-          gte(visitorSessions.startedAt, start),
-          lte(visitorSessions.startedAt, end),
-        ),
-      )
-      .groupBy(visitorSessions.countryCode, visitorSessions.country)
-      .orderBy(desc(count()))
-      .limit(input.limit);
-
-    return result.map((r) => ({
-      countryCode: r.countryCode ?? "unknown",
-      country: r.country ?? "Unknown",
-      value: n(r.count),
-    }));
-  }),
-
-  getTopCities: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
-    const chatbotId = getActiveChatbot(ctx);
-    const { start, end } = getDateRange(input.timeRange);
-
-    const result = await db
-      .select({
-        city: visitorSessions.city,
-        countryCode: visitorSessions.countryCode,
-        count: count().as("count"),
-      })
-      .from(visitorSessions)
-      .where(
-        and(
-          eq(visitorSessions.chatbotId, chatbotId),
-          gte(visitorSessions.startedAt, start),
-          lte(visitorSessions.startedAt, end),
-        ),
-      )
-      .groupBy(visitorSessions.city, visitorSessions.countryCode)
-      .orderBy(desc(count()))
-      .limit(input.limit);
-
-    return result.map((r) => ({
-      city: r.city ?? "Unknown",
-      countryCode: r.countryCode ?? "unknown",
-      value: n(r.count),
-    }));
-  }),
-
-  getTopContinents: protectedProcedure
-    .input(z.object({ timeRange: timeRangeSchema, limit: z.number().min(1).max(10).default(7) }))
-    .query(async ({ ctx, input }) => {
-      const chatbotId = getActiveChatbot(ctx);
-      const { start, end } = getDateRange(input.timeRange);
-
-      const result = await db
-        .select({
-          continent: visitorSessions.continent,
-          count: count().as("count"),
-        })
-        .from(visitorSessions)
-        .where(
-          and(
-            eq(visitorSessions.chatbotId, chatbotId),
-            gte(visitorSessions.startedAt, start),
-            lte(visitorSessions.startedAt, end),
-          ),
-        )
-        .groupBy(visitorSessions.continent)
-        .orderBy(desc(count()))
-        .limit(input.limit);
-
-      return result.map((r) => ({
-        continent: r.continent ?? "Unknown",
-        value: n(r.count),
-      }));
-    }),
-
-  getTopDevices: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
-    const chatbotId = getActiveChatbot(ctx);
-    const { start, end } = getDateRange(input.timeRange);
-
-    const result = await db
-      .select({
-        deviceType: visitorSessions.deviceType,
-        count: count().as("count"),
-      })
-      .from(visitorSessions)
-      .where(
-        and(
-          eq(visitorSessions.chatbotId, chatbotId),
-          gte(visitorSessions.startedAt, start),
-          lte(visitorSessions.startedAt, end),
-        ),
-      )
-      .groupBy(visitorSessions.deviceType)
-      .orderBy(desc(count()))
-      .limit(input.limit);
-
-    return result.map((r) => ({
-      deviceType: r.deviceType ?? "unknown",
-      count: n(r.count),
-    }));
-  }),
-
-  getTopOS: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
-    const chatbotId = getActiveChatbot(ctx);
-    const { start, end } = getDateRange(input.timeRange);
-
-    const result = await db
-      .select({
-        os: visitorSessions.os,
-        count: count().as("count"),
-      })
-      .from(visitorSessions)
-      .where(
-        and(
-          eq(visitorSessions.chatbotId, chatbotId),
-          gte(visitorSessions.startedAt, start),
-          lte(visitorSessions.startedAt, end),
-        ),
-      )
-      .groupBy(visitorSessions.os)
-      .orderBy(desc(count()))
-      .limit(input.limit);
-
-    return result.map((r) => ({
-      os: r.os ?? "unknown",
-      count: n(r.count),
-    }));
-  }),
-
-  getTopReferrers: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
-    const chatbotId = getActiveChatbot(ctx);
-    const { start, end } = getDateRange(input.timeRange);
-
-    const result = await db
-      .select({
-        referrer: visitorSessions.referrer,
-        count: count().as("count"),
-      })
-      .from(visitorSessions)
-      .where(
-        and(
-          eq(visitorSessions.chatbotId, chatbotId),
-          gte(visitorSessions.startedAt, start),
-          lte(visitorSessions.startedAt, end),
-        ),
-      )
-      .groupBy(visitorSessions.referrer)
-      .orderBy(desc(count()))
-      .limit(input.limit);
-
-    return result.map((r) => ({
-      referrer: r.referrer ?? "direct",
-      value: n(r.count),
-    }));
-  }),
+  /** Top countries, devices, operating systems and referrers, in one query. */
+  getBreakdowns: protectedProcedure
+    .input(paginatedInput)
+    .query(({ ctx, input }) => getBreakdowns(getActiveChatbot(ctx), input.timeRange, input.limit)),
 
   getTopPlatforms: protectedProcedure.input(paginatedInput).query(async ({ ctx, input }) => {
     const chatbotId = getActiveChatbot(ctx);
@@ -460,12 +241,13 @@ export const analyticsRouter = router({
       value: n(r.count),
     }));
   }),
+
   trackEvent: publicProcedure
     .input(
       z.object({
         chatbotId: z.uuid(),
         sessionId: z.uuid(),
-        visitorId: z.string(),
+        visitorId: z.string().max(200),
         event: z.enum([
           "session_start",
           "session_end",
@@ -481,27 +263,68 @@ export const analyticsRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
-      const [event] = await db
+      // Recorded only when the session belongs to the chatbot, so events can't
+      // be filed against another chatbot's analytics.
+      const inserted = await db
         .insert(visitorEvents)
-        .values({ ...input, timestamp: new Date() })
-        .returning();
+        .select(
+          db
+            .select({
+              id: sql<string>`gen_random_uuid()`.as("id"),
+              sessionId: visitorSessions.id,
+              chatbotId: visitorSessions.chatbotId,
+              visitorId: sql<string>`${input.visitorId}`.as("visitor_id"),
+              event: sql<typeof input.event>`${input.event}`.as("event"),
+              conversationId: sql<string | null>`${input.conversationId ?? null}::uuid`.as(
+                "conversation_id",
+              ),
+              durationMs: sql<number | null>`${clampDurationMs(input.durationMs) ?? null}::int`.as(
+                "duration_ms",
+              ),
+              timestamp: sql<Date>`now() at time zone 'utc'`.as("timestamp"),
+              extra: sql<unknown>`${input.extra ? JSON.stringify(input.extra) : null}::jsonb`.as(
+                "extra",
+              ),
+              deletedAt: sql<Date | null>`null`.as("deleted_at"),
+            })
+            .from(visitorSessions)
+            .where(
+              and(
+                eq(visitorSessions.id, input.sessionId),
+                eq(visitorSessions.chatbotId, input.chatbotId),
+              ),
+            ),
+        )
+        .returning({ id: visitorEvents.id });
 
-      return event;
+      if (inserted.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+      }
+
+      // "Chats started" is on the live overview.
+      if (input.event === "chat_started") {
+        analyticsEvents.emit("analytics-update", {
+          chatbotId: input.chatbotId,
+          action: "chat-started",
+        });
+      }
+
+      return { id: inserted[0]!.id };
     }),
 
   createSession: publicProcedure
     .input(
       z.object({
         chatbotId: z.uuid(),
-        visitorId: z.string(),
-        userAgent: z.string().optional(),
-        platform: z.string().optional(),
+        visitorId: z.string().max(200),
+        userAgent: z.string().max(1000).optional(),
+        platform: z.string().max(100).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const headers = ctx.request?.headers;
       const userAgent = input.userAgent || headers?.userAgent || "";
-      const deviceType = detectDeviceFromUserAgent(userAgent).type;
+      const device = detectDeviceFromUserAgent(userAgent);
 
       const [chatbotRecord] = await db
         .select({ organizationId: chatbot.organizationId })
@@ -509,13 +332,18 @@ export const analyticsRouter = router({
         .where(eq(chatbot.id, input.chatbotId))
         .limit(1);
 
+      if (!chatbotRecord) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Chatbot not found" });
+      }
+
+      // Sessions start when the widget opens, so they start active.
       const [session] = await db
         .insert(visitorSessions)
         .values({
           ...input,
           userAgent,
-          deviceType,
-          os: detectDeviceFromUserAgent(userAgent).os,
+          deviceType: device.type,
+          os: device.os,
           city: headers?.city,
           region: headers?.region,
           country: headers?.country,
@@ -523,42 +351,38 @@ export const analyticsRouter = router({
           continent: headers?.continent,
           referrer: headers?.referer,
           startedAt: new Date(),
+          isWidgetActive: true,
         })
-        .returning();
+        .returning({ id: visitorSessions.id });
 
       analyticsEvents.emit("analytics-update", {
         chatbotId: input.chatbotId,
         action: "session-create",
       });
 
-      if (chatbotRecord) {
-        try {
-          await createOrganizationNotification({
-            organizationId: chatbotRecord.organizationId,
-            chatbotId: input.chatbotId,
-            eventType: "visitor.new_unique",
-            entityType: "visitor",
-            entityId: input.visitorId,
-            title: headers?.city
-              ? `New visitor from ${headers.city}, ${headers?.country ?? "Unknown"}`
-              : `New visitor from ${headers?.country ?? "Unknown"}`,
-            body: headers?.city
-              ? `${headers.city}, ${headers?.country ?? "Unknown"}`
-              : headers?.country,
-            metadata: {
-              visitorId: input.visitorId,
-              chatbotId: input.chatbotId,
-              country: headers?.country,
-              city: headers?.city,
-            },
-            dedupeKey: `visitor.new_unique:${input.chatbotId}:${input.visitorId}`,
-          });
-        } catch (error) {
-          console.error("Failed to create visitor.new_unique notification", error);
-        }
-      }
+      // Deduplicated per visitor; it needn't hold up the widget.
+      createOrganizationNotification({
+        organizationId: chatbotRecord.organizationId,
+        chatbotId: input.chatbotId,
+        eventType: "visitor.new_unique",
+        entityType: "visitor",
+        entityId: input.visitorId,
+        title: headers?.city
+          ? `New visitor from ${headers.city}, ${headers?.country ?? "Unknown"}`
+          : `New visitor from ${headers?.country ?? "Unknown"}`,
+        body: headers?.city ? `${headers.city}, ${headers?.country ?? "Unknown"}` : headers?.country,
+        metadata: {
+          visitorId: input.visitorId,
+          chatbotId: input.chatbotId,
+          country: headers?.country,
+          city: headers?.city,
+        },
+        dedupeKey: `visitor.new_unique:${input.chatbotId}:${input.visitorId}`,
+      }).catch((error) => {
+        console.error("Failed to create visitor.new_unique notification", error);
+      });
 
-      return session;
+      return session!;
     }),
 
   endSession: publicProcedure
@@ -567,57 +391,17 @@ export const analyticsRouter = router({
         sessionId: z.uuid(),
         chatbotId: z.uuid(),
         durationMs: z.number().optional(),
-        pageViews: z.number().optional(),
+        pageViews: z.number().int().min(0).max(100_000).optional(),
         isBounce: z.boolean().optional(),
       }),
     )
-    .mutation(async ({ input }) => {
-      const { sessionId, chatbotId, ...rest } = input;
-      const [session] = await db
-        .update(visitorSessions)
-        .set({ ...rest, endedAt: new Date(), isWidgetActive: false })
-        .where(eq(visitorSessions.id, sessionId))
-        .returning();
-
-      analyticsEvents.emit("analytics-update", {
-        chatbotId,
-        action: "session-end",
-      });
-
-      return session;
-    }),
+    .mutation(async ({ input }) => ({ ended: await endVisitorSession(input) })),
 
   setWidgetActive: publicProcedure
     .input(z.object({ sessionId: z.uuid(), chatbotId: z.uuid() }))
-    .mutation(async ({ input }) => {
-      const [session] = await db
-        .update(visitorSessions)
-        .set({ isWidgetActive: true })
-        .where(eq(visitorSessions.id, input.sessionId))
-        .returning();
-
-      analyticsEvents.emit("analytics-update", {
-        chatbotId: input.chatbotId,
-        action: "widget-open",
-      });
-
-      return session;
-    }),
+    .mutation(({ input }) => setWidgetOpen(input, true)),
 
   setWidgetInactive: publicProcedure
     .input(z.object({ sessionId: z.uuid(), chatbotId: z.uuid() }))
-    .mutation(async ({ input }) => {
-      const [session] = await db
-        .update(visitorSessions)
-        .set({ isWidgetActive: false })
-        .where(eq(visitorSessions.id, input.sessionId))
-        .returning();
-
-      analyticsEvents.emit("analytics-update", {
-        chatbotId: input.chatbotId,
-        action: "widget-close",
-      });
-
-      return session;
-    }),
+    .mutation(({ input }) => setWidgetOpen(input, false)),
 });

@@ -5,6 +5,8 @@ export interface OverviewData {
   uniqueVisitors: number;
   totalChats: number;
   averageSessionTime: number;
+  /** 0..1 */
+  bounceRate: number;
   activeVisitors: number;
 }
 
@@ -58,19 +60,69 @@ export function useOverviewStream({
     const baseUrl = import.meta.env.VITE_SERVER_URL ?? "";
     const url = `${baseUrl}/api/analytics/stream/overview?timeRange=${encodeURIComponent(timeRange)}`;
 
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
     let retryTimeout: ReturnType<typeof setTimeout> | null = null;
     let reconnectAttempt = 0;
+    let streamController: AbortController | null = null;
 
-    const connect = async () => {
-      if (mountedRef.current) updateState({ error: null });
+    const parseChunk = (() => {
+      let buffer = "";
+      let eventType = "message";
+      const decoder = new TextDecoder();
+
+      return (value: Uint8Array) => {
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+
+              if (eventType === "overview") {
+                if (mountedRef.current) updateState({ data: parsed as OverviewData });
+              } else if (eventType === "error") {
+                console.error("[useOverviewStream] server error event:", parsed);
+                if (mountedRef.current) {
+                  updateState({
+                    error: (parsed as { error?: string }).error ?? "Unknown server error",
+                  });
+                }
+              }
+            } catch {}
+
+            eventType = "message";
+          } else if (line === "") {
+            eventType = "message";
+          }
+        }
+      };
+    })();
+
+    const scheduleReconnect = (delay: number) => {
+      if (retryTimeout) clearTimeout(retryTimeout);
+      retryTimeout = setTimeout(connect, delay);
+    };
+
+    async function connect() {
+      retryTimeout = null;
+      // A hidden tab doesn't hold a stream open; it reconnects when shown.
+      if (document.hidden) {
+        streamController = null;
+        return;
+      }
+
+      streamController?.abort();
+      const controller = new AbortController();
+      streamController = controller;
+      abortControllerRef.current = controller;
 
       try {
         const response = await fetch(url, {
           credentials: "include",
-          signal: abortController.signal,
+          signal: controller.signal,
         });
 
         if (!response.ok) {
@@ -88,60 +140,23 @@ export function useOverviewStream({
         reconnectAttempt = 0;
 
         const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-
-        let buffer = "";
-        let eventType = "message";
-
-        const processChunk = (value: Uint8Array) => {
-          buffer += decoder.decode(value, { stream: true });
-
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            if (line.startsWith("event: ")) {
-              eventType = line.slice(7).trim();
-            } else if (line.startsWith("data: ")) {
-              const raw = line.slice(6);
-              try {
-                const parsed = JSON.parse(raw);
-
-                if (eventType === "overview") {
-                  if (mountedRef.current) updateState({ data: parsed as OverviewData });
-                } else if (eventType === "error") {
-                  console.error("[useOverviewStream] server error event:", parsed);
-                  if (mountedRef.current) {
-                    updateState({
-                      error: (parsed as { error?: string }).error ?? "Unknown server error",
-                    });
-                  }
-                }
-              } catch {}
-
-              eventType = "message";
-            } else if (line === "") {
-              eventType = "message";
-            }
-          }
-        };
-
-        const readNext = async (): Promise<void> => {
+        for (;;) {
           const { done, value } = await reader.read();
+          if (done || controller.signal.aborted) break;
+          parseChunk(value);
+        }
 
-          if (done || abortController.signal.aborted) {
-            return;
-          }
-
-          processChunk(value);
-          await readNext();
-        };
-
-        await readNext();
+        // The server ends each stream after a while; pick up a fresh one.
+        if (!controller.signal.aborted && mountedRef.current) {
+          streamController = null;
+          scheduleReconnect(0);
+        }
       } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") {
+        if (controller.signal.aborted) {
           return;
         }
+
+        streamController = null;
 
         if (mountedRef.current) {
           updateState({
@@ -150,20 +165,35 @@ export function useOverviewStream({
           });
         }
 
-        if (reconnectAttempt < MAX_RETRIES && !abortController.signal.aborted) {
-          const delay = BASE_RETRY_DELAY_MS * Math.pow(2, reconnectAttempt);
+        if (reconnectAttempt < MAX_RETRIES) {
+          scheduleReconnect(BASE_RETRY_DELAY_MS * Math.pow(2, reconnectAttempt));
           reconnectAttempt++;
-          retryTimeout = setTimeout(connect, delay);
         }
+      }
+    }
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        if (retryTimeout) clearTimeout(retryTimeout);
+        retryTimeout = null;
+        streamController?.abort();
+        streamController = null;
+        if (mountedRef.current) updateState({ isConnected: false });
+      } else if (!streamController) {
+        reconnectAttempt = 0;
+        if (retryTimeout) clearTimeout(retryTimeout);
+        void connect();
       }
     };
 
+    document.addEventListener("visibilitychange", onVisibilityChange);
     void connect();
 
     return () => {
       mountedRef.current = false;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       if (retryTimeout) clearTimeout(retryTimeout);
-      abortController.abort();
+      streamController?.abort();
     };
   }, [timeRange, enabled]);
 

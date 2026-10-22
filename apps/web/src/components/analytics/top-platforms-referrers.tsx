@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExpandIcon, Globe } from "lucide-react";
 import { useState } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import BarList from "./bar-list";
 import { ViewAllStats } from "./view-all-stats";
@@ -25,20 +25,21 @@ export function TopPlatforms() {
 	const { timeRange } = useSearch({ from: "/(admin)/analytics" });
 	const selectedTimeRange: TimeRange = (timeRange as TimeRange) || "24h";
 
-	const [platformsQuery, referrersQuery] = useQueries({
-		queries: [
-			trpc.analytics.getTopPlatforms.queryOptions({
-				timeRange: selectedTimeRange,
-				limit: 10,
-			}),
-			trpc.analytics.getTopReferrers.queryOptions({
-				timeRange: selectedTimeRange,
-				limit: 10,
-			}),
-		],
-	});
+	const platformsQuery = useQuery(
+		trpc.analytics.getTopPlatforms.queryOptions({
+			timeRange: selectedTimeRange,
+			limit: 10,
+		}),
+	);
+	// Shared with the countries card: same query, fetched once.
+	const breakdownsQuery = useQuery(
+		trpc.analytics.getBreakdowns.queryOptions({
+			timeRange: selectedTimeRange,
+			limit: 10,
+		}),
+	);
 
-	const isPending = platformsQuery.isPending || referrersQuery.isPending;
+	const isPending = platformsQuery.isPending || breakdownsQuery.isPending;
 
 	const getPlatformIcon = (platform: string) => {
 		switch (platform.toLowerCase()) {
@@ -77,7 +78,7 @@ export function TopPlatforms() {
 		return labels[platform.toLowerCase()] || platform;
 	};
 
-	const mapReferrers = (referrersQuery.data ?? []).map((r) => {
+	const mapReferrers = (breakdownsQuery.data?.referrers ?? []).map((r) => {
 		const referrer = r.referrer;
 		const isDirect = referrer === "direct" || !referrer;
 		const icon = isDirect ? (

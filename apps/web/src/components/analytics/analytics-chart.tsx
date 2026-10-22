@@ -33,14 +33,26 @@ interface AnalyticsChartProps {
 	showVisitors?: boolean;
 	showChats?: boolean;
 	emptyText?: string;
+	/** Whether each data point is an hour or a day. */
+	granularity?: ChartGranularity;
 }
 
-const formatDateLabel = (value: string) => {
-	return new Date(value).toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-	});
-};
+// Day buckets are UTC midnights, so they're labelled in UTC (a local zone
+// behind UTC would show the previous day). Hour buckets are real instants and
+// read in the viewer's local time.
+const DAY_FORMAT = new Intl.DateTimeFormat("en-US", {
+	month: "short",
+	day: "numeric",
+	timeZone: "UTC",
+});
+const HOUR_FORMAT = new Intl.DateTimeFormat("en-US", { hour: "numeric" });
+const HOUR_TOOLTIP_FORMAT = new Intl.DateTimeFormat("en-US", {
+	month: "short",
+	day: "numeric",
+	hour: "numeric",
+});
+
+export type ChartGranularity = "hour" | "day";
 
 export function AnalyticsChart({
 	config,
@@ -50,10 +62,15 @@ export function AnalyticsChart({
 	showVisitors = true,
 	showChats = true,
 	emptyText = "No data available yet",
+	granularity = "day",
 }: AnalyticsChartProps) {
 	const fillChatsId = useId().replace(/:/g, "");
 	const fillVisitorsId = useId().replace(/:/g, "");
 	const displayedData = hasData ? data : EMPTY_ANALYTICS_CHART_DATA;
+	const formatTick = (value: string) =>
+		(granularity === "hour" ? HOUR_FORMAT : DAY_FORMAT).format(new Date(value));
+	const formatTooltip = (value: string) =>
+		(granularity === "hour" ? HOUR_TOOLTIP_FORMAT : DAY_FORMAT).format(new Date(value));
 
 	return (
 		<div className="relative h-full">
@@ -98,16 +115,14 @@ export function AnalyticsChart({
 						axisLine={false}
 						tickMargin={8}
 						minTickGap={32}
-						tickFormatter={formatDateLabel}
+						tickFormatter={formatTick}
 					/>
 					<YAxis tickLine={false} axisLine={false} />
 					<ChartTooltip
 						cursor={false}
 						content={
 							<ChartTooltipContent
-								labelFormatter={(value) =>
-									formatDateLabel(String(value))
-								}
+								labelFormatter={(value) => formatTooltip(String(value))}
 								indicator="dot"
 							/>
 						}
@@ -126,7 +141,8 @@ export function AnalyticsChart({
 							dataKey="chats"
 							fill="var(--chart-1)"
 							radius={[8, 8, 0, 0]}
-							barSize={24}
+							// Up to 24px wide, narrower when there are many buckets (90 days).
+							maxBarSize={24}
 							fillOpacity={0.8}
 						/>
 					)}

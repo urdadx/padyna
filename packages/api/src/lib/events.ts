@@ -2,7 +2,13 @@ import { EventEmitter } from "events";
 
 export interface AnalyticsEvent {
   chatbotId: string;
-  action: "widget-open" | "widget-close" | "session-create" | "session-end" | "presence-update";
+  action:
+    | "widget-open"
+    | "widget-close"
+    | "session-create"
+    | "session-end"
+    | "chat-started"
+    | "presence-update";
 }
 
 class AnalyticsEventEmitter extends EventEmitter {

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExpandIcon } from "lucide-react";
 import { useState } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import BarList from "./bar-list";
 import { ViewAllStats } from "./view-all-stats";
@@ -31,24 +31,13 @@ export function TopCountries() {
 	const { timeRange } = useSearch({ from: "/(admin)/analytics" });
 	const selectedTimeRange: TimeRange = (timeRange as TimeRange) || "24h";
 
-	const [countriesQuery, devicesQuery, osQuery] = useQueries({
-		queries: [
-			trpc.analytics.getTopCountries.queryOptions({
-				timeRange: selectedTimeRange,
-				limit: 10,
-			}),
-			trpc.analytics.getTopDevices.queryOptions({
-				timeRange: selectedTimeRange,
-				limit: 10,
-			}),
-			trpc.analytics.getTopOS.queryOptions({
-				timeRange: selectedTimeRange,
-				limit: 10,
-			}),
-		],
-	});
-
-	const isPending = countriesQuery.isPending || devicesQuery.isPending || osQuery.isPending;
+	// One query for countries, devices and OS; the referrers card shares it.
+	const { data: breakdowns, isPending } = useQuery(
+		trpc.analytics.getBreakdowns.queryOptions({
+			timeRange: selectedTimeRange,
+			limit: 10,
+		}),
+	);
 
 	const osCodeMap: Record<string, string> = {
 		iOS: "IOS",
@@ -59,7 +48,7 @@ export function TopCountries() {
 		unknown: "SYS",
 	};
 
-	const mapCountries = (countriesQuery.data ?? []).map((c) => {
+	const mapCountries = (breakdowns?.countries ?? []).map((c) => {
 		const countryName = getCountryFromCode(c.countryCode.toUpperCase()) ?? c.country ?? "Unknown";
 
 		return {
@@ -77,7 +66,7 @@ export function TopCountries() {
 		};
 	});
 
-	const mapDevices = (devicesQuery.data ?? []).map((d) => ({
+	const mapDevices = (breakdowns?.devices ?? []).map((d) => ({
 		icon:
 			d.deviceType === "mobile" ? (
 				<MobilePhoneLinear color="black" className="w-4 " />
@@ -93,7 +82,7 @@ export function TopCountries() {
 		href: "",
 	}));
 
-	const mapOS = (osQuery.data ?? []).map((o) => ({
+	const mapOS = (breakdowns?.os ?? []).map((o) => ({
 		icon: <img src={`/os/${osCodeMap[o.os] || "SYS"}.png`} className="w-4" alt={o.os} />,
 		title: o.os === "unknown" ? "Unknown" : o.os,
 		value: o.count,

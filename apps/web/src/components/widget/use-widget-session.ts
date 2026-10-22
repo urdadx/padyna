@@ -6,7 +6,6 @@ import {
   setStoredSession,
   clearStoredSession,
   setWidgetActive,
-  setWidgetInactive,
 } from "@/lib/analytics/track";
 import { getOrCreateVisitorId } from "@/lib/analytics/visitor";
 
@@ -144,10 +143,8 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
     const isBounce = !chatStartedRef.current;
 
     try {
-      await Promise.all([
-        setWidgetInactive(sessionIdRef.current, chatbotId),
-        endSession({ sessionId: sessionIdRef.current, chatbotId, durationMs, isBounce }),
-      ]);
+      // Ending a session also marks the widget inactive.
+      await endSession({ sessionId: sessionIdRef.current, chatbotId, durationMs, isBounce });
     } catch (error) {
       console.error("Failed to end session:", error);
     }
@@ -168,11 +165,11 @@ export function useWidgetSession({ chatbotId, isEnabled, chatId }: UseWidgetSess
 
     if (!sessionIdRef.current) {
       try {
+        // New sessions start with the widget marked active.
         const session = await createSession({ chatbotId, visitorId: visitorIdRef.current });
         sessionIdRef.current = session.id;
         sessionStartTimeRef.current = Date.now();
         setStoredSession(chatbotId, session.id);
-        await setWidgetActive(session.id, chatbotId);
       } catch (error) {
         console.error("Failed to create session on widget_open:", error);
         return;
