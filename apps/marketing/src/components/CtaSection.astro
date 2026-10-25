@@ -1,9 +1,11 @@
 ---
-
+import { Image } from "astro:assets";
+import playgroundImage from "../assets/features/playground.webp";
+import DemoBackdrop from "./DemoBackdrop.astro";
 ---
 
 <div class="flex flex-col items-center gap-6 bg-white pt-24 pb-12 text-center">
-  <div class="flex flex-col items-center gap-2">
+  <div class="flex flex-col items-center gap-2 space-x-2">
     <h1
       class="font-display text-4xl leading-tight tracking-tight text-stone-900 lg:text-7xl"
     >
@@ -31,11 +33,152 @@
       type="button"
       class="bg-primary box-border flex h-8 cursor-pointer items-center justify-center gap-x-2 rounded-md px-4 py-1.5 text-center font-mono text-sm leading-5 font-semibold whitespace-nowrap text-white uppercase transition-all duration-75 ease-in select-none active:scale-95 active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
       translate="no"
-      href="https://app.padyna.com">
-      <div class="flex items-center gap-x-2">
-        Get started
-      </div>
-    </a
+      href="https://app.padyna.com"
     >
+      <div class="flex items-center gap-x-2">Get started</div>
+    </a>
+  </div>
+  <div
+    class="relative mt-4 w-full overflow-hidden border-y border-stone-200 px-4 py-8 md:hidden"
+  >
+    <DemoBackdrop />
+    <div
+      class="relative rounded-xl bg-stone-50 p-1 shadow-sm ring-1 ring-stone-200"
+    >
+      <div
+        class="relative aspect-video overflow-hidden rounded-lg border border-stone-200 bg-white"
+      >
+        <Image
+          src={playgroundImage}
+          alt="Padyna Assistant playground showing a customer support conversation"
+          widths={[720, 1440]}
+          sizes="100vw"
+          loading="eager"
+          fetchpriority="high"
+          class="absolute inset-0 h-full w-full object-cover object-top-left"
+        />
+        <button
+          id="watch-demo"
+          type="button"
+          aria-haspopup="dialog"
+          class="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center gap-2 rounded-full border border-white/60 bg-white/75 px-5 py-3 font-sans text-sm font-semibold whitespace-nowrap text-stone-900 shadow-lg shadow-stone-900/20 backdrop-blur-md transition hover:bg-white/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 active:scale-95"
+        >
+          <svg
+            aria-hidden="true"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M8 5.5a1 1 0 0 1 1.52-.85l10 6.5a1 1 0 0 1 0 1.7l-10 6.5A1 1 0 0 1 8 18.5z"
+            ></path>
+          </svg>
+          Watch demo
+        </button>
+      </div>
+    </div>
   </div>
 </div>
+
+<dialog id="demo-dialog" aria-label="Padyna launch video" class="demo-dialog">
+  <div class="relative w-full overflow-hidden rounded-xl bg-black shadow-2xl">
+    <button
+      id="close-demo"
+      type="button"
+      aria-label="Close demo"
+      class="absolute top-2 right-2 z-10 flex size-10 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-white"
+    >
+      <svg
+        aria-hidden="true"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M18 6 6 18M6 6l12 12"></path>
+      </svg>
+    </button>
+    <video
+      id="launch-video"
+      class="aspect-video w-full"
+      controls
+      playsinline
+      preload="none"
+      data-src="/videos/padyna-launch.mp4"
+      aria-label="Padyna launch video"></video>
+  </div>
+</dialog>
+
+<script>
+  const trigger = document.querySelector<HTMLButtonElement>("#watch-demo")!;
+  const dialog = document.querySelector<HTMLDialogElement>("#demo-dialog")!;
+  const video = document.querySelector<HTMLVideoElement>("#launch-video")!;
+
+  const loadVideo = () => {
+    if (video.src) return;
+    video.src = video.dataset.src!;
+    video.load();
+  };
+
+  trigger.addEventListener("click", () => {
+    loadVideo();
+    dialog.showModal();
+    void video.play();
+  });
+
+  dialog
+    .querySelector("#close-demo")!
+    .addEventListener("click", () => dialog.close());
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+  dialog.addEventListener("close", () => {
+    video.pause();
+    trigger.focus();
+  });
+
+  // Let the screenshot paint first; warm the video cache only when the page is idle.
+  const preloadVideo = () => {
+    if (!window.matchMedia("(max-width: 767px)").matches) return;
+    if (
+      (navigator as Navigator & { connection?: { saveData?: boolean } })
+        .connection?.saveData
+    )
+      return;
+    const schedule =
+      window.requestIdleCallback ??
+      ((callback) => window.setTimeout(callback, 1000));
+    schedule(() => {
+      video.preload = "auto";
+      loadVideo();
+    });
+  };
+  if (document.readyState === "complete") preloadVideo();
+  else window.addEventListener("load", preloadVideo, { once: true });
+</script>
+
+<style>
+  .demo-dialog {
+    position: fixed;
+    inset: 0;
+    width: min(92vw, 960px);
+    max-width: none;
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .demo-dialog::backdrop {
+    background: rgb(0 0 0 / 0.8);
+    backdrop-filter: blur(6px);
+  }
+</style>
