@@ -10,6 +10,7 @@ interface Props {
   height: number;
   title: string;
   autoplay?: boolean;
+  desktopOnly?: boolean;
   class?: string;
 }
 
@@ -19,6 +20,7 @@ const {
   height,
   title,
   autoplay = false,
+  desktopOnly = false,
   class: className,
 } = Astro.props;
 ---
@@ -27,13 +29,15 @@ const {
   class:list={["relative block overflow-hidden", className]}
   data-width={width}
   data-autoplay={autoplay ? "" : undefined}
+  data-desktop-only={desktopOnly ? "" : undefined}
 >
   <iframe
-    src={src}
+    src={desktopOnly ? undefined : src}
+    data-src={desktopOnly ? src : undefined}
     title={title}
     aria-hidden="true"
     tabindex="-1"
-    loading="lazy"
+    loading={desktopOnly ? "eager" : "lazy"}
     class="pointer-events-none absolute top-0 left-0 origin-top-left border-0"
     style={`width: ${width}px; height: ${height}px`}></iframe>
 </demo-frame>
@@ -46,9 +50,21 @@ const {
   class DemoFrame extends HTMLElement {
     private playing = false;
     private cleanup?: () => void;
+    private desktopCleanup?: () => void;
 
     connectedCallback() {
       const iframe = this.querySelector("iframe")!;
+      if (this.hasAttribute("data-desktop-only")) {
+        const desktop = window.matchMedia("(min-width: 768px)");
+        const loadOnDesktop = () => {
+          if (desktop.matches && !iframe.hasAttribute("src"))
+            iframe.src = iframe.dataset.src!;
+        };
+        desktop.addEventListener("change", loadOnDesktop);
+        loadOnDesktop();
+        this.desktopCleanup = () =>
+          desktop.removeEventListener("change", loadOnDesktop);
+      }
       const width = Number(this.dataset.width);
       const resizeObserver = new ResizeObserver(() => {
         iframe.style.transform = `scale(${this.clientWidth / width})`;
@@ -90,6 +106,7 @@ const {
 
     disconnectedCallback() {
       this.cleanup?.();
+      this.desktopCleanup?.();
     }
 
     setPlaying(playing: boolean) {
