@@ -36,14 +36,14 @@ export default function FAQs() {
     <section id="faqs" className="w-full border-y pb-10">
       <div className="w-full">
         <div className="border-b px-4 md:px-6">
-          <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-2 px-4 py-10 text-center">
-            <p className="text-primary font-mono text-xs font-medium tracking-[0.56px] uppercase">
+          <div className="mx-auto flex w-full max-w-2xl flex-col items-start gap-4 px-4 py-10 text-left sm:items-center sm:gap-2 sm:text-center">
+            <p className="text-primary font-mono text-sm font-medium tracking-[0.56px] uppercase sm:text-xs">
               FREQUENTLY ASKED QUESTIONS
             </p>
-            <h2 className="text-2xl font-medium tracking-tight text-stone-900 sm:text-4xl">
+            <h2 className="max-w-100.5 text-[24px] leading-[1.2] font-medium tracking-tight text-stone-900 sm:max-w-none sm:text-4xl sm:leading-tight">
               Everything you need to know
             </h2>
-            <p className="max-w-lg text-sm font-normal text-stone-600">
+            <p className="max-w-lg text-base leading-5.5 font-normal text-stone-500 sm:text-sm sm:leading-normal sm:text-stone-600">
               Discover quick and comprehensive answers to common questions about
               our platform, services, and features.
             </p>

@@ -163,14 +163,14 @@ export function PricingOptions() {
   return (
     <section id="pricing" className="w-full border-y pb-10 font-sans">
       <div className="w-full border-b">
-        <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-2 px-4 py-10 text-center">
-          <p className="text-primary font-mono text-xs font-medium tracking-[0.56px] uppercase">
+        <div className="mx-auto flex w-full max-w-2xl flex-col items-start gap-4 px-4 py-10 text-left sm:items-center sm:gap-2 sm:text-center">
+          <p className="text-primary font-mono text-sm font-medium tracking-[0.56px] uppercase sm:text-xs">
             PRICING
           </p>
-          <h2 className="text-2xl font-medium tracking-tight text-stone-900 sm:text-4xl">
+          <h2 className="max-w-100.5 text-[24px] leading-[1.2] font-medium tracking-tight text-stone-900 sm:max-w-none sm:text-4xl sm:leading-tight">
             Simple, transparent pricing that scales with your business
           </h2>
-          <p className="max-w-lg text-sm font-normal text-stone-600">
+          <p className="max-w-lg text-base leading-5.5 font-normal text-stone-500 sm:text-sm sm:leading-normal sm:text-stone-600">
             Start with a free trial and choose the plan that fits your needs. No
             hidden fees, no surprises. Upgrade, downgrade, or cancel anytime.
           </p>
