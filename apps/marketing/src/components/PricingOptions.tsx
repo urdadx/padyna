@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "./ui/card";
 import { buttonVariants } from "./ui/button";
+import { cn } from "@/lib/utils";
 
 type Plan = {
   id: number;
@@ -143,10 +144,12 @@ function PlanCard({
         <CardFooter className="p-3">
           <a
             href="https://app.padyna.com"
-            className={buttonVariants({
-              variant: plan.isPopular ? "default" : "outline",
-              className: "w-full",
-            })}
+            className={cn(
+              buttonVariants({
+                variant: plan.isPopular ? "default" : "outline",
+                className: "w-full",
+              }),
+            )}
           >
             Start free trial
           </a>
