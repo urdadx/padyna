@@ -27,7 +27,7 @@ const navLinks = [
     />
   </a>
 
-  <nav class="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-6 sm:gap-10 md:flex">
+  <nav class="absolute left-1/2 top-1/2 hidden sm:flex -translate-x-1/2 -translate-y-1/2 items-center gap-6 sm:gap-10 md:flex">
     {
       navLinks.map((link) => (
         <a
@@ -57,7 +57,7 @@ const navLinks = [
     </a>
   </div>
 </div>
-  <nav aria-label="Sections" class="flex justify-around gap-2 border-t border-stone-200 px-3 py-2 md:hidden">
+  <nav aria-label="Sections" class="hidden sm:flex justify-around gap-2 border-t border-stone-200 px-3 py-2 md:hidden">
     {navLinks.map((link) => <a href={link.href} class="py-1 text-xs font-medium">{link.label}</a>)}
   </nav>
 </header>

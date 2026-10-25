@@ -49,3 +49,6 @@ coverage
 .cache
 tmp
 temp
+
+# Launch video (Remotion) and the agent skills installed for it
+apps/video/
