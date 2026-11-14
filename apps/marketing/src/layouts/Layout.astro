@@ -2,18 +2,30 @@
 import "../styles/global.css";
 
 const pathname = Astro.url.pathname;
-const isLegalPage = /^\/(privacy|terms-of-service)\/?$/.test(pathname);
+const isLegalPage = /^\/(privacy|terms-of-service|about|contact)\/?$/.test(pathname);
 const shouldLoadWidget = pathname !== "/widget" && !isLegalPage;
-const title = pathname.startsWith("/privacy")
-  ? "Privacy Policy | Padyna"
-  : pathname.startsWith("/terms-of-service")
-    ? "Terms of Service | Padyna"
-    : "Padyna - Your customer support on autopilot";
-const description = isLegalPage
-  ? pathname.startsWith("/privacy")
-    ? "Read how Padyna collects, uses, and protects your personal information."
-    : "Read the terms governing your use of Padyna's AI customer support service."
-  : "Instantly answer customer queries with an AI support agent trained on your business";
+const pageMeta: Record<string, { title: string; description: string }> = {
+  privacy: {
+    title: "Privacy Policy | Padyna",
+    description: "Read how Padyna collects, uses, and protects your personal information.",
+  },
+  "terms-of-service": {
+    title: "Terms of Service | Padyna",
+    description: "Read the terms governing your use of Padyna's AI customer support service.",
+  },
+  about: {
+    title: "About Padyna | AI customer support agents",
+    description: "What Padyna is, who it is for, and how its AI support agents work.",
+  },
+  contact: {
+    title: "Contact Padyna",
+    description: "Reach the Padyna team for support, sales questions, or a product demo.",
+  },
+};
+const page = pageMeta[pathname.replace(/^\/|\/$/g, "")];
+const title = page?.title ?? "Padyna - Your customer support on autopilot";
+const description =
+  page?.description ?? "Instantly answer customer queries with an AI support agent trained on your business";
 const canonicalUrl = new URL(pathname, Astro.site ?? Astro.url);
 const ogImageUrl = new URL("/og.png", Astro.site ?? Astro.url);
 ---
@@ -43,7 +55,16 @@ const ogImageUrl = new URL("/og.png", Astro.site ?? Astro.url);
     <script type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
       "@graph": [
-        { "@type": "Organization", "@id": "https://padyna.com/#organization", name: "Padyna", url: "https://padyna.com" },
+        {
+          "@type": "Organization",
+          "@id": "https://padyna.com/#organization",
+          name: "Padyna",
+          url: "https://padyna.com",
+          logo: "https://padyna.com/favicon.svg",
+          email: "support@padyna.com",
+          sameAs: ["https://x.com/trypadyna"],
+          contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: "support@padyna.com", url: "https://padyna.com/contact" },
+        },
         { "@type": "WebSite", "@id": "https://padyna.com/#website", name: "Padyna", url: "https://padyna.com", publisher: { "@id": "https://padyna.com/#organization" } },
         ...(!isLegalPage ? [{ "@type": "SoftwareApplication", name: "Padyna", url: "https://padyna.com", applicationCategory: "BusinessApplication", operatingSystem: "Web", description }] : []),
       ],
