@@ -11,6 +11,14 @@ const links: { title: string; href: string }[] = [
     href: "#pricing",
   },
   {
+    title: "About",
+    href: "/about/",
+  },
+  {
+    title: "Contact",
+    href: "/contact/",
+  },
+  {
     title: "Terms of Service",
     href: "/terms-of-service/",
   },
