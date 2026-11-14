@@ -163,7 +163,7 @@ function applyLayoutState(dom: PadynaDom, isOpen: boolean) {
   dom.root.style.left = isMobileFullscreen ? "0" : "auto";
   dom.root.style.right = isMobileFullscreen ? "0" : "20px";
   dom.root.style.bottom = isMobileFullscreen ? "0" : "20px";
-  dom.root.style.width = isMobileFullscreen ? "100vw" : "auto";
+  dom.root.style.width = isMobileFullscreen ? "100%" : "auto";
   dom.root.style.height = isMobileFullscreen ? "100dvh" : "auto";
   dom.root.style.alignItems = isMobileFullscreen ? "stretch" : "flex-end";
   if (isMobileFullscreen) {
@@ -172,7 +172,7 @@ function applyLayoutState(dom: PadynaDom, isOpen: boolean) {
     document.body.style.overflow = "";
   }
 
-  dom.panel.style.width = isMobileFullscreen ? "100vw" : "min(400px, calc(100vw - 24px))";
+  dom.panel.style.width = isMobileFullscreen ? "100%" : "min(400px, calc(100vw - 24px))";
   dom.panel.style.height = isMobileFullscreen ? "100dvh" : "min(680px, calc(100vh - 96px))";
   dom.panel.style.maxHeight = isMobileFullscreen ? "100dvh" : "680px";
   dom.panel.style.marginBottom = isMobileFullscreen ? "0" : "12px";

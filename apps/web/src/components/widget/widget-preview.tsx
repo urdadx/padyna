@@ -526,7 +526,7 @@ function WidgetPreviewContent({
 										"--ring": widgetConfig?.primaryColor,
 									} as React.CSSProperties
 								}
-								className="bg-white pr-10 text-sm focus-visible:ring-ring"
+								className="bg-white pr-10 text-sm pointer-coarse:text-base focus-visible:ring-ring"
 								placeholder={inputPlaceholder}
 								value={input}
 								onChange={(e) => setInput(e.target.value)}
