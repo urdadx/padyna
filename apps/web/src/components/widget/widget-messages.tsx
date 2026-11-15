@@ -6,7 +6,7 @@ import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
 import { WidgetMarkdownCodeBlock } from "./widget-components/code-block";
-import { Fragment } from "react";
+import { Fragment, useRef } from "react";
 import { FeedbackBar } from "../agent/feedback-bar";
 import {
   CalendlyAppointmentForm,
@@ -58,6 +58,16 @@ export const WidgetMessages = ({
   chatbotId,
   showVoteBlock,
 }: WidgetMessagesProps) => {
+  // The visitor's message animates in as they send it, not when a saved chat loads (or
+  // when they scroll back up to it). A batch of messages arriving at once is a load.
+  const knownIds = useRef(new Set<string>());
+  const sentIds = useRef(new Set<string>());
+  const added = messages.filter((message) => !knownIds.current.has(message.id));
+  for (const message of added) {
+    knownIds.current.add(message.id);
+    if (added.length <= 2) sentIds.current.add(message.id);
+  }
+
   return messages.map((message, index) => {
     const isLastMessage = index === messages.length - 1;
     const isPendingAssistantMessage =
@@ -154,7 +164,7 @@ export const WidgetMessages = ({
         {!formCount || hasVisibleContent || statusLabel ? (
           <WidgetMessage
             isUser={isUser}
-            animate={isUser || isPendingAssistantMessage}
+            animate={(isUser && sentIds.current.has(message.id)) || isPendingAssistantMessage}
             primaryColor={primaryColor}
           >
             {!hasVisibleContent && !statusLabel ? null : messageContent}

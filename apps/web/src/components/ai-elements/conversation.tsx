@@ -69,7 +69,8 @@ export const ConversationScrollButton = ({
   const { isAtBottom, scrollToBottom } = useStickToBottomContext();
 
   const handleScrollToBottom = useCallback(() => {
-    scrollToBottom();
+    // Jump, rather than the library's default smooth scroll.
+    scrollToBottom("instant");
   }, [scrollToBottom]);
 
   return (
