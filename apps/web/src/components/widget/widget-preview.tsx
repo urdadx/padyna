@@ -26,6 +26,7 @@ import "streamdown/styles.css";
 import Spinner from "../ui/spinner";
 import api from "@/lib/api";
 import { useLiveChatSocket } from "@/lib/chat/live-chat-socket";
+import { playAgentJoinedSound } from "@/lib/chat/notification-sound";
 import { ChatStatusHeader } from "../chat-logs/chat-status-header";
 import { DisabledBanner, EscalatedBanner, ErrorBanner, ClosedBanner } from "../chat-logs/banners";
 import { getInputPlaceholder } from "./get-input-placeholder";
@@ -289,6 +290,8 @@ function WidgetPreviewContent({
 		autoJoin: isEscalated,
 		joinToken: initData?.liveChatToken ?? undefined,
 		userName: "Visitor",
+		// A chime when an agent joins the chat.
+		onPeerJoined: playAgentJoinedSound,
 		onMessage: (incoming) => {
 			if (messageIdsRef.current.has(incoming.id)) return;
 			messageIdsRef.current.add(incoming.id);

@@ -76,6 +76,8 @@ type UseLiveChatSocketInput = {
     conversationId: string;
     status: "opened" | "escalated" | "assigned" | "closed";
   }) => void;
+  /** The other side joined while this socket was connected (not already there on connect). */
+  onPeerJoined?: () => void;
 };
 
 function parseEvent(raw: string): LiveChatServerEvent | null {
@@ -112,10 +114,16 @@ export function useLiveChatSocket({
   userName,
   onMessage,
   onConversationStatus,
+  onPeerJoined,
 }: UseLiveChatSocketInput) {
   const socketRef = useRef<WebSocket | null>(null);
   const onMessageRef = useRef(onMessage);
   const onConversationStatusRef = useRef(onConversationStatus);
+  const onPeerJoinedRef = useRef(onPeerJoined);
+  onPeerJoinedRef.current = onPeerJoined;
+  // The peer's joined state from this connection's last update; null until the first one,
+  // so a peer who was already there on connect (a reload) doesn't count as joining.
+  const lastPeerJoinedRef = useRef<boolean | null>(null);
   const shouldReconnectRef = useRef(false);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
@@ -234,6 +242,7 @@ export function useLiveChatSocket({
       }
 
       retryCountRef.current = 0;
+      lastPeerJoinedRef.current = null;
       setIsConnected(true);
       setStatus("connected");
 
@@ -258,6 +267,11 @@ export function useLiveChatSocket({
         const roleJoined = role === "agent" ? state.agentJoined : state.visitorJoined;
         const myJoined = roleJoined && joinRequestedRef.current;
         const peerJoined = role === "agent" ? state.visitorJoined : state.agentJoined;
+
+        if (lastPeerJoinedRef.current === false && peerJoined) {
+          onPeerJoinedRef.current?.();
+        }
+        lastPeerJoinedRef.current = peerJoined;
 
         setHasJoined(myJoined);
         setIsPeerJoined(peerJoined);
