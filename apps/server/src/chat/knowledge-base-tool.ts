@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { retrieveHybridChunks, type HybridRetrievalMetrics } from "../search/hybrid-retrieval";
+import { retrieveChunks, type RetrievalMetrics } from "../search/retrieval";
 import { estimateContentTokens } from "../ingestion/chunking";
 import { recordDatasourceReferences } from "./datasource-references";
 
@@ -41,8 +41,8 @@ export interface KnowledgeBaseOutput {
 export async function searchKnowledgeBase(
   input: KnowledgeBaseScope & { query: string; maxResults?: number; abortSignal?: AbortSignal },
 ): Promise<KnowledgeBaseOutput> {
-  let retrievalMetrics: HybridRetrievalMetrics | undefined;
-  const rows = await retrieveHybridChunks({
+  let retrievalMetrics: RetrievalMetrics | undefined;
+  const rows = await retrieveChunks({
     query: input.query,
     chatbotId: input.chatbotId,
     organizationId: input.organizationId,
@@ -55,7 +55,7 @@ export async function searchKnowledgeBase(
 
   if (
     retrievalMetrics &&
-    (retrievalMetrics.totalMs > 1_000 || retrievalMetrics.degradedToFullText)
+    (retrievalMetrics.totalMs > 1_000 || retrievalMetrics.fullTextFallback === "semantic_failed")
   ) {
     console.info("Knowledge base retrieval metrics", retrievalMetrics);
   }

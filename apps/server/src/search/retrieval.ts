@@ -4,7 +4,10 @@ import { embedTextForSemanticSearch } from "./semantic-search";
 
 type SourceType = "link" | "file" | "qa" | "text" | "notion" | "google_drive";
 
-export interface HybridRetrievalMetrics {
+// Why full-text search ran instead of semantic search.
+export type FullTextFallbackReason = "semantic_failed" | "no_semantic_matches";
+
+export interface RetrievalMetrics {
   totalMs: number;
   embeddingMs: number | null;
   semanticMs: number | null;
@@ -12,10 +15,10 @@ export interface HybridRetrievalMetrics {
   semanticCandidates: number;
   fullTextCandidates: number;
   resultCount: number;
-  degradedToFullText: boolean;
+  fullTextFallback: FullTextFallbackReason | null;
 }
 
-export interface HybridRetrievalInput {
+export interface RetrievalInput {
   query: string;
   chatbotId: string;
   organizationId: string;
@@ -24,14 +27,11 @@ export interface HybridRetrievalInput {
   fullTextChunkLimit?: number;
   maxChunksPerDatasource?: number;
   minSemanticScore?: number;
-  semanticWeight?: number;
-  fullTextWeight?: number;
-  rrfK?: number;
-  onMetrics?: (metrics: HybridRetrievalMetrics) => void;
+  onMetrics?: (metrics: RetrievalMetrics) => void;
   abortSignal?: AbortSignal;
 }
 
-export interface HybridRetrievedChunk {
+export interface RetrievedChunk {
   chunkId: string;
   datasourceId: string;
   content: string;
@@ -39,11 +39,8 @@ export interface HybridRetrievedChunk {
   sourceName: string;
   sourceType: SourceType;
   url: string | null;
-  fusedScore: number;
-  semanticScore: number | null;
-  fullTextScore: number | null;
-  semanticRank: number | null;
-  fullTextRank: number | null;
+  score: number;
+  matchedBy: "semantic" | "full_text";
 }
 
 interface CandidateRow {
@@ -72,12 +69,9 @@ export interface RankedRetrievalCandidate {
   rank: number;
 }
 
-export interface FusionOptions {
+export interface SelectionOptions {
   limit: number;
   maxChunksPerDatasource: number;
-  rrfK: number;
-  semanticWeight: number;
-  fullTextWeight: number;
 }
 
 const DEFAULT_LIMIT = 8;
@@ -85,12 +79,6 @@ const DEFAULT_SEMANTIC_LIMIT = 40;
 const DEFAULT_FTS_CHUNK_LIMIT = 40;
 const DEFAULT_MAX_CHUNKS_PER_DATASOURCE = 2;
 const DEFAULT_MIN_SEMANTIC_SCORE = 0.2;
-const DEFAULT_RRF_K = 60;
-// Tuned with evaluate-retrieval: full-text mainly rescues matches semantic search
-// ranks just outside the cut-off. At equal weight its broad "any term" matches
-// pushed the best source down the list.
-const DEFAULT_SEMANTIC_WEIGHT = 1;
-const DEFAULT_FULL_TEXT_WEIGHT = 0.25;
 const MAX_LIMIT = 50;
 const MAX_CANDIDATE_LIMIT = 200;
 const LEGACY_EMBEDDING_MODEL = "deterministic-hash-v1";
@@ -109,14 +97,6 @@ function clampScore(value: number | undefined, fallback: number) {
   }
 
   return Math.max(-1, Math.min(value, 1));
-}
-
-function clampWeight(value: number | undefined, fallback: number) {
-  if (value === undefined || !Number.isFinite(value)) {
-    return fallback;
-  }
-
-  return Math.max(0, Math.min(value, 5));
 }
 
 function normalizeQuery(query: string) {
@@ -281,71 +261,20 @@ async function retrieveSemanticCandidates(
   };
 }
 
-export function fuseRetrievalCandidates(
-  semanticCandidates: RankedRetrievalCandidate[],
-  fullTextCandidates: RankedRetrievalCandidate[],
-  options: FusionOptions,
-): HybridRetrievedChunk[] {
-  const fused = new Map<string, HybridRetrievedChunk & { contentHash: string | null }>();
-
-  for (const candidate of semanticCandidates) {
-    fused.set(candidate.chunkId, {
-      chunkId: candidate.chunkId,
-      datasourceId: candidate.datasourceId,
-      content: candidate.content,
-      contentHash: candidate.contentHash,
-      chunkIndex: candidate.chunkIndex,
-      sourceName: candidate.sourceName,
-      sourceType: candidate.sourceType,
-      url: candidate.url,
-      fusedScore: options.semanticWeight / (options.rrfK + candidate.rank),
-      semanticScore: candidate.score,
-      fullTextScore: null,
-      semanticRank: candidate.rank,
-      fullTextRank: null,
-    });
-  }
-
-  for (const candidate of fullTextCandidates) {
-    const existing = fused.get(candidate.chunkId);
-    const contribution = options.fullTextWeight / (options.rrfK + candidate.rank);
-
-    if (existing) {
-      existing.fusedScore += contribution;
-      existing.fullTextScore = candidate.score;
-      existing.fullTextRank = candidate.rank;
-      continue;
-    }
-
-    fused.set(candidate.chunkId, {
-      chunkId: candidate.chunkId,
-      datasourceId: candidate.datasourceId,
-      content: candidate.content,
-      contentHash: candidate.contentHash,
-      chunkIndex: candidate.chunkIndex,
-      sourceName: candidate.sourceName,
-      sourceType: candidate.sourceType,
-      url: candidate.url,
-      fusedScore: contribution,
-      semanticScore: null,
-      fullTextScore: candidate.score,
-      semanticRank: null,
-      fullTextRank: candidate.rank,
-    });
-  }
-
-  const ordered = [...fused.values()].sort((left, right) => {
-    return (
-      right.fusedScore - left.fusedScore ||
-      (right.semanticScore ?? -Infinity) - (left.semanticScore ?? -Infinity) ||
-      (right.fullTextScore ?? -Infinity) - (left.fullTextScore ?? -Infinity) ||
-      left.chunkId.localeCompare(right.chunkId)
-    );
-  });
+// Keeps the best-ranked candidates, skipping repeated content and capping how many
+// chunks one datasource contributes so a single long document can't fill the context.
+export function selectRetrievalCandidates(
+  candidates: RankedRetrievalCandidate[],
+  matchedBy: RetrievedChunk["matchedBy"],
+  options: SelectionOptions,
+): RetrievedChunk[] {
+  const ordered = [...candidates].sort(
+    (left, right) => left.rank - right.rank || left.chunkId.localeCompare(right.chunkId),
+  );
 
   const datasourceCounts = new Map<string, number>();
   const seenContent = new Set<string>();
-  const results: HybridRetrievedChunk[] = [];
+  const results: RetrievedChunk[] = [];
 
   for (const candidate of ordered) {
     const contentKey = candidate.contentHash || candidate.content.trim().replace(/\s+/g, " ");
@@ -355,8 +284,17 @@ export function fuseRetrievalCandidates(
       continue;
     }
 
-    const { contentHash: _contentHash, ...result } = candidate;
-    results.push(result);
+    results.push({
+      chunkId: candidate.chunkId,
+      datasourceId: candidate.datasourceId,
+      content: candidate.content,
+      chunkIndex: candidate.chunkIndex,
+      sourceName: candidate.sourceName,
+      sourceType: candidate.sourceType,
+      url: candidate.url,
+      score: candidate.score,
+      matchedBy,
+    });
     seenContent.add(contentKey);
     datasourceCounts.set(candidate.datasourceId, datasourceCount + 1);
 
@@ -368,9 +306,11 @@ export function fuseRetrievalCandidates(
   return results;
 }
 
-export async function retrieveHybridChunks(
-  input: HybridRetrievalInput,
-): Promise<HybridRetrievedChunk[]> {
+// Semantic search answers the query. Full-text search is only the fallback, for when
+// the embedding call or the semantic query fails, or nothing clears the minimum score.
+// Mixing it into every result list (rank fusion) ranked the right source lower on the
+// evaluation set: its "any term" matches outranked better semantic hits.
+export async function retrieveChunks(input: RetrievalInput): Promise<RetrievedChunk[]> {
   const query = normalizeQuery(input.query);
   if (!query) {
     return [];
@@ -378,19 +318,7 @@ export async function retrieveHybridChunks(
 
   const startedAt = performance.now();
   const limit = clamp(input.limit, DEFAULT_LIMIT);
-  const semanticCandidateLimit = clamp(
-    input.semanticCandidateLimit,
-    DEFAULT_SEMANTIC_LIMIT,
-    limit,
-    MAX_CANDIDATE_LIMIT,
-  );
-  const fullTextCandidateLimit = clamp(
-    input.fullTextChunkLimit,
-    DEFAULT_FTS_CHUNK_LIMIT,
-    limit,
-    MAX_CANDIDATE_LIMIT,
-  );
-  const fusionOptions: FusionOptions = {
+  const selectionOptions: SelectionOptions = {
     limit,
     maxChunksPerDatasource: clamp(
       input.maxChunksPerDatasource,
@@ -398,70 +326,73 @@ export async function retrieveHybridChunks(
       1,
       limit,
     ),
-    rrfK: clamp(input.rrfK, DEFAULT_RRF_K, 1, 500),
-    semanticWeight: clampWeight(input.semanticWeight, DEFAULT_SEMANTIC_WEIGHT),
-    fullTextWeight: clampWeight(input.fullTextWeight, DEFAULT_FULL_TEXT_WEIGHT),
   };
 
-  const fullTextPromise = retrieveFullTextCandidates(
-    query,
-    input.chatbotId,
-    input.organizationId,
-    fullTextCandidateLimit,
-  );
-  const embeddingStartedAt = performance.now();
   let embeddingMs: number | null = null;
-  const semanticPromise = embedTextForSemanticSearch(query, input.abortSignal).then((embedding) => {
+  let semantic: Awaited<ReturnType<typeof retrieveSemanticCandidates>> | null = null;
+  let semanticError: unknown = null;
+  try {
+    const embeddingStartedAt = performance.now();
+    const embedding = await embedTextForSemanticSearch(query, input.abortSignal);
     embeddingMs = performance.now() - embeddingStartedAt;
-    return retrieveSemanticCandidates(
+    semantic = await retrieveSemanticCandidates(
       embedding,
       input.chatbotId,
       input.organizationId,
-      semanticCandidateLimit,
+      clamp(input.semanticCandidateLimit, DEFAULT_SEMANTIC_LIMIT, limit, MAX_CANDIDATE_LIMIT),
       clampScore(input.minSemanticScore, DEFAULT_MIN_SEMANTIC_SCORE),
     );
-  });
-
-  const [semanticResult, fullTextResult] = await Promise.allSettled([
-    semanticPromise,
-    fullTextPromise,
-  ]);
-
-  if (semanticResult.status === "rejected" && fullTextResult.status === "rejected") {
-    throw new AggregateError(
-      [semanticResult.reason, fullTextResult.reason],
-      "Semantic and full-text retrieval both failed.",
-    );
+  } catch (error) {
+    // A cancelled request has no one to answer; don't run the fallback for it.
+    if (input.abortSignal?.aborted) {
+      throw error;
+    }
+    semanticError = error;
   }
 
-  if (semanticResult.status === "rejected") {
-    console.error(
-      "Semantic retrieval failed; using full-text results only.",
-      semanticResult.reason,
-    );
-  }
-  if (fullTextResult.status === "rejected") {
-    console.error(
-      "Full-text retrieval failed; using semantic results only.",
-      fullTextResult.reason,
-    );
-  }
+  let fullText: Awaited<ReturnType<typeof retrieveFullTextCandidates>> | null = null;
+  let fullTextFallback: FullTextFallbackReason | null = null;
+  let results: RetrievedChunk[];
 
-  const semanticCandidates =
-    semanticResult.status === "fulfilled" ? semanticResult.value.candidates : [];
-  const fullTextCandidates =
-    fullTextResult.status === "fulfilled" ? fullTextResult.value.candidates : [];
-  const results = fuseRetrievalCandidates(semanticCandidates, fullTextCandidates, fusionOptions);
+  if (semantic && semantic.candidates.length > 0) {
+    results = selectRetrievalCandidates(semantic.candidates, "semantic", selectionOptions);
+  } else {
+    fullTextFallback = semantic ? "no_semantic_matches" : "semantic_failed";
+    if (semanticError) {
+      console.error("Semantic retrieval failed; falling back to full-text search.", semanticError);
+    }
+
+    try {
+      fullText = await retrieveFullTextCandidates(
+        query,
+        input.chatbotId,
+        input.organizationId,
+        clamp(input.fullTextChunkLimit, DEFAULT_FTS_CHUNK_LIMIT, limit, MAX_CANDIDATE_LIMIT),
+      );
+    } catch (error) {
+      if (semanticError) {
+        throw new AggregateError(
+          [semanticError, error],
+          "Semantic and full-text retrieval both failed.",
+        );
+      }
+      // Semantic search worked and found nothing relevant; that answer stands.
+      console.error("Full-text fallback failed.", error);
+    }
+    results = fullText
+      ? selectRetrievalCandidates(fullText.candidates, "full_text", selectionOptions)
+      : [];
+  }
 
   input.onMetrics?.({
     totalMs: performance.now() - startedAt,
     embeddingMs,
-    semanticMs: semanticResult.status === "fulfilled" ? semanticResult.value.durationMs : null,
-    fullTextMs: fullTextResult.status === "fulfilled" ? fullTextResult.value.durationMs : null,
-    semanticCandidates: semanticCandidates.length,
-    fullTextCandidates: fullTextCandidates.length,
+    semanticMs: semantic?.durationMs ?? null,
+    fullTextMs: fullText?.durationMs ?? null,
+    semanticCandidates: semantic?.candidates.length ?? 0,
+    fullTextCandidates: fullText?.candidates.length ?? 0,
     resultCount: results.length,
-    degradedToFullText: semanticResult.status === "rejected",
+    fullTextFallback,
   });
 
   return results;

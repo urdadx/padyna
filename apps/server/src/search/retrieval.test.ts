@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { FusionOptions, RankedRetrievalCandidate } from "./hybrid-retrieval";
+import type { RankedRetrievalCandidate, SelectionOptions } from "./retrieval";
 
 Object.assign(process.env, {
   DATABASE_URL: "postgresql://test:test@localhost:5432/test",
@@ -15,14 +15,11 @@ Object.assign(process.env, {
   REDIS_URL: "redis://localhost:6379",
 });
 
-const { fuseRetrievalCandidates } = await import("./hybrid-retrieval");
+const { selectRetrievalCandidates } = await import("./retrieval");
 
-const defaultOptions: FusionOptions = {
+const defaultOptions: SelectionOptions = {
   limit: 8,
   maxChunksPerDatasource: 8,
-  rrfK: 60,
-  semanticWeight: 1,
-  fullTextWeight: 1,
 };
 
 function candidate(
@@ -45,28 +42,21 @@ function candidate(
   };
 }
 
-describe("fuseRetrievalCandidates", () => {
-  test("boosts candidates found by both modalities with reciprocal rank fusion", () => {
-    const semantic = [candidate("semantic-only", 1), candidate("overlap", 2)];
-    const fullText = [candidate("full-text-only", 1), candidate("overlap", 2)];
+describe("selectRetrievalCandidates", () => {
+  test("keeps candidates in rank order and labels where they matched", () => {
+    const fullText = [candidate("second", 2), candidate("first", 1)];
 
-    const results = fuseRetrievalCandidates(semantic, fullText, defaultOptions);
+    const results = selectRetrievalCandidates(fullText, "full_text", defaultOptions);
 
-    expect(results.map((result) => result.chunkId)).toEqual([
-      "overlap",
-      "semantic-only",
-      "full-text-only",
-    ]);
-    expect(results[0]?.fusedScore).toBeCloseTo(2 / 62);
-    expect(results[0]?.semanticRank).toBe(2);
-    expect(results[0]?.fullTextRank).toBe(2);
+    expect(results.map((result) => result.chunkId)).toEqual(["first", "second"]);
+    expect(results.every((result) => result.matchedBy === "full_text")).toBe(true);
   });
 
   test("orders exact score ties deterministically by chunk ID", () => {
     const semantic = [candidate("chunk-b", 1), candidate("chunk-a", 1)];
 
-    const first = fuseRetrievalCandidates(semantic, [], defaultOptions);
-    const second = fuseRetrievalCandidates([...semantic].reverse(), [], defaultOptions);
+    const first = selectRetrievalCandidates(semantic, "semantic", defaultOptions);
+    const second = selectRetrievalCandidates([...semantic].reverse(), "semantic", defaultOptions);
 
     expect(first.map((result) => result.chunkId)).toEqual(["chunk-a", "chunk-b"]);
     expect(second.map((result) => result.chunkId)).toEqual(["chunk-a", "chunk-b"]);
@@ -79,7 +69,7 @@ describe("fuseRetrievalCandidates", () => {
       candidate("unique", 3, { content: "Unique content", contentHash: null }),
     ];
 
-    const results = fuseRetrievalCandidates(semantic, [], defaultOptions);
+    const results = selectRetrievalCandidates(semantic, "semantic", defaultOptions);
 
     expect(results.map((result) => result.chunkId)).toEqual(["preferred", "unique"]);
   });
@@ -91,7 +81,7 @@ describe("fuseRetrievalCandidates", () => {
       candidate("source-b-1", 3, { datasourceId: "source-b" }),
     ];
 
-    const results = fuseRetrievalCandidates(semantic, [], {
+    const results = selectRetrievalCandidates(semantic, "semantic", {
       ...defaultOptions,
       maxChunksPerDatasource: 1,
     });
@@ -99,25 +89,10 @@ describe("fuseRetrievalCandidates", () => {
     expect(results.map((result) => result.chunkId)).toEqual(["source-a-1", "source-b-1"]);
   });
 
-  test("applies semantic and full-text modality weights", () => {
-    const semantic = [candidate("semantic", 1)];
-    const fullText = [candidate("full-text", 1)];
-
-    const results = fuseRetrievalCandidates(semantic, fullText, {
-      ...defaultOptions,
-      semanticWeight: 1,
-      fullTextWeight: 3,
-    });
-
-    expect(results.map((result) => result.chunkId)).toEqual(["full-text", "semantic"]);
-    expect(results[0]?.fusedScore).toBeCloseTo(3 / 61);
-    expect(results[1]?.fusedScore).toBeCloseTo(1 / 61);
-  });
-
   test("limits the final result set", () => {
     const semantic = [candidate("one", 1), candidate("two", 2), candidate("three", 3)];
 
-    const results = fuseRetrievalCandidates(semantic, [], {
+    const results = selectRetrievalCandidates(semantic, "semantic", {
       ...defaultOptions,
       limit: 2,
     });

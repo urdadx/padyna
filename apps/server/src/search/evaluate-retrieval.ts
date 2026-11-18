@@ -1,4 +1,4 @@
-import type { HybridRetrievalMetrics } from "./hybrid-retrieval";
+import type { RetrievalMetrics } from "./retrieval";
 
 interface EvaluationItem {
   query: string;
@@ -78,7 +78,7 @@ function formatLatency(values: number[]): string {
   return `p50 ${p50.toFixed(2)} ms, p95 ${p95.toFixed(2)} ms (${values.length} samples)`;
 }
 
-function collectLatencies(latencies: Latencies, metrics: HybridRetrievalMetrics) {
+function collectLatencies(latencies: Latencies, metrics: RetrievalMetrics) {
   latencies.total.push(metrics.totalMs);
   if (metrics.embeddingMs !== null) latencies.embedding.push(metrics.embeddingMs);
   if (metrics.semanticMs !== null) latencies.semantic.push(metrics.semanticMs);
@@ -88,9 +88,7 @@ function collectLatencies(latencies: Latencies, metrics: HybridRetrievalMetrics)
 async function main() {
   const datasetPath = Bun.argv[2];
   if (!datasetPath) {
-    throw new Error(
-      "Usage: bun run evaluate-search -- <dataset.json> [k] [show-misses]",
-    );
+    throw new Error("Usage: bun run evaluate-search -- <dataset.json> [k] [show-misses]");
   }
 
   const requestedK = Bun.argv[3] === undefined ? 8 : Number(Bun.argv[3]);
@@ -104,21 +102,21 @@ async function main() {
   }
 
   const dataset = parseDataset(await Bun.file(datasetPath).json());
-  const { retrieveHybridChunks } = await import("./hybrid-retrieval");
+  const { retrieveChunks } = await import("./retrieval");
   const latencies: Latencies = { total: [], embedding: [], semantic: [], fullText: [] };
   let recallTotal = 0;
   let reciprocalRankTotal = 0;
   let zeroResults = 0;
-  let fallbackCount = 0;
+  let semanticFailedCount = 0;
   let failedQueries = 0;
-  let queriesWithFullTextHits = 0;
+  let noSemanticMatchCount = 0;
   const missedQueries: MissedQuery[] = [];
 
   for (const [index, item] of dataset.entries()) {
-    let metrics: HybridRetrievalMetrics | undefined;
+    let metrics: RetrievalMetrics | undefined;
 
     try {
-      const results = await retrieveHybridChunks({
+      const results = await retrieveChunks({
         query: item.query,
         chatbotId: item.chatbotId,
         organizationId: item.organizationId,
@@ -147,8 +145,8 @@ async function main() {
         });
       }
       if (results.length === 0) zeroResults += 1;
-      if (metrics?.degradedToFullText) fallbackCount += 1;
-      if ((metrics?.fullTextCandidates ?? 0) > 0) queriesWithFullTextHits += 1;
+      if (metrics?.fullTextFallback === "semantic_failed") semanticFailedCount += 1;
+      if (metrics?.fullTextFallback === "no_semantic_matches") noSemanticMatchCount += 1;
       if (metrics) collectLatencies(latencies, metrics);
     } catch (error) {
       failedQueries += 1;
@@ -164,8 +162,9 @@ async function main() {
   console.log(
     `Zero-result rate: ${((zeroResults / count) * 100).toFixed(2)}% (${zeroResults}/${count})`,
   );
-  console.log(`Degraded/full-text fallback count: ${fallbackCount}`);
-  console.log(`Queries with full-text hits: ${queriesWithFullTextHits}/${dataset.length}`);
+  console.log(
+    `Full-text fallbacks: ${semanticFailedCount} semantic failed, ${noSemanticMatchCount} no semantic match`,
+  );
   console.log(`Failed queries: ${failedQueries}`);
   console.log(`Missed queries: ${missedQueries.length}`);
   console.log(`Total latency: ${formatLatency(latencies.total)}`);
