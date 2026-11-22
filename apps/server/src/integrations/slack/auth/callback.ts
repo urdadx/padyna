@@ -3,6 +3,7 @@ import { slackConnection } from "@padyna/db/schema/index";
 import type { Context } from "hono";
 import { initializeSlackBot, slackAdapter } from "../bot";
 import { consumeSlackOAuthState, SLACK_PENDING_CHANNEL_ID } from "../utils";
+import { isOAuthStateOwner, OAUTH_STATE_OWNER_MESSAGE } from "../../oauth-state-owner";
 
 function renderCloseWindowPage(message: string) {
   const escapedMessage = message
@@ -41,6 +42,10 @@ export async function handleSlackOAuthCallback(c: Context) {
   const stateRecord = await consumeSlackOAuthState(state);
   if (!stateRecord) {
     return c.json({ message: "Invalid or expired OAuth state" }, 400);
+  }
+
+  if (!(await isOAuthStateOwner(c, stateRecord.userId))) {
+    return c.json({ message: OAUTH_STATE_OWNER_MESSAGE }, 403);
   }
 
   const chatbots = await db.query.chatbot.findMany({

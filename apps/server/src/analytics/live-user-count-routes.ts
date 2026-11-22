@@ -14,7 +14,7 @@ ensurePresenceShutdownHooks();
 presenceRoutes.get(
   "/:chatbotId/ws",
   upgradeWebSocket((c) => {
-    const chatbotId = c.req.param("chatbotId");
+    const chatbotId = c.req.param("chatbotId")!;
     const connectionId = randomUUID();
     let isClosed = false;
     let cleanupStarted = false;

@@ -11,6 +11,7 @@ import {
   getConversationByChatbotAndOrganization,
   initializeLiveChatConversation,
 } from "./live-chat-service";
+import { checkRateLimit } from "../lib/ratelimiter";
 
 interface CreateEscalateToHumanToolInput {
   chatbotId: string;
@@ -90,11 +91,20 @@ export function EscalateToHumanTool(input: CreateEscalateToHumanToolInput) {
           .innerJoin(user, eq(member.userId, user.id))
           .where(eq(member.organizationId, input.organizationId));
 
-        if (members.length > 0) {
+        // Each escalation emails every member, and visitors can start conversations freely, so
+        // cap the emails per organization. In-app notifications still record every escalation.
+        const emailAllowance = await checkRateLimit({
+          namespace: "escalation-email",
+          identifier: input.organizationId,
+          maxRequests: 20,
+          windowSeconds: 60 * 60,
+        });
+
+        if (members.length > 0 && emailAllowance.allowed) {
           const emailBatch = members.map((m) => ({
             from: "Padyna <escalation@padyna.com>",
             to: [m.email],
-            subject: `🚨 Conversation Escalated - ${reason || "Human attention needed"}`,
+            subject: `🚨 Conversation escalated - ${input.chatbotName || "Your chatbot"}`,
             react: EscalationEmail({
               chatId: conversationId,
               reason: reason || "other",

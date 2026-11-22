@@ -51,6 +51,20 @@ app.use(
   }),
 );
 
+// The auth cookie is SameSite=None, so browsers attach it to requests that other sites make.
+// Refuse state-changing requests and WebSocket upgrades that carry a cookie from any origin but
+// the web app. Webhooks and the widget's calls don't send cookies, so they're unaffected.
+const trustedOrigin = new URL(env.CORS_ORIGIN).origin;
+app.use("/api/*", async (c, next) => {
+  const isWebSocket = c.req.header("upgrade")?.toLowerCase() === "websocket";
+  const changesState = !["GET", "HEAD", "OPTIONS"].includes(c.req.method);
+  const origin = c.req.header("origin");
+  if ((changesState || isWebSocket) && c.req.header("cookie") && origin && origin !== trustedOrigin) {
+    return c.json({ message: "Cross-site request refused" }, 403);
+  }
+  await next();
+});
+
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 app.get("/api/accept-invitation/:invitationId", async (c) => {
@@ -153,6 +167,7 @@ app.post("/api/accept-invitation/:invitationId", async (c) => {
           .where(eq(schema.user.id, session.user.id));
       }
       if (session?.session) {
+        // Only the session that accepted switches to the new organization.
         await db
           .update(schema.session)
           .set({
@@ -160,7 +175,7 @@ app.post("/api/accept-invitation/:invitationId", async (c) => {
             activeChatbot: chatbotId,
             updatedAt: new Date(),
           })
-          .where(eq(schema.session.userId, session.user.id));
+          .where(eq(schema.session.id, session.session.id));
       }
     }
 

@@ -3,6 +3,7 @@ import { discordConnection } from "@padyna/db/schema/index";
 import { env } from "@padyna/env/server";
 import type { Context } from "hono";
 import { consumeDiscordOAuthState, getDiscordApplicationId, getDiscordRedirectUri } from "../utils";
+import { isOAuthStateOwner, OAUTH_STATE_OWNER_MESSAGE } from "../../oauth-state-owner";
 
 async function exchangeDiscordOAuthCode(code: string) {
   const clientId = getDiscordApplicationId();
@@ -60,7 +61,6 @@ function renderCloseWindowPage(message: string) {
 
 export async function handleDiscordOAuthCallback(c: Context) {
   const code = c.req.query("code");
-  const guildId = c.req.query("guild_id");
   const state = c.req.query("state");
   const oauthError = c.req.query("error");
 
@@ -68,20 +68,36 @@ export async function handleDiscordOAuthCallback(c: Context) {
     return c.json({ message: "Discord OAuth error", error: oauthError }, 400);
   }
 
-  if (!guildId || !state || !code) {
-    return c.json({ message: "Missing code, guild_id, or state" }, 400);
+  if (!state || !code) {
+    return c.json({ message: "Missing code or state" }, 400);
   }
 
+  // The server the bot was added to comes from Discord's token response. The `guild_id` query
+  // parameter is only a hint from the redirect URL, which the person completing the flow can edit.
+  let guildId: string | undefined;
   try {
-    await exchangeDiscordOAuthCode(code);
+    const token = (await exchangeDiscordOAuthCode(code)) as { guild?: { id?: unknown } };
+    guildId = typeof token.guild?.id === "string" ? token.guild.id : undefined;
   } catch (error) {
     console.error("Discord OAuth token exchange failed", error);
     return c.json({ message: "Discord OAuth token exchange failed" }, 502);
   }
 
+  if (!guildId) {
+    return c.json({ message: "Discord didn't say which server the bot was added to" }, 400);
+  }
+  const queryGuildId = c.req.query("guild_id");
+  if (queryGuildId && queryGuildId !== guildId) {
+    return c.json({ message: "Server mismatch" }, 400);
+  }
+
   const stateRecord = await consumeDiscordOAuthState(state);
   if (!stateRecord) {
     return c.json({ message: "Invalid or expired OAuth state" }, 400);
+  }
+
+  if (!(await isOAuthStateOwner(c, stateRecord.userId))) {
+    return c.json({ message: OAUTH_STATE_OWNER_MESSAGE }, 403);
   }
 
   const chatbots = await db.query.chatbot.findMany({

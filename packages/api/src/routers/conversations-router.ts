@@ -278,7 +278,7 @@ export const conversationsRouter = router({
         throw new Error("Conversation not found");
       }
 
-      const isAdmin = ctx.session.user.role === "admin";
+      const isAdmin = ctx.memberRole === "owner" || ctx.memberRole === "admin";
       const removingExistingAssignment =
         record.status === "assigned" && input.status !== "assigned";
       const assignedToCurrentUser = record.assignedTo === ctx.session.user.id;

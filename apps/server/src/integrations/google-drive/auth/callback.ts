@@ -8,6 +8,7 @@ import {
   GoogleDriveApiError,
 } from "./client";
 import { consumeGoogleDriveOAuthState, getGoogleDriveCallbackUrl } from "../utils";
+import { isOAuthStateOwner, OAUTH_STATE_OWNER_MESSAGE } from "../../oauth-state-owner";
 
 function getGoogleDriveErrorStatusCode(statusCode?: number) {
   return statusCode === 400
@@ -39,6 +40,10 @@ export async function handleGoogleDriveOAuthCallback(c: Context) {
   const stateRecord = await consumeGoogleDriveOAuthState(state);
   if (!stateRecord) {
     return c.json({ message: "Invalid or expired OAuth state" }, 400);
+  }
+
+  if (!(await isOAuthStateOwner(c, stateRecord.userId))) {
+    return c.json({ message: OAUTH_STATE_OWNER_MESSAGE }, 403);
   }
 
   try {

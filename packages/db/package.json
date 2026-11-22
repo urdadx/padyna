@@ -19,7 +19,7 @@
     "@padyna/env": "workspace:*",
     "dotenv": "catalog:",
     "drizzle-kit": "^0.31.8",
-    "drizzle-orm": "^0.45.1",
+    "drizzle-orm": "^0.45.4",
     "pg": "^8.17.1",
     "zod": "catalog:"
   },

@@ -136,7 +136,7 @@ export const subscriptionRouter = router({
     .input(z.object({ email: z.email() }))
     .mutation(async ({ input, ctx }) => {
       const organizationId = requireActiveOrganization(ctx.session.session.activeOrganization);
-      if (!isBillingAdmin(ctx.session.user.role)) {
+      if (!isBillingAdmin(ctx.memberRole)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can update billing" });
       }
 
@@ -155,7 +155,7 @@ export const subscriptionRouter = router({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const organizationId = requireActiveOrganization(ctx.session.session.activeOrganization);
-      if (!isBillingAdmin(ctx.session.user.role)) {
+      if (!isBillingAdmin(ctx.memberRole)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can cancel subscriptions" });
       }
 
@@ -168,6 +168,10 @@ export const subscriptionRouter = router({
 
   endTrial: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input, ctx }) => {
     const organizationId = requireActiveOrganization(ctx.session.session.activeOrganization);
+    // Ending the trial starts billing, so it's for billing admins only, like cancelling.
+    if (!isBillingAdmin(ctx.memberRole)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can end the trial" });
+    }
     await assertSubscriptionInOrganization(input.id, organizationId);
 
     const response = await fetch(`${env.POLAR_API_URL}/subscriptions/${input.id}`, {

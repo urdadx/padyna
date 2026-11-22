@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../index";
 import { db } from "@padyna/db";
-import { eq, sql } from "drizzle-orm";
-import { vote } from "@padyna/db/schema/chat";
+import { and, eq, sql } from "drizzle-orm";
+import { chatConversation, vote } from "@padyna/db/schema/chat";
 import { chatbot } from "@padyna/db/schema/chatbot";
 
 export const voteRouter = router({
@@ -16,7 +16,17 @@ export const voteRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
-      await db
+      // Votes count only for a real conversation of this chatbot, once per message.
+      const [conversation] = await db
+        .select({ id: chatConversation.id })
+        .from(chatConversation)
+        .where(and(eq(chatConversation.id, input.chatId), eq(chatConversation.chatbotId, input.chatbotId)))
+        .limit(1);
+      if (!conversation) {
+        return { success: false };
+      }
+
+      const inserted = await db
         .insert(vote)
         .values({
           chatId: input.chatId,
@@ -24,7 +34,11 @@ export const voteRouter = router({
           chatbotId: input.chatbotId,
           isUpvoted: input.isUpvoted,
         })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning({ chatId: vote.chatId });
+      if (inserted.length === 0) {
+        return { success: true };
+      }
 
       const column = input.isUpvoted ? chatbot.upvotes : chatbot.downvotes;
       await db

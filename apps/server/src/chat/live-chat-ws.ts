@@ -11,7 +11,7 @@ export function createLiveChatRoutes(hub: LiveChatHub) {
   routes.get(
     "/:conversationId/ws",
     upgradeWebSocket((c) => {
-      const conversationId = c.req.param("conversationId");
+      const conversationId = c.req.param("conversationId")!;
       const headers = new Headers(c.req.raw.headers);
       let connectionId: string | null = null;
 

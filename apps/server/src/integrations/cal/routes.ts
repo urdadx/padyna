@@ -2,6 +2,8 @@ import { env } from "@padyna/env/server";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
+import { calActionConfigSchema, parseCalUrl } from "../../actions/schema";
+import { findEnabledPublicAction, publicActionRateLimit } from "../../lib/public-action-guard";
 
 const CAL_API_BASE_URL = "https://api.cal.com/v2/";
 const CAL_SLOTS_API_VERSION = "2024-09-04";
@@ -24,6 +26,7 @@ type CalBookingResponse = Record<string, unknown> & {
 
 const slotsQuerySchema = z
   .object({
+    actionId: z.uuid("actionId is required"),
     username: z.string().trim().min(1, "username is required"),
     eventSlug: z.string().trim().min(1, "eventSlug is required"),
     startTime: z.iso.datetime({ offset: true }),
@@ -41,6 +44,7 @@ const slotsQuerySchema = z
 
 const bookingBodySchema = z
   .object({
+    actionId: z.uuid("actionId is required"),
     username: z.string().trim().min(1, "username is required"),
     eventSlug: z.string().trim().min(1, "eventSlug is required"),
     start: z.iso.datetime({ offset: true }),
@@ -224,6 +228,20 @@ function respondWithUnhandledError(c: Context, error: unknown, requestId: string
   return c.json({ error: "Internal server error" }, 500);
 }
 
+/**
+ * The Cal.com event a request may use: the one configured on an enabled Cal action. Requests
+ * carry the action id they came from, so Padyna's Cal.com key is only ever used for events a
+ * tenant set up, not for any username a caller names.
+ */
+async function resolveCalEvent(actionId: string, username: string, eventSlug: string) {
+  const action = await findEnabledPublicAction(actionId, "cal");
+  if (!action) return null;
+  const config = calActionConfigSchema.safeParse(action.config);
+  const event = config.success ? parseCalUrl(config.data.calUrl) : null;
+  if (!event || event.username !== username || event.eventSlug !== eventSlug) return null;
+  return event;
+}
+
 export const calRoutes = new Hono();
 
 calRoutes.get("/slots", async (c) => {
@@ -232,6 +250,16 @@ calRoutes.get("/slots", async (c) => {
 
   if (!parsedQuery.success) {
     return respondWithValidationError(c, parsedQuery.error);
+  }
+
+  if (
+    !(await resolveCalEvent(
+      parsedQuery.data.actionId,
+      parsedQuery.data.username,
+      parsedQuery.data.eventSlug,
+    ))
+  ) {
+    return c.json({ error: "Appointment booking isn't available" }, 404);
   }
 
   const calApiKey = env.CAL_API_KEY;
@@ -290,7 +318,7 @@ calRoutes.get("/slots", async (c) => {
   }
 });
 
-calRoutes.post("/booking", async (c) => {
+calRoutes.post("/booking", publicActionRateLimit, async (c) => {
   const requestId = getRequestId(c);
 
   let body: unknown;
@@ -303,6 +331,16 @@ calRoutes.post("/booking", async (c) => {
   const parsedBody = bookingBodySchema.safeParse(body);
   if (!parsedBody.success) {
     return respondWithValidationError(c, parsedBody.error);
+  }
+
+  if (
+    !(await resolveCalEvent(
+      parsedBody.data.actionId,
+      parsedBody.data.username,
+      parsedBody.data.eventSlug,
+    ))
+  ) {
+    return c.json({ error: "Appointment booking isn't available" }, 404);
   }
 
   const calApiKey = env.CAL_API_KEY;

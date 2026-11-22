@@ -25,6 +25,7 @@ export function getCalAppointmentFormPayloads(parts: Array<{ output?: unknown; s
 }
 
 interface CalAppointmentPickerProps {
+	actionId?: string;
 	username?: string;
 	eventSlug?: string;
 	duration?: number;
@@ -83,6 +84,7 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string) {
 }
 
 export function CalAppointmentPicker({
+	actionId,
 	username,
 	eventSlug,
 	duration = 30,
@@ -129,6 +131,7 @@ export function CalAppointmentPicker({
 
 			const response = await api.get("/api/cal/slots", {
 				params: {
+					actionId,
 					username,
 					eventSlug,
 					startTime,
@@ -180,6 +183,7 @@ export function CalAppointmentPicker({
 			const selectedDateTime = new Date(selectedSlot);
 			const endDateTime = new Date(selectedDateTime.getTime() + duration * 60000);
 			const bookingPayload = {
+				actionId,
 				username,
 				eventSlug,
 				start: selectedDateTime.toISOString(),
@@ -439,5 +443,11 @@ type CalAppointmentFormProps = {
 };
 
 export function CalAppointmentForm({ payload }: CalAppointmentFormProps) {
-	return <CalAppointmentPicker username={payload.username} eventSlug={payload.eventSlug} />;
+	return (
+		<CalAppointmentPicker
+			actionId={payload.actionId}
+			username={payload.username}
+			eventSlug={payload.eventSlug}
+		/>
+	);
 }

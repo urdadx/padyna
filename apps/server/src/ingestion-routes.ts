@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { ingestFiles } from "./ingestion/file/ingest-files";
 import { ingestLink, runMapWebsite } from "./ingestion/scrape";
 import {
@@ -10,6 +11,7 @@ import {
 import { ingestQa, updateQa } from "./ingestion/qa";
 import { ingestText, updateText } from "./ingestion/text";
 import { authMiddleware } from "./middlewares/auth-middleware";
+import { createRateLimitMiddleware } from "./lib/ratelimiter";
 
 type Variables = {
   user: any;
@@ -19,6 +21,43 @@ type Variables = {
 export const ingestionRoutes = new Hono<{ Variables: Variables }>();
 
 ingestionRoutes.use(authMiddleware);
+
+// Limits that match the dashboard (20 MB per file) and keep one organization from exhausting
+// memory, Firecrawl credits or embedding spend for everyone.
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const MAX_FILES_PER_UPLOAD = 10;
+const MAX_CRAWL_PAGES = 200;
+const MAX_CRAWL_INCLUDE_PATHS = 20;
+const CRAWL_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+ingestionRoutes.use(
+  "*",
+  bodyLimit({
+    maxSize: MAX_FILES_PER_UPLOAD * MAX_FILE_BYTES,
+    onError: (c) => c.json({ message: "The upload is too large." }, 413),
+  }),
+);
+
+const organizationKey = (c: { get: (key: "session") => any }) =>
+  String(c.get("session")?.activeOrganization ?? "none");
+
+const ingestionRateLimit = createRateLimitMiddleware({
+  namespace: "ingestion-write",
+  maxRequests: 60,
+  windowSeconds: 10 * 60,
+  resolveIdentifier: organizationKey,
+});
+
+const crawlRateLimit = createRateLimitMiddleware({
+  namespace: "ingestion-crawl",
+  maxRequests: 10,
+  windowSeconds: 10 * 60,
+  resolveIdentifier: organizationKey,
+});
+
+ingestionRoutes.on(["POST", "PUT"], "*", ingestionRateLimit);
+ingestionRoutes.post("/crawl", crawlRateLimit);
+ingestionRoutes.post("/map", crawlRateLimit);
 
 ingestionRoutes.post("/files", async (c) => {
   const session = c.get("session");
@@ -35,6 +74,14 @@ ingestionRoutes.post("/files", async (c) => {
       },
       400,
     );
+  }
+
+  if (files.length > MAX_FILES_PER_UPLOAD) {
+    return c.json({ message: `Upload at most ${MAX_FILES_PER_UPLOAD} files at a time.` }, 400);
+  }
+
+  if (files.some((file) => file.size > MAX_FILE_BYTES)) {
+    return c.json({ message: "Each file must be 20 MB or smaller." }, 413);
   }
 
   const ingestion = await ingestFiles({
@@ -130,9 +177,16 @@ ingestionRoutes.post("/crawl", async (c) => {
       url,
       chatbotId: activeChatbot,
       organizationId: activeOrganization,
-      limit,
-      includePaths,
-      crawlEntireDomain,
+      limit: Math.min(
+        Math.max(1, Number.isFinite(Number(limit)) ? Math.floor(Number(limit)) : 100),
+        MAX_CRAWL_PAGES,
+      ),
+      includePaths: Array.isArray(includePaths)
+        ? includePaths
+            .filter((path): path is string => typeof path === "string")
+            .slice(0, MAX_CRAWL_INCLUDE_PATHS)
+        : undefined,
+      crawlEntireDomain: crawlEntireDomain === true,
     });
     return c.json(result);
   } catch (error) {
@@ -161,6 +215,11 @@ ingestionRoutes.get("/crawl/:id", async (c) => {
   }
 
   const crawlId = c.req.param("id");
+
+  // Firecrawl crawl ids are UUIDs; anything else must not reach the Firecrawl URL.
+  if (crawlId && !CRAWL_ID_PATTERN.test(crawlId)) {
+    return c.json({ message: "Invalid crawl ID." }, 400);
+  }
 
   if (!crawlId) {
     return c.json(
@@ -196,6 +255,11 @@ ingestionRoutes.get("/crawl/:id", async (c) => {
 
 ingestionRoutes.delete("/crawl/:id", async (c) => {
   const crawlId = c.req.param("id");
+
+  // Firecrawl crawl ids are UUIDs; anything else must not reach the Firecrawl URL.
+  if (crawlId && !CRAWL_ID_PATTERN.test(crawlId)) {
+    return c.json({ message: "Invalid crawl ID." }, 400);
+  }
 
   if (!crawlId) {
     return c.json(

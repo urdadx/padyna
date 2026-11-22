@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { exchangeNotionAuthorizationCode, NotionApiError } from "./client";
 import { consumeNotionOAuthState, getNotionCallbackUrl } from "../utils";
+import { isOAuthStateOwner, OAUTH_STATE_OWNER_MESSAGE } from "../../oauth-state-owner";
 
 function getNotionErrorStatusCode(statusCode?: number) {
   return statusCode === 400
@@ -35,6 +36,10 @@ export async function handleNotionOAuthCallback(c: Context) {
   const stateRecord = await consumeNotionOAuthState(state);
   if (!stateRecord) {
     return c.json({ message: "Invalid or expired OAuth state" }, 400);
+  }
+
+  if (!(await isOAuthStateOwner(c, stateRecord.userId))) {
+    return c.json({ message: OAUTH_STATE_OWNER_MESSAGE }, 403);
   }
 
   try {

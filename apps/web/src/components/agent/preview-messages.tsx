@@ -206,6 +206,19 @@ export const PreviewMessages = memo(
 											{children}
 										</ol>
 									),
+									// Images in replies become links, so opening a conversation never loads
+									// an image from wherever injected text pointed it.
+									img: ({ src, alt }) =>
+										typeof src === "string" ? (
+											<a
+												href={src}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="underline underline-offset-2"
+											>
+												{alt || "Image"}
+											</a>
+										) : null,
 									code: MarkdownCodeBlock,
 								}}
 								className="text-foreground text-content-emphasis overflow-wrap-anywhere wrap-break-word min-w-0 w-full overflow-hidden">

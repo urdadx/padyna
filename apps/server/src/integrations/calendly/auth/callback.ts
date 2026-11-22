@@ -9,6 +9,7 @@ import {
   type CalendlyEventType,
 } from "./client";
 import { consumeCalendlyOAuthState, getCalendlyCallbackUrl } from "../utils";
+import { isOAuthStateOwner, OAUTH_STATE_OWNER_MESSAGE } from "../../oauth-state-owner";
 
 export async function handleCalendlyOAuthCallback(c: Context) {
   const code = c.req.query("code");
@@ -26,6 +27,10 @@ export async function handleCalendlyOAuthCallback(c: Context) {
   const stateRecord = await consumeCalendlyOAuthState(state);
   if (!stateRecord) {
     return c.json({ message: "Invalid or expired OAuth state" }, 400);
+  }
+
+  if (!(await isOAuthStateOwner(c, stateRecord.userId))) {
+    return c.json({ message: OAUTH_STATE_OWNER_MESSAGE }, 403);
   }
 
   const callbackUrl = getCalendlyCallbackUrl();

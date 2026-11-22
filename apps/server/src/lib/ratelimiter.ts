@@ -109,11 +109,19 @@ export function createRateLimitMiddleware(options: RateLimitMiddlewareOptions) {
 }
 
 export function getClientIp(c: Context): string {
+  // Cloudflare sets CF-Connecting-IP to the address it received the request from. The first
+  // X-Forwarded-For entry is whatever the client sent, so it's only used as a last resort and
+  // read from the right (the entry the nearest proxy added).
+  const cloudflareIp = c.req.header("cf-connecting-ip")?.trim();
+  if (cloudflareIp) {
+    return cloudflareIp;
+  }
+
   const forwardedFor = c.req.header("x-forwarded-for");
   if (forwardedFor) {
-    const first = forwardedFor.split(",")[0]?.trim();
-    if (first) {
-      return first;
+    const last = forwardedFor.split(",").at(-1)?.trim();
+    if (last) {
+      return last;
     }
   }
 

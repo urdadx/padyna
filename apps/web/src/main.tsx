@@ -14,7 +14,9 @@ const router = createRouter({
 	defaultPreload: "intent",
 	defaultPendingComponent: GlobalLoader,
 	defaultNotFoundComponent: NotFoundPage,
-	defaultErrorComponent: ({ error }) => <ErrorPage error={error} />,
+	defaultErrorComponent: ({ error }) => (
+		<ErrorPage error={error instanceof Error ? error : undefined} />
+	),
 	scrollRestoration: true,
 	context: { trpc, queryClient, session: null },
 	Wrap: ({ children }) => (

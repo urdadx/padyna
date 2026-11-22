@@ -18,8 +18,8 @@
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "dotenv": "catalog:",
-    "drizzle-orm": "^0.45.1",
-    "nanoid": "^5.1.6",
+    "drizzle-orm": "^0.45.4",
+    "nanoid": "^5.1.16",
     "resend": "^6.10.0",
     "zod": "catalog:"
   },

@@ -15,6 +15,7 @@ import {
 } from "./auth/client";
 import { createJiraConnectUrl } from "./auth/connect";
 import { jiraActionConfigSchema } from "../../actions/schema";
+import { findEnabledPublicAction, publicActionRateLimit } from "../../lib/public-action-guard";
 import {
   getActiveJiraIntegrationByChatbot,
   isJiraAccessTokenExpired,
@@ -43,8 +44,8 @@ const createJiraIssueBodySchema = z.object({
 
 const createJiraIssueFromActionBodySchema = z.object({
   actionId: z.uuid(),
-  summary: z.string().trim().min(1),
-  description: z.string().trim().min(1).optional(),
+  summary: z.string().trim().min(1).max(255),
+  description: z.string().trim().min(1).max(5000).optional(),
 });
 
 function getJiraErrorStatusCode(statusCode?: number) {
@@ -223,8 +224,20 @@ securedJiraRoutes.get("/status", async (c) => {
         {
           connected: true,
           chatbotId: access.chatbotId,
+          // The same public fields as the success response: never the tokens.
           integration: {
-            ...integration,
+            id: integration.id,
+            chatbotId: integration.chatbotId,
+            userId: integration.userId,
+            accessTokenExpiresAt: integration.accessTokenExpiresAt,
+            scope: integration.scope,
+            cloudId: integration.cloudId,
+            siteUrl: integration.siteUrl,
+            siteName: integration.siteName,
+            siteAvatarUrl: integration.siteAvatarUrl,
+            isActive: integration.isActive,
+            disconnectedAt: integration.disconnectedAt,
+            updatedAt: integration.updatedAt,
             tokenExpired: true,
             canRefresh: Boolean(integration.refreshToken),
           },
@@ -383,7 +396,7 @@ securedJiraRoutes.get("/fields", async (c) => {
   }
 });
 
-publicJiraRoutes.post("/action-issue", async (c) => {
+publicJiraRoutes.post("/action-issue", publicActionRateLimit, async (c) => {
   const parseResult = createJiraIssueFromActionBodySchema.safeParse(await c.req.json());
   if (!parseResult.success) {
     return c.json(
@@ -396,11 +409,7 @@ publicJiraRoutes.post("/action-issue", async (c) => {
   }
 
   const payload = parseResult.data;
-  const [action] = await db
-    .select()
-    .from(agentAction)
-    .where(and(eq(agentAction.id, payload.actionId), eq(agentAction.provider, "jira")))
-    .limit(1);
+  const action = await findEnabledPublicAction(payload.actionId, "jira");
 
   if (!action) {
     return c.json({ message: "Jira action not found" }, 404);

@@ -9,6 +9,7 @@ import {
   selectJiraAccessibleResource,
 } from "./client";
 import { consumeJiraOAuthState, getJiraCallbackUrl } from "../utils";
+import { isOAuthStateOwner, OAUTH_STATE_OWNER_MESSAGE } from "../../oauth-state-owner";
 
 function getJiraErrorStatusCode(statusCode?: number) {
   return statusCode === 400
@@ -44,6 +45,10 @@ export async function handleJiraOAuthCallback(c: Context) {
   const stateRecord = await consumeJiraOAuthState(state);
   if (!stateRecord) {
     return c.json({ message: "Invalid or expired OAuth state" }, 400);
+  }
+
+  if (!(await isOAuthStateOwner(c, stateRecord.userId))) {
+    return c.json({ message: OAUTH_STATE_OWNER_MESSAGE }, 403);
   }
 
   try {

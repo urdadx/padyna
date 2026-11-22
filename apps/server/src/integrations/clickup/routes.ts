@@ -22,6 +22,7 @@ import {
   type ClickUpAuthContext,
 } from "./utils";
 import { clickupActionConfigSchema } from "../../actions/schema";
+import { findEnabledPublicAction, publicActionRateLimit } from "../../lib/public-action-guard";
 
 type Variables = {
   user: any;
@@ -43,8 +44,8 @@ const createClickUpTaskBodySchema = z.object({
 
 const createClickUpTaskFromActionBodySchema = z.object({
   actionId: z.uuid(),
-  name: z.string().trim().min(1),
-  description: z.string().trim().min(1).optional(),
+  name: z.string().trim().min(1).max(255),
+  description: z.string().trim().min(1).max(5000).optional(),
 });
 
 function getClickUpErrorStatusCode(statusCode?: number) {
@@ -334,7 +335,7 @@ securedClickUpRoutes.get("/list", async (c) => {
   }
 });
 
-publicClickUpRoutes.post("/action-task", async (c) => {
+publicClickUpRoutes.post("/action-task", publicActionRateLimit, async (c) => {
   const parseResult = createClickUpTaskFromActionBodySchema.safeParse(await c.req.json());
   if (!parseResult.success) {
     return c.json(
@@ -347,11 +348,7 @@ publicClickUpRoutes.post("/action-task", async (c) => {
   }
 
   const payload = parseResult.data;
-  const [action] = await db
-    .select()
-    .from(agentAction)
-    .where(and(eq(agentAction.id, payload.actionId), eq(agentAction.provider, "clickup")))
-    .limit(1);
+  const action = await findEnabledPublicAction(payload.actionId, "clickup");
 
   if (!action) {
     return c.json({ message: "ClickUp action not found" }, 404);

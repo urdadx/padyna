@@ -144,6 +144,19 @@ export const WidgetMessages = ({
                     {children}
                   </a>
                 ),
+                // Images in replies become links: loading one automatically would let text the
+                // model was tricked into writing send the visitor's details to any site.
+                img: ({ src, alt }) =>
+                  typeof src === "string" ? (
+                    <a
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-neutral-900 underline underline-offset-2 hover:text-neutral-600"
+                    >
+                      {alt || "Image"}
+                    </a>
+                  ) : null,
                 ul: ({ children }) => <ul className="list-outside list-disc pl-6">{children}</ul>,
                 ol: ({ children }) => (
                   <ol className="list-outside list-decimal pl-6">{children}</ol>

@@ -1,10 +1,40 @@
 import { Hono } from "hono";
+import { auth } from "@padyna/auth";
 import { env } from "@padyna/env/server";
 import { polarClient } from "@padyna/auth/lib/payments";
+import { getMemberRole } from "@padyna/api/lib/membership";
 
 export const checkout = new Hono();
 
+/** Labels the dashboard sends with a checkout; anything else in `metadata` is ignored. */
+function readCheckoutLabels(raw: string | null) {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const labels: Record<string, string> = {};
+    for (const key of ["planName", "addonType"]) {
+      const value = parsed[key];
+      if (typeof value === "string" && value.length <= 100) labels[key] = value;
+    }
+    return labels;
+  } catch {
+    return {};
+  }
+}
+
+// The customer and the organization being paid for come from the signed-in session, never from
+// the query string: the webhook trusts them to decide which user and organization get the plan.
 checkout.get("/checkout", async (c) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  const organizationId = (session?.session as { activeOrganization?: string | null } | undefined)
+    ?.activeOrganization;
+  if (!session?.user || !organizationId) {
+    return c.redirect(`${env.CORS_ORIGIN}/login`);
+  }
+  if (!(await getMemberRole(session.user.id, organizationId))) {
+    return c.json({ error: "You are not a member of this organization" }, 403);
+  }
+
   const url = new URL(c.req.url);
   const products = url.searchParams.getAll("products");
 
@@ -19,26 +49,13 @@ checkout.get("/checkout", async (c) => {
     const result = await polarClient.checkouts.create({
       products,
       successUrl: decodeURI(successUrl.toString()),
-      customerId: url.searchParams.get("customerId") ?? undefined,
-      externalCustomerId: url.searchParams.get("customerExternalId") ?? undefined,
-      customerEmail: url.searchParams.get("customerEmail") ?? undefined,
-      customerName: url.searchParams.get("customerName") ?? undefined,
-      customerBillingAddress: url.searchParams.has("customerBillingAddress")
-        ? JSON.parse(url.searchParams.get("customerBillingAddress") ?? "{}")
-        : undefined,
-      customerTaxId: url.searchParams.get("customerTaxId") ?? undefined,
-      customerIpAddress: url.searchParams.get("customerIpAddress") ?? undefined,
-      customerMetadata: url.searchParams.has("customerMetadata")
-        ? JSON.parse(url.searchParams.get("customerMetadata") ?? "{}")
-        : undefined,
-      allowDiscountCodes: url.searchParams.has("allowDiscountCodes")
-        ? url.searchParams.get("allowDiscountCodes") === "true"
-        : undefined,
-      discountId: url.searchParams.get("discountId") ?? undefined,
-      metadata: url.searchParams.has("metadata")
-        ? JSON.parse(url.searchParams.get("metadata") ?? "{}")
-        : undefined,
-      returnUrl: url.searchParams.get("returnUrl") ?? undefined,
+      externalCustomerId: session.user.id,
+      customerEmail: session.user.email ?? undefined,
+      customerName: session.user.name ?? undefined,
+      metadata: {
+        ...readCheckoutLabels(url.searchParams.get("metadata")),
+        referenceId: organizationId,
+      },
     });
 
     return c.redirect(result.url);

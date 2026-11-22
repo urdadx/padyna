@@ -280,6 +280,12 @@ export function CalendlyAppointmentForm({ payload }: CalendlyAppointmentFormProp
 			schedulingUrl={payload.schedulingUrl}
 			eventTypeName={payload.eventTypeName}
 			onConfirm={({ calendlyUrl }) => {
+				// The URL comes from a stored tool output; only ever open an https page.
+				try {
+					if (new URL(calendlyUrl).protocol !== "https:") return;
+				} catch {
+					return;
+				}
 				window.open(calendlyUrl, "_blank", "noopener,noreferrer");
 			}}
 		/>
